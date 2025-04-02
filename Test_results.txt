@@ -1,52 +1,63 @@
-1. Declarações e atribuições
-int x = 2 + 3; e x = x * 4; → write(x); → Resultado: 20 ✅
+✅ Validações já tratadas e testadas com sucesso
+Declarações e atribuições
+int x = 2 + 3; x = x * 4; write(x); → Resultado: 20 ✅
 int x = 5; int y = x + 3; x = y * 2; write(x); → Resultado: 16 ✅
 
-2. Escrita (write)
+Escrita (write)
 write(x); com variável previamente atribuída → Resultado: Correto ✅
 
-3. Parênteses e precedência
+Parênteses e precedência
 (2 + 3) * 2 → write(x); → Resultado: 10 ✅
 
-4. double e int com casting
+double e int com casting
 double x = 5.9; int y = (int) x; write(y); → Resultado: 5 ✅
 double z = (double) x / y; → Resultado: 2.5 ✅
 Operações com mistura int + double → Resultado correto ✅
 
-5. Aceitar e "ignorar" return
+Aceitar e "ignorar" return
 int main() { int x = 10; return x; } → Resultado correto ✅
 
-6. Read
+read()
 int main() { int x = read(); write(x); }
-Introduz valor: 42
-42 → Resultado correto ✅
-int main() { char c = readc(); writec(c); }
-Introduz valor: a
-97 → Resultado correto ✅
+Introduz valor: 42 → Resultado: 42 ✅
 
-int main() { char c = readc(); writec(c); }
-Introduz valor: 100
-[Erro de Execução] readc() espera apenas um único caráter. → Resultado correto ✅
+readc()
+char c = readc(); writec(c);
+Introduz valor: a → Resultado: 97 ✅
+Introduz valor: 1 → Resultado: 49 ✅
+Introduz valor: abc → [Erro de Execução] readc() espera apenas um único caráter. ✅
+Introduz valor: 100 → [Erro de Execução] readc() espera apenas um único caráter. ✅
 
-int main() { char c = readc(); writec(c); }
-Introduz valor: abc
-[Erro de Execução] readc() espera apenas um único caráter.  → Resultado correto ✅
+🔧 Validações por tratar / por testar
+Condicionais (if / if-else)
+⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
 
+Ciclos while
+⚠️ Loop parcial ou crash (erro list has no attribute accept) → A rever
 
+Ciclos for
+⏳ Ainda não testado
 
-TODO
+Vetores (declaração, leitura, escrita)
+⏳ Ainda não testado
 
-11. Indentações
-Pré-processamento
+Indentações / múltiplas linhas / formatação livre
+⏳ Ainda não testado
 
-5. Condicionais if / if-else
-⚠️ Comportamento incorreto (executava sempre if e else)
+Pré-processamento:
 
-⚠️ 7. Ciclos while
-⚠️ Loop parcial ou crash (erro list has no attribute accept)
+❌ Redeclaração de variáveis → A validar
 
-⏳ 8. for loops
-❌ Ainda não testado
+❌ Uso de variáveis não declaradas → OK ✅
 
-⏳ 10. Vetores
-❌ Ainda não testado
+❌ Chamadas a funções sem protótipos → A validar
+
+❌ Número e tipo de argumentos nas funções → A validar
+
+❌ Uso incorreto de reads() (só em vetores int) → A testar
+
+❌ Conversões automáticas int ↔ double (regras do C) → Já parcialmente testado ✅
+
+❌ Castings (int), (double) → Já testado ✅
+
+❌ Escrita com writec, writev, writes → A testar
