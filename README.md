@@ -2,7 +2,7 @@
 UAb 2024/2025 - UC de Compilação
 
 ########### Enunciado do EfolioA ###########
-
+```
 /* e-fólio A
    Compilação 2024/25
    Linguagem: MOC (My Own C)
@@ -136,3 +136,4 @@ void main(void) {
     }
     write(avg(v, n));
 }
+```
