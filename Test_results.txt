@@ -1,0 +1,52 @@
+1. Declarações e atribuições
+int x = 2 + 3; e x = x * 4; → write(x); → Resultado: 20 ✅
+int x = 5; int y = x + 3; x = y * 2; write(x); → Resultado: 16 ✅
+
+2. Escrita (write)
+write(x); com variável previamente atribuída → Resultado: Correto ✅
+
+3. Parênteses e precedência
+(2 + 3) * 2 → write(x); → Resultado: 10 ✅
+
+4. double e int com casting
+double x = 5.9; int y = (int) x; write(y); → Resultado: 5 ✅
+double z = (double) x / y; → Resultado: 2.5 ✅
+Operações com mistura int + double → Resultado correto ✅
+
+5. Aceitar e "ignorar" return
+int main() { int x = 10; return x; } → Resultado correto ✅
+
+6. Read
+int main() { int x = read(); write(x); }
+Introduz valor: 42
+42 → Resultado correto ✅
+int main() { char c = readc(); writec(c); }
+Introduz valor: a
+97 → Resultado correto ✅
+
+int main() { char c = readc(); writec(c); }
+Introduz valor: 100
+[Erro de Execução] readc() espera apenas um único caráter. → Resultado correto ✅
+
+int main() { char c = readc(); writec(c); }
+Introduz valor: abc
+[Erro de Execução] readc() espera apenas um único caráter.  → Resultado correto ✅
+
+
+
+TODO
+
+11. Indentações
+Pré-processamento
+
+5. Condicionais if / if-else
+⚠️ Comportamento incorreto (executava sempre if e else)
+
+⚠️ 7. Ciclos while
+⚠️ Loop parcial ou crash (erro list has no attribute accept)
+
+⏳ 8. for loops
+❌ Ainda não testado
+
+⏳ 10. Vetores
+❌ Ainda não testado

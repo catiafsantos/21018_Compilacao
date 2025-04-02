@@ -58,7 +58,8 @@ STRINGLITERAL : '"' (~["\r\n])* '"' ;
 COMENTARIO : '/*' .*? '*/' -> skip ;
 
 // Tokens básicos
-NUMERO        : [0-9]+ ;
+NUM_REAL : [0-9]+ '.' [0-9]+ ;
+NUMERO   : [0-9]+ ;
 IDENTIFICADOR : [a-zA-Z_][a-zA-Z0-9_]* ;
 
 // Espaços em branco (ignorados)
@@ -161,6 +162,7 @@ expressao
     | IDENTIFICADOR                              # VariavelID
     | IDENTIFICADOR ABRECOLCH expressao FECHACOLCH # AcessoVetor
     | NUMERO                                     # Numero
+    | NUM_REAL                                  # NumeroReal
     | chamadaFuncao                              # ChamadaLeitura
     | IDENTIFICADOR ABREPAR argumentos? FECHAPAR # ChamadaGenerica
     | ABREPAR tipo FECHAPAR expressao            # Casting
