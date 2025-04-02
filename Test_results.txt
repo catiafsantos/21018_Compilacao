@@ -1,34 +1,53 @@
 ✅ Validações já tratadas e testadas com sucesso
-Declarações e atribuições
-int x = 2 + 3; x = x * 4; write(x); → Resultado: 20 ✅
-int x = 5; int y = x + 3; x = y * 2; write(x); → Resultado: 16 ✅
+#### Declarações e atribuições
+int x = 2 + 3; x = x * 4; write(x); → Resultado: 20 
+int x = 5; int y = x + 3; x = y * 2; write(x); → Resultado: 16 
+int main() { double x = 2 + 3.5; write(x); } → Resultado:5.5
 
-Escrita (write)
-write(x); com variável previamente atribuída → Resultado: Correto ✅
+#### Escrita (write)
+write(x); com variável previamente atribuída 
 
-Parênteses e precedência
-(2 + 3) * 2 → write(x); → Resultado: 10 ✅
+#### Parênteses e precedência
+(2 + 3) * 2 → write(x); → Resultado: 10 
 
-double e int com casting
-double x = 5.9; int y = (int) x; write(y); → Resultado: 5 ✅
-double z = (double) x / y; → Resultado: 2.5 ✅
-Operações com mistura int + double → Resultado correto ✅
+#### double e int com casting
+double x = 5.9; int y = (int) x; write(y); → Resultado: 5 
+double z = (double) x / y; → Resultado: 2.5 
+    Operações com mistura int + double:
+    int main() { int x = 5; double y = (double)x / 2; write(y); } → Resultado: 2.5 
 
-Aceitar e "ignorar" return
-int main() { int x = 10; return x; } → Resultado correto ✅
+#### Aceitar e "ignorar" return
+int main() { int x = 10; return x; }  → Sem resultado
 
-read()
+#### read()
 int main() { int x = read(); write(x); }
-Introduz valor: 42 → Resultado: 42 ✅
+Introduz valor: 42 → Resultado: 42 
 
-readc()
+#### readc()
 char c = readc(); writec(c);
-Introduz valor: a → Resultado: 97 ✅
-Introduz valor: 1 → Resultado: 49 ✅
-Introduz valor: abc → [Erro de Execução] readc() espera apenas um único caráter. ✅
-Introduz valor: 100 → [Erro de Execução] readc() espera apenas um único caráter. ✅
+Introduz valor: a → Resultado: 97 
+Introduz valor: 1 → Resultado: 49 
+    Operações inválidas:
+    Introduz valor: abc → [Erro de Execução] readc() espera apenas um único caráter. 
+    Introduz valor: 100 → [Erro de Execução] readc() espera apenas um único caráter. 
 
-🔧 Validações por tratar / por testar
+#### Redeclaração de variáveis
+int main() { int x = 5; int x = 10; write(x); }
+[Erro de Execução] Variável 'x' já foi declarada. 
+
+### Uso de variáveis não declaradas
+int main() { write(x); }
+[Erro de Execução] Variável 'x' não declarada
+
+#### Escrita com writec, writev, writes 
+Digite o programa: int main() { int c = 97; writec(); } → Resultado:9 7
+Digite o programa: int main() { int v[] = {1, 2, 3, 0}; writev(v); } → Resultado: {1,2,3,0}
+Digite o programa: int main() { int c = 97; writec(c); } → Resultado:  a
+Digite o programa: int main() { int s[] = {97, 98, 99, 0}; writes(s); } → Resultado: abc
+Digite o programa: int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
+
+#############################
+Validações por tratar / por testar
 Condicionais (if / if-else)
 ⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
 
@@ -36,28 +55,13 @@ Ciclos while
 ⚠️ Loop parcial ou crash (erro list has no attribute accept) → A rever
 
 Ciclos for
-⏳ Ainda não testado
 
 Vetores (declaração, leitura, escrita)
-⏳ Ainda não testado
 
 Indentações / múltiplas linhas / formatação livre
-⏳ Ainda não testado
 
-Pré-processamento:
+Número e tipo de argumentos nas funções 
 
-❌ Redeclaração de variáveis → A validar
+Uso incorreto de reads() (só em vetores int) 
 
-❌ Uso de variáveis não declaradas → OK ✅
-
-❌ Chamadas a funções sem protótipos → A validar
-
-❌ Número e tipo de argumentos nas funções → A validar
-
-❌ Uso incorreto de reads() (só em vetores int) → A testar
-
-❌ Conversões automáticas int ↔ double (regras do C) → Já parcialmente testado ✅
-
-❌ Castings (int), (double) → Já testado ✅
-
-❌ Escrita com writec, writev, writes → A testar
+Chamadas a funções sem protótipos
