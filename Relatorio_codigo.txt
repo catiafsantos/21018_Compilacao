@@ -1,11 +1,11 @@
 #################### Estrutura de código ####################
-reset.antlr.sh ---> Script em bash para limpar os ficheiros de antlr e voltar a carregar pela gramática.
-MOC.g4 ---> A nossa gramática
-MOCVisitorDEBUG.py ---> Visitor customizado com modo de DEBUG em todas as funções para conseguirmos verificar cenários.
+reset.antlr.sh ---> Script em bash para limpar os ficheiros de antlr e voltar a carregar pela gramatica.
+MOC.g4 ---> A nossa gramatica
+MOCVisitorDEBUG.py ---> Visitor customizado com modo de DEBUG em todas as funcoes para conseguirmos verificar cenarios.
 MOCVisitor.py ---> Visitor customizado para pré-processamento de dados.
 
-#################### Métodos implementados no visitor para cada parte da gramática #################### 
-#### Regra da gramática  ---> Método no MOCVisitor	
+#################### Métodos implementados no visitor para cada parte da gramatica #################### 
+#### Regra da gramatica  ---> Método no MOCVisitor	
 programa              ---> visitPrograma
 unidade               ---> visitUnidade
 prototipo             ---> visitPrototipo
@@ -42,9 +42,9 @@ opRelacional          ---> visitOpRelacional
 chamadaFuncao         ---> visitChamadaFuncao
 bloco                 ---> visitBloco
 instrucoes            ---> visitInstrucoes
-instrução             ---> visitInstrução
-instruçãoEmparelhada  ---> visitInstruçãoEmparelhada
-instruçãoPorEmparelhar---> visitInstruçãoPorEmparelhar
+instrucao             ---> visitInstrucao
+instrucaoEmparelhada  ---> visitInstrucaoEmparelhada
+instrucaoPorEmparelhar---> visitInstrucaoPorEmparelhar
 outraInstrucao        ---> visitOutraInstrucao
 instrucaoWhile        ---> visitInstrucaoWhile
 instrucaoFor          ---> visitInstrucaoFor
@@ -64,9 +64,9 @@ int fact(int); void main(void); int fact(int k) { int i, n = 1; for (i = 2; i <=
 Exemplo 3:
 double avg(double v[], int size); void main(void); double avg(double v[], int size) { int i; double sum = 0; for (i = 0; i < size; i = i + 1) { sum = sum + v[i]; } return sum / size; } void main(void) { int i, n; double v[100]; writes("Introduza tamanho do vetor, seguido dos respetivos valores: "); n = read(); for (i = 0; i < n; i = i + 1) { v[i] = read(); } write(avg(v, n)); }
 
-#################### Validações já tratadas e testadas com sucesso #################### 
+#################### Validacoes ja tratadas e testadas com sucesso #################### 
 
-#### Declarações e atribuições  --->  visitDeclaracao, visitInstrucaoAtribuicao, visitAdicao, visitMultiplicacao, visitSubtracao
+#### Declaracoes e atribuicoes  --->  visitDeclaracao, visitInstrucaoAtribuicao, visitAdicao, visitMultiplicacao, visitSubtracao
 void main() { int x = 2 + 3; x = x * 4; write(x); } → Resultado: 20 
 void main() { int x = 5; int y = x + 3; x = y * 2; write(x); } → Resultado: 16 
 int main() { double x = 2 + 3.5; write(x); } → Resultado: 5.5
@@ -80,7 +80,7 @@ void main() { int x = (2 + 3) * 2; write(x); } → Resultado: 10
 #### double e int com casting  --->  visitCasting, visitInstrucaoEscrita
 void main() { double x = 5.9; int y = (int) x; write(y); double z = (double) x / y; write(z); } → Resultado: 5 
 void main() { int x = 5; int y = 2; double z = (double) x / y; write(z); }  → Resultado: 2.5 
-    Operações com mistura int + double:
+    Operacoes com mistura int + double:
     int main() { int x = 5; double y = (double)x / 2; write(y); } → Resultado: 2.5 
 
 #### Aceitar e "ignorar" return  --->  visitInstrucaoReturn
@@ -98,17 +98,17 @@ Introduz valor: 1 → 1
 void main() { int c = readc(); write(c); }
 Introduz valor: a → 97
 Introduz valor: 1 → 49
-    Operações inválidas:
-    Introduz valor: abc → [Erro de Execução] readc() espera apenas um único caráter. 
-    Introduz valor: 100 → [Erro de Execução] readc() espera apenas um único caráter. 
+    Operacoes invalidas:
+    Introduz valor: abc → [Erro de Execucao] readc() espera apenas um único carater. 
+    Introduz valor: 100 → [Erro de Execucao] readc() espera apenas um único carater. 
 
-#### Redeclaração de variáveis  --->  visitDeclaracao
+#### Redeclaracao de variaveis  --->  visitDeclaracao
 int main() { int x = 5; int x = 10; write(x); }
-[Erro de Execução] Variável 'x' já foi declarada. 
+[Erro de Execucao] Variavel 'x' ja foi declarada. 
 
-#### Uso de variáveis não declaradas  --->  visitVariavelID
+#### Uso de variaveis nao declaradas  --->  visitVariavelID
 int main() { write(x); }
-[Erro de Execução] Variável 'x' não declarada
+[Erro de Execucao] Variavel 'x' nao declarada
 
 #### Escrita com writec, writev, writes  --->  visitInstrucaoEscrita, visitArgumentoString
 int main() { int c = 97; writec(c); } → Resultado:9 7
@@ -118,8 +118,8 @@ int main() { int s[] = {97, 98, 99, 0}; writes(s); } → Resultado: abc
 int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
 
 
-############################# Validações por tratar / por testar #################### 
-Chamadas a funções sem protótipos, se os protótipos não forem declarados o programa não corre.
+############################# Validacoes por tratar / por testar #################### 
+Chamadas a funcoes sem protótipos, se os protótipos nao forem declarados o programa nao corre.
 
 Condicionais (if / if-else)
 ⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
@@ -129,11 +129,11 @@ Ciclos while
 
 Ciclos for
 
-Vetores (declaração, leitura, escrita)
+Vetores (declaracao, leitura, escrita)
 
-Indentações / múltiplas linhas / formatação livre
+Indentacoes / múltiplas linhas / formatacao livre
 
-Número e tipo de argumentos nas funções 
+Número e tipo de argumentos nas funcoes 
 
 Uso incorreto de reads() (só em vetores int) 
 
