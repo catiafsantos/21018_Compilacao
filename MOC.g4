@@ -37,7 +37,7 @@ E_LOGICO    : '&&' ;
 OU_LOGICO   : '||' ;
 NAO         : '!' ;
 
-// Símbolos e pontuação
+// Símbolos e pontuacao
 ATRIBUICAO   : '=' ;
 VIRGULA      : ',' ;
 PONTOVIRG    : ';' ;
@@ -62,7 +62,7 @@ NUM_REAL : [0-9]+ '.' [0-9]+ ;
 NUMERO   : [0-9]+ ;
 IDENTIFICADOR : [a-zA-Z_][a-zA-Z0-9_]* ;
 
-// Espaços em branco (ignorados)
+// Espacos em branco (ignorados)
 ESPACO : [ \t\r\n]+ -> skip ;
 
 /*
@@ -71,7 +71,7 @@ ESPACO : [ \t\r\n]+ -> skip ;
  * ----------------------------
  */
 
-// Programa = protótipos + (opcional) main + outras funções/declarações + EOF
+// Programa = protótipos + (opcional) main + outras funcoes/declaracoes + EOF
 programa
     : prototipo* prototipoPrincipal? unidade* funcaoPrincipal EOF
     ;
@@ -81,27 +81,27 @@ unidade
     | declaracao
     ;
 
-// Protótipos de função
+// Protótipos de funcao
 prototipo
     : tipo IDENTIFICADOR ABREPAR parametros? FECHAPAR PONTOVIRG
     ;
 
-// Protótipo específico da função main
+// Protótipo específico da funcao main
 prototipoPrincipal
     : tipo 'main' ABREPAR parametros? FECHAPAR PONTOVIRG
     ;
 
-// Função principal (main)
+// Funcao principal (main)
 funcaoPrincipal
     : tipo 'main' ABREPAR parametros? FECHAPAR bloco
     ;
 
-// Funções com corpo
+// Funcoes com corpo
 funcao
     : tipo IDENTIFICADOR ABREPAR parametros? FECHAPAR bloco
     ;
 
-// Parâmetros da função
+// Parâmetros da funcao
 parametros
     : 'void'                         // permite void
     | tipo                           // permite apenas o tipo (ex: int)
@@ -121,7 +121,7 @@ tipo
     | VOID
     ;
 
-// Declaração de variáveis
+// Declaracao de variáveis
 declaracao
     : tipo listaVariaveis PONTOVIRG
     ;
@@ -138,7 +138,7 @@ variavel
     | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO blocoArray      // ex: v[] = {1,2,3};
     ;
 
-// Inicialização de vetores
+// Inicializacao de vetores
 blocoArray
     : ABRECHAVES listaValores? FECHACHAVES
     ;
@@ -147,7 +147,7 @@ listaValores
     : expressao (VIRGULA expressao)*
     ;
 
-// Expressões com operadores, lógica, casting
+// Expressoes com operadores, lógica, casting
 expressao
     : NAO expressao                              # Negacao
     | expressao MULT expressao                   # Multiplicacao
@@ -182,39 +182,39 @@ opRelacional
     | DIFERENTE
     ;
 
-// Funções de leitura (tratadas como literais no parser)
+// Funcoes de leitura (tratadas como literais no parser)
 chamadaFuncao
     : 'read' ABREPAR FECHAPAR
     | 'readc' ABREPAR FECHAPAR
     | 'reads' ABREPAR FECHAPAR
     ;
 
-// Bloco de instruções
+// Bloco de instrucoes
 bloco
     : ABRECHAVES instrucoes FECHACHAVES
     ;
 
 instrucoes
-    : instrução*
+    : instrucao*
     ;
 
-// Instrução geral (if com ou sem else, ciclos, escrita, etc.)
-instrução
-    : instruçãoEmparelhada
-    | instruçãoPorEmparelhar
+// Instrucao geral (if com ou sem else, ciclos, escrita, etc.)
+instrucao
+    : instrucaoEmparelhada
+    | instrucaoPorEmparelhar
     ;
 
-instruçãoEmparelhada
-    : IF ABREPAR expressao FECHAPAR instruçãoEmparelhada ELSE instruçãoEmparelhada
+instrucaoEmparelhada
+    : IF ABREPAR expressao FECHAPAR instrucaoEmparelhada ELSE instrucaoEmparelhada
     | outraInstrucao
     ;
 
-instruçãoPorEmparelhar
-    : IF ABREPAR expressao FECHAPAR instrução
-    | IF ABREPAR expressao FECHAPAR instruçãoEmparelhada ELSE instruçãoPorEmparelhar
+instrucaoPorEmparelhar
+    : IF ABREPAR expressao FECHAPAR instrucao
+    | IF ABREPAR expressao FECHAPAR instrucaoEmparelhada ELSE instrucaoPorEmparelhar
     ;
 
-// Instruções normais (sem if): blocos, ciclos, escrita, etc.
+// Instrucoes normais (sem if): blocos, ciclos, escrita, etc.
 outraInstrucao
     : bloco
     | declaracao
@@ -230,18 +230,18 @@ instrucaoWhile
     : WHILE ABREPAR expressao FECHAPAR bloco
     ;
 
-// Ciclo for com 3 expressões
+// Ciclo for com 3 expressoes
 instrucaoFor
     : FOR ABREPAR expressaoOuAtribuicao? PONTOVIRG expressao? PONTOVIRG expressaoOuAtribuicao? FECHAPAR bloco
     ;
 
-// Permite que expressões tipo "x = 2" apareçam em locais como o for(...)
+// Permite que expressoes tipo "x = 2" aparecam em locais como o for(...)
 expressaoOuAtribuicao
     : IDENTIFICADOR ATRIBUICAO expressao
     | expressao
     ;
 
-// Funções de escrita no ecrã (usadas como literais para antlr4-parse funcionar)
+// Funcoes de escrita no ecra (usadas como literais para antlr4-parse funcionar)
 instrucaoEscrita
     : 'write' ABREPAR expressao FECHAPAR PONTOVIRG
     | 'writec' ABREPAR expressao FECHAPAR PONTOVIRG
@@ -249,12 +249,12 @@ instrucaoEscrita
     | 'writes' ABREPAR argumentoString FECHAPAR PONTOVIRG
     ;
 
-// Instrução de retorno: return expressao;
+// Instrucao de retorno: return expressao;
 instrucaoReturn
     : RETURN expressao PONTOVIRG
     ;
 
-// Atribuição simples: x = 2;
+// Atribuicao simples: x = 2;
 instrucaoAtribuicao
     : (IDENTIFICADOR | IDENTIFICADOR ABRECOLCH expressao FECHACOLCH) ATRIBUICAO expressao PONTOVIRG
     ;

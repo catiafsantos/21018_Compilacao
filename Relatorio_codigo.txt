@@ -1,0 +1,129 @@
+#################### Estrutura de código ####################
+reset.antlr.sh ---> Script em bash para limpar os ficheiros de antlr e voltar a carregar pela gramática.
+MOC.g4 ---> A nossa gramática
+MOCVisitorDEBUG.py ---> Visitor customizado com modo de DEBUG em todas as funções para conseguirmos verificar cenários.
+MOCVisitor.py ---> Visitor customizado para pré-processamento de dados.
+
+#################### Métodos implementados no visitor para cada parte da gramática #################### 
+#### Regra da gramática  ---> Método no MOCVisitor	
+programa              ---> visitPrograma
+unidade               ---> visitUnidade
+prototipo             ---> visitPrototipo
+prototipoPrincipal    ---> visitPrototipoPrincipal
+funcaoPrincipal       ---> visitFuncaoPrincipal
+funcao                ---> visitFuncao
+parametros            ---> visitParametros
+parametro             ---> visitParametro
+tipo                  ---> visitTipo
+declaracao            ---> visitDeclaracao
+listaVariaveis        ---> visitListaVariaveis
+variavel              ---> visitVariavel
+blocoArray            ---> visitBlocoArray
+listaValores          ---> visitListaValores
+expressao (Negacao)           ---> visitNegacao
+expressao (Multiplicacao)     ---> visitMultiplicacao
+expressao (Divisao)           ---> visitDivisao
+expressao (Modulo)            ---> visitModulo
+expressao (Adicao)            ---> visitAdicao
+expressao (Subtracao)         ---> visitSubtracao
+expressao (Comparacao)        ---> visitComparacao
+expressao (ELogico)           ---> visitELogico
+expressao (OuLogico)          ---> visitOuLogico
+expressao (Parnteses)         ---> visitParnteses
+expressao (VariavelID)        ---> visitVariavelID
+expressao (AcessoVetor)       ---> visitAcessoVetor
+expressao (Numero)            ---> visitNumero
+expressao (NumeroReal)        ---> visitNumeroReal
+expressao (ChamadaLeitura)    ---> visitChamadaLeitura
+expressao (ChamadaGenerica)   ---> visitChamadaGenerica
+expressao (Casting)           ---> visitCasting
+argumentos            ---> visitArgumentos
+opRelacional          ---> visitOpRelacional
+chamadaFuncao         ---> visitChamadaFuncao
+bloco                 ---> visitBloco
+instrucoes            ---> visitInstrucoes
+instrução             ---> visitInstrução
+instruçãoEmparelhada  ---> visitInstruçãoEmparelhada
+instruçãoPorEmparelhar---> visitInstruçãoPorEmparelhar
+outraInstrucao        ---> visitOutraInstrucao
+instrucaoWhile        ---> visitInstrucaoWhile
+instrucaoFor          ---> visitInstrucaoFor
+expressaoOuAtribuicao ---> visitExpressaoOuAtribuicao
+instrucaoEscrita      ---> visitInstrucaoEscrita
+instrucaoReturn       ---> visitInstrucaoReturn
+instrucaoAtribuicao   ---> visitInstrucaoAtribuicao
+argumentoString       ---> visitArgumentoString
+
+#################### Validações já tratadas e testadas com sucesso #################### 
+
+#### Declarações e atribuições  --->  visitDeclaracao, visitInstrucaoAtribuicao, visitAdicao, visitMultiplicacao, visitSubtracao
+void main() { int x = 2 + 3; x = x * 4; write(x); } → Resultado: 20 
+void main() { int x = 5; int y = x + 3; x = y * 2; write(x); } → Resultado: 16 
+int main() { double x = 2 + 3.5; write(x); } → Resultado:5.5
+
+#### Escrita (write)  --->  visitInstrucaoEscrita, visitVariavelID
+void main() { int x = 42; write(x); } → Resultado: 42 
+
+#### Parênteses e precedência  --->  visitParnteses, visitAdicao, visitMultiplicacao
+void main() { int x = (2 + 3) * 2; write(x); } → Resultado: 10 
+
+#### double e int com casting  --->  visitCasting, visitInstrucaoEscrita
+void main() { double x = 5.9; int y = (int) x; write(y); double z = (double) x / y; write(z); } → Resultado: 5 
+void main() { int x = 5; int y = 2; double z = (double) x / y; write(z); }  → Resultado: 2.5 
+    Operações com mistura int + double:
+    int main() { int x = 5; double y = (double)x / 2; write(y); } → Resultado: 2.5 
+
+#### Aceitar e "ignorar" return  --->  visitInstrucaoReturn
+int main() { int x = 10; return x; }  → Sem resultado (Em DEBUG Return: 10)
+
+#### read()  --->  visitChamadaLeitura
+int main() { int x = read(); write(x); }
+Introduz valor: 42 → Resultado: 42 
+
+#### readc()  --->  visitChamadaLeitura, visitInstrucaoEscrita
+char c = readc(); writec(c);
+void main() { int c = readc(); writec(c); }
+Introduz valor: a → a
+Introduz valor: 1 → 1
+void main() { int c = readc(); write(c); }
+Introduz valor: a → 97
+Introduz valor: 1 → 49
+    Operações inválidas:
+    Introduz valor: abc → [Erro de Execução] readc() espera apenas um único caráter. 
+    Introduz valor: 100 → [Erro de Execução] readc() espera apenas um único caráter. 
+
+#### Redeclaração de variáveis  --->  visitDeclaracao
+int main() { int x = 5; int x = 10; write(x); }
+[Erro de Execução] Variável 'x' já foi declarada. 
+
+#### Uso de variáveis não declaradas  --->  visitVariavelID
+int main() { write(x); }
+[Erro de Execução] Variável 'x' não declarada
+
+#### Escrita com writec, writev, writes  --->  visitInstrucaoEscrita, visitArgumentoString
+int main() { int c = 97; writec(c); } → Resultado:9 7
+int main() { int v[] = {1, 2, 3, 0}; writev(v); } → Resultado: {1,2,3,0}
+int main() { int c = 97; writec(c); } → Resultado:  a
+int main() { int s[] = {97, 98, 99, 0}; writes(s); } → Resultado: abc
+int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
+
+
+#############################
+Validações por tratar / por testar
+Condicionais (if / if-else)
+⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
+
+Ciclos while
+⚠️ Loop parcial ou crash (erro list has no attribute accept) → A rever
+
+Ciclos for
+
+Vetores (declaração, leitura, escrita)
+
+Indentações / múltiplas linhas / formatação livre
+
+Número e tipo de argumentos nas funções 
+
+Uso incorreto de reads() (só em vetores int) 
+
+Chamadas a funções sem protótipos
