@@ -54,12 +54,22 @@ instrucaoReturn       ---> visitInstrucaoReturn
 instrucaoAtribuicao   ---> visitInstrucaoAtribuicao
 argumentoString       ---> visitArgumentoString
 
+############################# Exemplos do EfolioA #############################
+Exemplo1 1:
+int fact(int k) { if (k <= 1) { return 1; } else { return k * fact(k - 1); } } void main(void) { int n; writes("Introduza inteiro: "); n = read(); write(fact(n)); }
+
+Exemplo 2: 
+int fact(int); void main(void); int fact(int k) { int i, n = 1; for (i = 2; i <= k; i = i + 1) { n = n * i; } return n; } void main(void) { int n; writes("Introduza inteiro: "); n = read(); write(fact(n)); }
+
+Exemplo 3:
+double avg(double v[], int size); void main(void); double avg(double v[], int size) { int i; double sum = 0; for (i = 0; i < size; i = i + 1) { sum = sum + v[i]; } return sum / size; } void main(void) { int i, n; double v[100]; writes("Introduza tamanho do vetor, seguido dos respetivos valores: "); n = read(); for (i = 0; i < n; i = i + 1) { v[i] = read(); } write(avg(v, n)); }
+
 #################### Validações já tratadas e testadas com sucesso #################### 
 
 #### Declarações e atribuições  --->  visitDeclaracao, visitInstrucaoAtribuicao, visitAdicao, visitMultiplicacao, visitSubtracao
 void main() { int x = 2 + 3; x = x * 4; write(x); } → Resultado: 20 
 void main() { int x = 5; int y = x + 3; x = y * 2; write(x); } → Resultado: 16 
-int main() { double x = 2 + 3.5; write(x); } → Resultado:5.5
+int main() { double x = 2 + 3.5; write(x); } → Resultado: 5.5
 
 #### Escrita (write)  --->  visitInstrucaoEscrita, visitVariavelID
 void main() { int x = 42; write(x); } → Resultado: 42 
@@ -108,8 +118,9 @@ int main() { int s[] = {97, 98, 99, 0}; writes(s); } → Resultado: abc
 int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
 
 
-#############################
-Validações por tratar / por testar
+############################# Validações por tratar / por testar #################### 
+Chamadas a funções sem protótipos, se os protótipos não forem declarados o programa não corre.
+
 Condicionais (if / if-else)
 ⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
 
@@ -126,4 +137,4 @@ Número e tipo de argumentos nas funções
 
 Uso incorreto de reads() (só em vetores int) 
 
-Chamadas a funções sem protótipos
+ 
