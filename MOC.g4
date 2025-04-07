@@ -103,7 +103,7 @@ funcao
 
 // Parâmetros da funcao
 parametros
-    : 'void'                         // permite void
+    : VOID                         // permite void
     | tipo                           // permite apenas o tipo (ex: int)
     | parametro (VIRGULA parametro)* // permite vários parâmetros completos (ex: int x, double y)
     ;
@@ -189,6 +189,7 @@ chamadaFuncao
     | 'reads' ABREPAR FECHAPAR
     ;
 
+
 // Bloco de instrucoes
 bloco
     : ABRECHAVES instrucoes FECHACHAVES
@@ -202,17 +203,19 @@ instrucoes
 instrucao
     : instrucaoEmparelhada
     | instrucaoPorEmparelhar
-    ;
-
-instrucaoEmparelhada
-    : IF ABREPAR expressao FECHAPAR instrucaoEmparelhada ELSE instrucaoEmparelhada
     | outraInstrucao
     ;
 
-instrucaoPorEmparelhar
-    : IF ABREPAR expressao FECHAPAR instrucao
-    | IF ABREPAR expressao FECHAPAR instrucaoEmparelhada ELSE instrucaoPorEmparelhar
+instrucaoEmparelhada
+    : IF ABREPAR expressao FECHAPAR bloco ELSE instrucaoEmparelhada
+    | bloco
     ;
+
+instrucaoPorEmparelhar
+    : IF ABREPAR expressao FECHAPAR bloco
+    | IF ABREPAR expressao FECHAPAR bloco ELSE instrucaoPorEmparelhar
+    ;
+
 
 // Instrucoes normais (sem if): blocos, ciclos, escrita, etc.
 outraInstrucao
