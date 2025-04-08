@@ -120,6 +120,9 @@ int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
 
 ############################# Validacoes por tratar / por testar #################### 
 Chamadas a funcoes sem protótipos, se os protótipos nao forem declarados o programa nao corre.
+int main() { int x = soma(2, 3); write(x); } int soma(int a, int b) { return a + b; }  
+[Erro de Execucao] Funcao 'soma' nao encontrada.
+
 
 Condicionais (if / if-else)
 ⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
@@ -129,12 +132,59 @@ Ciclos while
 
 Ciclos for
 
-Vetores (declaracao, leitura, escrita)
+Vetores (declaracao, leitura, escrita)  ---> visitDeclaracao (?), visitAcessoVetor, visitInstrucaoEscrita
+int main() { int v[] = {1, 2, 3, 0}; write(v[0]); write(v[2]); writev(v); } → Resultado: 1 3 {1,2,3,0}
+int main() { int v[] = {1, 2, 3}; write(v[3]); }  
+[Erro de Execucao] Índice fora dos limites do vetor 'v'.
+
+int main() { int x = 5; write(x[0]); }
+[Erro de Execucao] 'x' nao é um vetor.
+
+int main() { write(v[0]); }
+[Erro de Execucao] Vetor 'v' nao declarado.
+
+int main() { double s[] = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { int v[] = {1,2,3}; v = 10; }
+[Erro de Execucao] 'v' é um vetor, não pode ser atribuído diretamente.
+
+int main() { int v[] = {1,2,3}; int x = v + 1; }
+[Erro de Execucao] Não é possível usar o vetor 'v' como um valor numérico.
+
 
 Indentacoes / múltiplas linhas / formatacao livre
 
-Número e tipo de argumentos nas funcoes 
+Número e tipo de argumentos nas funcoes ---> visitChamadaGenerica, visitParametros, visitArgumentos
+(Sucesso)
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2, 3); write(x); } → Resultado: 5
 
-Uso incorreto de reads() (só em vetores int) 
+double div(int a, double b) { return a / b; } void main(void) { write(div(4, 2.0)); } → Resultado: 2.0
+
+(Falha)
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2, 3, 4); write(x); }
+[Erro de Execucao] Número incorreto de argumentos na chamada 'soma'
+
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2); write(x); }
+[Erro de Execucao] Número incorreto de argumentos na chamada 'soma'
+
+double div(int a, double b) { return a / b; } void main(void) { write(div(2.0, 4)); }
+→ Pode dar erro de execução ou resultado incorreto (dependendo da implementação). Ordem e tipo de argumentos trocados (esperado int, double)
+
+
+
+Uso incorreto de reads() (só em vetores int) ---> visitDeclaracao (?), visitVariavel, visitChamadaLeitura, visitInstrucaoAtribuicao
+(Sucesso)
+int main() { int s[] = reads(); writev(s); } → Resultado: (depende da entrada, ex: `abc` → {97,98,99,0})
+
+(Falha)
+int main() { double s[] = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { int x = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { double x = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
 
  
