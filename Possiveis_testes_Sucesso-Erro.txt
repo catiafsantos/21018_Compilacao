@@ -1,0 +1,513 @@
+──────────────────────────────
+
+Teste 1 – Diretivas Pré-processuais (não permitidas)
+Regra: Não pode haver diretivas (ex.: “#include”) no código.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+// Código sem diretivas
+int foo(int);
+void main(void);
+
+int foo(int a) { return a; }
+void main(void) { }
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+// Código com diretiva proibida
+#include <stdio.h>   // <-- Isto deve causar erro
+int foo(int);
+void main(void);
+
+int foo(int a) { return a; }
+void main(void) { }
+──────────────────────────────
+
+Teste 2 – Ordem – Protótipos Antes de Declarações
+Regra: Todos os protótipos devem vir antes de qualquer declaração ou definição.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+// Os protótipos aparecem todos no início
+int foo(int);
+void main(void);
+
+int m, n;  // Declaração de variáveis após os protótipos
+
+int foo(int a) { return a; }
+void main(void) { }
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+// Declaração de variável antes dos protótipos – isto deve ser rejeitado
+int m, n;  // <-- Não é permitido antes dos protótipos
+
+int foo(int);
+void main(void);
+
+int foo(int a) { return a; }
+void main(void) { }
+──────────────────────────────
+
+Teste 3 – Declaração de Variáveis: Tipos e Sintaxe
+Regra: Apenas os tipos "int" e "double" são permitidos. Os arrays devem ser declarados com colchetes.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int a, b, v[10];
+double x, y, z;
+
+int foo(int a){ return a; }
+void main(void){ }
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+// Uso de tipo não permitido (float)
+float a;   // <-- 'float' não está definido na gramática
+
+int foo(int a){ return a; }
+void main(void){ }
+──────────────────────────────
+
+Teste 4 – Inicialização de Variáveis
+Regra: As variáveis podem ser inicializadas com expressões aritméticas ou com valores lidos, usando a sintaxe correta.
+
+Exemplo de Sucesso (Inicialização Aritmética e com leitura):
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int m = 1, n = 2 * m;
+double x = 3.14, y = x / 2;
+int a = read();         // Correto: uso de read() com parênteses
+
+int foo(int a){ return a; }
+void main(void){ }
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+// Erro de sintaxe: falta parênteses na chamada de read
+int m = 1, n = 2 * m;
+double x = 3.14, y = x / 2;
+int a = read;          // <-- Falta os parênteses
+
+int foo(int a){ return a; }
+void main(void){ }
+──────────────────────────────
+
+Teste 5 – Funções de Leitura e Escrita
+Regra:
+
+As funções de leitura devem ser chamadas com parênteses: READ, READC, READS.
+
+Para escrita, use: write() para variáveis simples, writev() para vetores, e writes() para strings.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int c = read();
+int s[] = reads();
+
+int foo(int a){ return a; }
+void main(void){
+    int v[3] = {97,98,99};
+    write(v[0]);        // para número
+    writec(v[0]);       // para carácter
+    writev(v);          // para vetor
+    writes("abc");      // para string
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+// Uso incorreto: faltam parênteses e aspas ausentes em string
+int c = read;           // <-- Falta parênteses
+int s[] = reads;        // <-- Falta parênteses
+
+int foo(int a){ return a; }
+void main(void){
+    int v[3] = {97,98,99};
+    write("abc");       // <-- Para escrever string, deve usar writes()
+}
+──────────────────────────────
+
+Teste 6 – Blocos de Instrução: Obrigatoriedade de Chavetas
+Regra: Todos os blocos de instrução (mesmo com uma única instrução) devem estar entre chavetas.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ 
+    if(a < 0) { 
+        return -a; 
+    } else { 
+        return a; 
+    }
+}
+void main(void){
+    if(1 < 2) { 
+        writes("ok"); 
+    }
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ 
+    if(a < 0) 
+        return -a;   // <-- Falta chavetas no if
+    else
+        return a;
+}
+void main(void){
+    if(1 < 2) 
+        writes("ok");  // <-- Falta chavetas
+}
+──────────────────────────────
+
+Teste 7 – Ciclo While
+Regra: O ciclo while deve ter a forma “while (expressão) { bloco }”.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int x = 10;
+    while(x > 0) {
+        x = x - 1;
+    }
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int x = 10;
+    while x > 0 {      // <-- Faltam os parênteses
+        x = x - 1;
+    }
+}
+──────────────────────────────
+
+Teste 8 – Ciclo For
+Regra: O ciclo for deve ter a forma “for (inicialização; condição; atualização) { bloco }” e não pode usar operadores não permitidos (como i++).
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int i, s;
+    for(i = 0; i < 10; i = i + 1) {
+        s = s + i;
+    }
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int i, s;
+    for(i = 0; i < 10; i++) {    // <-- Uso de i++ ou i++ shorthand não é permitido
+        s = s + i;
+    }
+}
+──────────────────────────────
+
+Teste 9 – Condições Simplificadas
+Regra: As condições devem ser simples (ou uma única expressão ou uma comparação simples “Expr op Expr”), sem composições ambíguas.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int x = 5, y = 10;
+    if (x < y) {
+        writes("ok");
+    }
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int x = 5, y = 10, z = 15;
+    if (x < y < z) {   // <-- Expressão "x < y < z" não é permitida
+        writes("erro");
+    }
+}
+──────────────────────────────
+
+Teste 10 – Função main com Protótipo
+Regra: A função main (ponto de entrada) deve ter o seu protótipo declarado antes de sua definição.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int fact(int);
+void main(void);
+
+int fact(int k) {
+    if (k <= 1) {
+        return 1;
+    } else {
+        return k * fact(k - 1);
+    }
+}
+
+void main(void) {
+    int n;
+    writes("Introduza inteiro: ");
+    n = read();
+    write(fact(n));
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int fact(int);  // Protótipo de fact está presente, mas...
+// Falta o protótipo de main!
+    
+int fact(int k) {
+    if (k <= 1) {
+        return 1;
+    } else {
+        return k * fact(k - 1);
+    }
+}
+
+void main(void) {   // main definida, mas sem protótipo antecedente
+    int n;
+    writes("Introduza inteiro: ");
+    n = read();
+    write(fact(n));
+}
+Observação: Este exemplo deveria ser rejeitado pelo compilador semântico, mas sintaticamente, com a estrutura atual, pode ser aceito se a checagem semântica não for aplicada. Para forçar a rejeição usando apenas gramática, seria necessário separar as seções de protótipos dos demais elementos – o que, normalmente, recorre a verificações semânticas externas.
+
+──────────────────────────────
+
+Teste 11 – Chamadas de Função vs. Acesso a Vetores
+Regra:
+
+Uma chamada de função deve usar parênteses;
+
+O acesso a vetor deve usar colchetes.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int fact(int);
+void main(void);
+
+int fact(int k){ return k; }
+void main(void){
+    int n = 5, v[5];
+    fact(n);       // Correto: chamada de função
+    v[0];          // Correto: acesso a vetor (com colchetes)
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int fact(int);
+void main(void);
+
+int fact(int k){ return k; }
+void main(void){
+    int n = 5, v[5];
+    fact[n];       // <-- Incorreto: usa colchetes para função
+    v(n);          // <-- Incorreto: usa parênteses para acesso a vetor
+}
+──────────────────────────────
+
+Teste 12 – Casting
+Regra: Deve ser usado o casting com a sintaxe (tipo) expressão.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a) {
+    int b = (int) 3.14;
+    return b;
+}
+
+void main(void) { }
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a) {
+    int b = int(3.14);   // <-- Incorreto: não usa a forma (tipo) expressão
+    return b;
+}
+
+void main(void) { }
+──────────────────────────────
+
+Teste 13 – Leitura de Vetor (Fluxo de Leitura)
+Regra: Para ler um vetor de inteiros ou reais, deve ser usado um ciclo (o read() lê apenas um valor por vez).
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int v[10];
+    int i;
+    for(i = 0; i < 10; i = i + 1) {
+        v[i] = read();
+    }
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+// Tentativa incorreta: ler vetor diretamente sem ciclo
+int v[] = read();   // <-- Incorreto: read() lê apenas um valor por chamada
+
+int foo(int a){ return a; }
+void main(void){ }
+──────────────────────────────
+
+Teste 14 – Escrita: Uso Adequado
+Regra:
+
+Use write() para variáveis simples,
+
+writev() para vetores,
+
+e writes() para strings.
+
+Exemplo de Sucesso:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int v[3] = {97, 98, 99};
+    write(v[0]);      // Escreve um valor (número)
+    writec(v[0]);     // Escreve o carácter (conforme o código ASCII)
+    writev(v);        // Escreve um vetor
+    writes("abc");    // Escreve uma string literal
+}
+Exemplo de Falha:
+
+c
+Copiar
+Editar
+int foo(int);
+void main(void);
+
+int foo(int a){ return a; }
+void main(void){
+    int v[3] = {97, 98, 99};
+    write("abc");    // <-- Incorreto: para strings, usar writes()
+}
+──────────────────────────────
