@@ -1,5 +1,10 @@
+cat exemplo1.txt | antlr4-parse MOC.g4 programa -tree
+
+cat exemplo1.txt | antlr4-parse MOC.g4 programa -gui
+
 #################### Estrutura de código ####################
-reset.antlr.sh ---> Script em bash para limpar os ficheiros de antlr e voltar a carregar pela gramatica.
+reset.antlr.sh ---> Script em bash para 
+limpar os ficheiros de antlr e voltar a carregar pela gramatica.
 MOC.g4 ---> A nossa gramatica
 MOCVisitorDEBUG.py ---> Visitor customizado com modo de DEBUG em todas as funcoes para conseguirmos verificar cenarios.
 MOCVisitor.py ---> Visitor customizado para pré-processamento de dados.

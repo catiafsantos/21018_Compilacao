@@ -12,6 +12,7 @@ rm -f MOCVisitor.py
 rm -f MOCVisitor.interp
 rm -f MOCListener.py 
 rm -f MOCListener.interp
+rm -rf .antlr
 
 echo "✅ Limpeza completa."
 
@@ -23,7 +24,7 @@ if ! command -v antlr4 &> /dev/null; then
     exit 1
 fi
 
-antlr4 -Dlanguage=Python3 MOC.g4 -visitor
+antlr4 -Dlanguage=Python3 MOC.g4
 
 if [ $? -eq 0 ]; then
     echo "✅ Ficheiros gerados com sucesso!"
