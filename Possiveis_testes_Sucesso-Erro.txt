@@ -4,169 +4,116 @@ Teste 1 – Diretivas Pré-processuais (não permitidas)
 Regra: Não pode haver diretivas (ex.: “#include”) no código.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 // Código sem diretivas
 int foo(int);
 void main(void);
-
 int foo(int a) { return a; }
 void main(void) { }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 // Código com diretiva proibida
 #include <stdio.h>   // <-- Isto deve causar erro
 int foo(int);
 void main(void);
-
 int foo(int a) { return a; }
 void main(void) { }
+
 ──────────────────────────────
 
 Teste 2 – Ordem – Protótipos Antes de Declarações
 Regra: Todos os protótipos devem vir antes de qualquer declaração ou definição.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 // Os protótipos aparecem todos no início
 int foo(int);
 void main(void);
-
 int m, n;  // Declaração de variáveis após os protótipos
-
 int foo(int a) { return a; }
 void main(void) { }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 // Declaração de variável antes dos protótipos – isto deve ser rejeitado
 int m, n;  // <-- Não é permitido antes dos protótipos
-
 int foo(int);
 void main(void);
-
 int foo(int a) { return a; }
 void main(void) { }
+
 ──────────────────────────────
 
 Teste 3 – Declaração de Variáveis: Tipos e Sintaxe
 Regra: Apenas os tipos "int" e "double" são permitidos. Os arrays devem ser declarados com colchetes.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int a, b, v[10];
 double x, y, z;
-
 int foo(int a){ return a; }
 void main(void){ }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
 // Uso de tipo não permitido (float)
 float a;   // <-- 'float' não está definido na gramática
-
 int foo(int a){ return a; }
 void main(void){ }
+
 ──────────────────────────────
 
 Teste 4 – Inicialização de Variáveis
 Regra: As variáveis podem ser inicializadas com expressões aritméticas ou com valores lidos, usando a sintaxe correta.
 
 Exemplo de Sucesso (Inicialização Aritmética e com leitura):
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int m = 1, n = 2 * m;
 double x = 3.14, y = x / 2;
-int a = read();         // Correto: uso de read() com parênteses
-
+int a = read();       
 int foo(int a){ return a; }
 void main(void){ }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
-// Erro de sintaxe: falta parênteses na chamada de read
 int m = 1, n = 2 * m;
 double x = 3.14, y = x / 2;
 int a = read;          // <-- Falta os parênteses
-
 int foo(int a){ return a; }
 void main(void){ }
 ──────────────────────────────
 
 Teste 5 – Funções de Leitura e Escrita
-Regra:
-
-As funções de leitura devem ser chamadas com parênteses: READ, READC, READS.
-
-Para escrita, use: write() para variáveis simples, writev() para vetores, e writes() para strings.
+Regra: As funções de leitura devem ser chamadas com parênteses: READ, READC, READS.
+Para escrita, usamos: write() para variáveis simples, writev() para vetores, e writes() para strings.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int c = read();
 int s[] = reads();
-
 int foo(int a){ return a; }
 void main(void){
-    int v[3] = {97,98,99};
+    int v[] = {97,98,99};
     write(v[0]);        // para número
     writec(v[0]);       // para carácter
     writev(v);          // para vetor
     writes("abc");      // para string
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
 // Uso incorreto: faltam parênteses e aspas ausentes em string
 int c = read;           // <-- Falta parênteses
 int s[] = reads;        // <-- Falta parênteses
-
 int foo(int a){ return a; }
 void main(void){
     int v[3] = {97,98,99};
     write("abc");       // <-- Para escrever string, deve usar writes()
 }
+
 ──────────────────────────────
 
 Teste 6 – Blocos de Instrução: Obrigatoriedade de Chavetas
