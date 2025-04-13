@@ -154,6 +154,7 @@ parametros
 parametro
     : tipo
     | tipo IDENTIFICADOR
+    | tipo ABRECOLCH FECHACOLCH  // apenas para prototipos de vectores
     | tipo IDENTIFICADOR ABRECOLCH FECHACOLCH  // vetor como parâmetro
     ;
 

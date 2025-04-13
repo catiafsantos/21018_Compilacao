@@ -1,10 +1,19 @@
-int foo(int);
-void main(void);    
-// Uso incorreto: faltam parênteses e aspas ausentes em string
-int c = read;           // <-- Falta parênteses
-int s[] = reads;        // <-- Falta parênteses 
-int foo(int a){ return a; }
-void main(void){
-    int v[3] = {97,98,99};
-    write("abc");       // <-- Para escrever string, deve usar writes()
+/* exemplo 1
+   fatorial versão recursiva */
+int fact(int);
+void main(void);
+
+int fact(int k) {
+    if (k <= 1) {
+        return 1;
+    } else {
+        return k * fact(k - 1);
+    }
+}
+
+void main(void) {
+    int n;
+    writes("Introduza inteiro: ");
+    n = read();
+    write(fact(n));
 }

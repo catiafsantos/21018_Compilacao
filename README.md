@@ -1,6 +1,14 @@
 # 21018_Compilacao
 UAb 2024/2025 - UC de Compilação
 
+Instruções de utilizaçãp:
+
+
+python3 main.py exemplo.txt            // Corre o programa para validar a gramática              
+python3 main.py exemplo.txt -tree      // Corre o programa para validar a gramática e gerar a árvore sintática
+python3 main.py exemplo.txt -gui       // Corre o programa para validar a gramática e gerar a árvore sintática com interface gráfica             
+
+
 ########### Enunciado do EfolioA ###########
 ```
 /* e-fólio A
