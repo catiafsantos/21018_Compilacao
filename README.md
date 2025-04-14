@@ -71,23 +71,44 @@ brew install python
 ```bash
 pip install antlr4-python3-runtime
 ```
+### Compilar
+```bash
+antlr4 -Dlanguage=Python3 -visitor MOC.g4
+```
 
-### Executar exemplos
-
+### Executar exemplos com ErrorListener personalizado 
+#### Assume-se que tem um ficheiro `exemplo.txt` com o exemplo a testar
+> Valida o ficheiro `exemplo.txt` de acordo com a gramática.
 ```bash
 python3 main.py exemplo.txt
 ```
-Valida o ficheiro `exemplo.txt` de acordo com a gramática.
+> Gera e imprime a árvore sintática textual (parse tree).
 
 ```bash
 python3 main.py exemplo.txt -tree
 ```
-Gera e imprime a árvore sintática textual (parse tree).
+> Abre a árvore sintática numa interface gráfica (requer Java com GUI).
 
 ```bash
 python3 main.py exemplo.txt -gui
 ```
-Abre a árvore sintática numa interface gráfica (requer Java com GUI).
+#### Executar exemplos com ErrorListener default do ANTLR
+#### Assume-se que tem um ficheiro `exemplo.txt` com o exemplo a testar
+
+> Valida o ficheiro `exemplo.txt` de acordo com a gramática.
+```bash
+cat exemplo.txt | antlr4-parse MOC.g4 programa
+```
+> Gera e imprime a árvore sintática textual (parse tree).
+
+```bash
+cat exemplo.txt | antlr4-parse MOC.g4 programa -tree
+```
+> Abre a árvore sintática numa interface gráfica (requer Java com GUI).
+
+```bash
+cat exemplo.txt | antlr4-parse MOC.g4 programa -gui
+```
 
 ---
 
