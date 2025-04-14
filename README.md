@@ -1,98 +1,102 @@
-# 21018_Compilacao
-UAb 2024/2025 - UC de Compilação
+# MOCC - My Own C Compiler
+**UAb 2024/2025 – Unidade Curricular de Compilação**
 
-Instruções de utilizaçãp:
+Este projeto consiste no desenvolvimento de um compilador para a linguagem **MOC (My Own C)**, uma linguagem fictícia inspirada em C, com uma gramática simplificada adaptada para o ensino e análise de compiladores.
 
+## Introdução
 
-python3 main.py exemplo.txt            // Corre o programa para validar a gramática              
-python3 main.py exemplo.txt -tree      // Corre o programa para validar a gramática e gerar a árvore sintática
-python3 main.py exemplo.txt -gui       // Corre o programa para validar a gramática e gerar a árvore sintática com interface gráfica             
+A linguagem MOC tem como objetivo permitir a exploração dos conceitos de análise léxica e sintática com ferramentas modernas como **ANTLR4**. Este repositório contém a gramática completa em ANTLR, bem como os scripts necessários para compilar, analisar e validar código-fonte nesta linguagem.
 
+> **Requisitos recomendados:**  
+> - Python 3.10 ou superior  
+> - ANTLR versão 4.13.2  
+> - Sistema com Java instalado (necessário para o ANTLR)
 
-########### Enunciado do EfolioA ###########
+Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na UC:  
+**[Enunciado do e-fólio A](https://elearning.uab.pt/pluginfile.php/3918150/mod_assign/introattachment/0/MOCC.pdf?forcedownload=1)**
+
+---
+
+## Estrutura do Projeto
+
+| Ficheiro              | Descrição                                                           |
+|-----------------------|---------------------------------------------------------------------|
+| `main.py`             | Script principal com menu e execução automática do ANTLR            |
+| `MOC.g4`              | Ficheiro de gramática (regras léxicas e sintáticas)                 |
+| `MOCErrorListener.py` | Tratamento de erros com mensagens legíveis para o utilizador        |
+| `MOCVisitorDEBUG.py`  | Visitor alternativo com debug passo-a-passo (não usado por defeito) |
+| `reset_antlr.sh`      | Script utilitário para limpar e regenerar ficheiros do ANTLR        |
+| `README.md`           | Instruções de utilização e documentação técnica do projeto          |
+
+---
+
+## Como executar
+
+### Instalar o Python
+
+Este projeto requer **Python 3.10** ou superior.
+
+### Windows
+
+1. Vá a [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+2. Clique em “Download Python 3.X”
+3. Durante a instalação, **ative a opção** `Add Python to PATH`
+4. Verificar a instalação:
+
+```bash
+python --version
 ```
-/* e-fólio A
-   Compilação 2024/25
-   Linguagem: MOC (My Own C)
-   Compilador da linguagem: MOCC
-*/
 
-/* Os comentários são o habitual do C */
-/* A sintaxe é a habitual do C, com as restrições que se seguem:
-   - Não há #include nem qualquer diretiva #
-   - As variáveis podem ser int ou double, podendo ser simples ou vetores
-   - O valor inteiro pode ser visto como um caráter
-   - Um vetor de inteiros pode ser visto como uma string de carateres
-*/
+### Linux (Debian/Ubuntu)
 
-/* Declaração de variáveis */
-int m, n, v[10];
-double x, y, z;
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+```
 
-/* Inicialização com expressões aritméticas */
-int m = 1, n = 2 * m;
-double x = 3.14, y = x / 2;
+### macOS
 
-/* Inicialização com valores introduzidos pelo utilizador */
-int m = read();       // lê um inteiro
-double n = read();    // lê um double
-int c = readc();      // lê um caráter (código ASCII)
-int s[] = reads();    // lê uma string (códigos ASCII terminando em 0)
+```bash
+brew install python
+```
 
-/* Mistura de inicializações */
-int a, b = read(), c = 2 * b, v[] = {1, 2, 3}; // v fica com tamanho 3 automaticamente
+> Em todos os sistemas, certifique que está a usar `python3` e `pip3`, especialmente se tiver o Python 2 instalado por defeito.
 
-/* Regras adicionais:
-   - Se a variável ainda não tiver sido declarada anteriormente, deve dar erro
-   - Não existem estruturas
-   - Conversões entre int e double seguem as regras do C
-   - Pode haver casting (double) e (int)
-*/
+---
 
-/* Prototipagem de funções */
+### Preparar ambiente
+
+1. Instale o ANTLR4 e adicione ao PATH (ver instruções em: https://github.com/antlr/antlr4)
+2. Instale dependências:
+```bash
+pip install antlr4-python3-runtime
+```
+
+### Executar exemplos
+
+```bash
+python3 main.py exemplo.txt
+```
+Valida o ficheiro `exemplo.txt` de acordo com a gramática.
+
+```bash
+python3 main.py exemplo.txt -tree
+```
+Gera e imprime a árvore sintática textual (parse tree).
+
+```bash
+python3 main.py exemplo.txt -gui
+```
+Abre a árvore sintática numa interface gráfica (requer Java com GUI).
+
+---
+
+## Exemplos de código válidos (retirados do enunciado)
+
+```c
 int fact(int);
 void main(void);
 
-/* Exemplos de blocos e condições */
-if (x > y) {
-    y = x;
-} else {
-    x = y;
-}
-
-if (x > y) {
-    y = 0;
-}
-
-/* Ciclos */
-while (x > 0) {
-    x = x - 10;
-}
-
-for (i = 0; i < 10; i = i + 1) {
-    x = x + i;
-    y = y + x;
-}
-
-/* Regras adicionais:
-   - Não é possível usar ++, --, +=, etc.
-   - A função read() lê apenas um valor de cada vez
-   - Para ler um vetor de int ou double, é necessário um ciclo for
-   - Para ler uma string ou caráter, usa-se reads() ou readc()
-*/
-
-/* Escrita no ecrã */
-c = readc();  // lê um caráter
-s = reads();  // lê uma string
-
-/* Exemplos de escrita */
-write(v[0]);      // escreve: 97
-writec(v[0]);     // escreve: a
-writev(v);        // escreve: {97, 98, 99, 0}
-writes(v);        // escreve: abc
-writes("Hello, World!"); // escreve a string e muda de linha
-
-/* Exemplo 1: Fatorial (versão recursiva) */
 int fact(int k) {
     if (k <= 1) {
         return 1;
@@ -100,48 +104,39 @@ int fact(int k) {
         return k * fact(k - 1);
     }
 }
-
 void main(void) {
     int n;
     writes("Introduza inteiro: ");
     n = read();
     write(fact(n));
-}
-
-/* Exemplo 2: Fatorial (versão iterativa) */
-int fact(int k) {
-    int i, n = 1;
-    for (i = 2; i <= k; i = i + 1) {
-        n = n * i;
-    }
-    return n;
-}
-
-void main(void) {
-    int n;
-    writes("Introduza inteiro: ");
-    n = read();
-    write(fact(n));
-}
-
-/* Exemplo 3: Média de uma lista de valores positivos */
-double avg(double v[], int size) {
-    int i;
-    double sum = 0;
-    for (i = 0; i < size; i = i + 1) {
-        sum = sum + v[i];
-    }
-    return sum / size;
-}
-
-void main(void) {
-    int i, n;
-    double v[100];
-    writes("Introduza tamanho do vetor, seguido dos respetivos valores: ");
-    n = read();
-    for (i = 0; i < n; i = i + 1) {
-        v[i] = read();
-    }
-    write(avg(v, n));
 }
 ```
+
+> Não são permitidas diretivas `#include` nem operadores como `++`, `--`, `+=`, etc.
+
+---
+
+## Erros comuns e mensagens
+
+- `Token inválido '#'` → A linguagem MOC não suporta diretivas como `#include`.
+- `mismatched input '=' expecting ';'` → Erro comum em inicializações incorretas de vetores com tamanho explícito.
+- `Função 'x' não definida.` → Chamada de função sem definição correspondente.
+
+---
+
+## Regenerar ficheiros do ANTLR (opcional)
+
+Sempre que for alterada a gramática:
+
+```bash
+./reset_antlr.sh
+```
+
+Este script remove os ficheiros antigos e regenera todos os `.py` a partir do `MOC.g4`.
+
+---
+
+## Autores
+
+- [Grupo: Qualquer] - [Andreia Romão - 1702430 / Cátia Santos - 1702194]
+- UC de Compilação – Universidade Aberta, 2024/2025
