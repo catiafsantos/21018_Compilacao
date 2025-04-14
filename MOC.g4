@@ -187,6 +187,7 @@ variavel
     | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH
     | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO expressao       // ex: s[] = reads();
     | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO blocoArray      // ex: v[] = {1,2,3};
+    | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH ATRIBUICAO blocoArray // ex: v[3] = {97,98,99};
     ;
 
 // Bloco de inicialização para arrays:

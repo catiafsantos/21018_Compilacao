@@ -1,5 +1,4 @@
 ──────────────────────────────
-
 Teste 1 – Diretivas Pré-processuais (não permitidas)
 Regra: Não pode haver diretivas (ex.: “#include”) no código.
 
@@ -19,7 +18,6 @@ int foo(int a) { return a; }
 void main(void) { }
 
 ──────────────────────────────
-
 Teste 2 – Ordem – Protótipos Antes de Declarações
 Regra: Todos os protótipos devem vir antes de qualquer declaração ou definição.
 
@@ -40,7 +38,6 @@ int foo(int a) { return a; }
 void main(void) { }
 
 ──────────────────────────────
-
 Teste 3 – Declaração de Variáveis: Tipos e Sintaxe
 Regra: Apenas os tipos "int" e "double" são permitidos. Os arrays devem ser declarados com colchetes.
 
@@ -61,7 +58,6 @@ int foo(int a){ return a; }
 void main(void){ }
 
 ──────────────────────────────
-
 Teste 4 – Inicialização de Variáveis
 Regra: As variáveis podem ser inicializadas com expressões aritméticas ou com valores lidos, usando a sintaxe correta.
 
@@ -83,7 +79,6 @@ int a = read;          // <-- Falta os parênteses
 int foo(int a){ return a; }
 void main(void){ }
 ──────────────────────────────
-
 Teste 5 – Funções de Leitura e Escrita
 Regra: As funções de leitura devem ser chamadas com parênteses: READ, READC, READS.
 Para escrita, usamos: write() para variáveis simples, writev() para vetores, e writes() para strings.
@@ -95,7 +90,7 @@ int c = read();
 int s[] = reads();
 int foo(int a){ return a; }
 void main(void){
-    int v[] = {97,98,99};
+    int v[3] = {97,98,99};
     write(v[0]);        // para número
     writec(v[0]);       // para carácter
     writev(v);          // para vetor
@@ -115,21 +110,16 @@ void main(void){
 }
 
 ──────────────────────────────
-
 Teste 6 – Blocos de Instrução: Obrigatoriedade de Chavetas
 Regra: Todos os blocos de instrução (mesmo com uma única instrução) devem estar entre chavetas.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
 
 int foo(int a){ 
     if(a < 0) { 
-        return -a; 
+        return b; 
     } else { 
         return a; 
     }
@@ -139,17 +129,14 @@ void main(void){
         writes("ok"); 
     }
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
 
 int foo(int a){ 
     if(a < 0) 
-        return -a;   // <-- Falta chavetas no if
+        return b;   // <-- Falta chavetas no if
     else
         return a;
 }
@@ -158,15 +145,10 @@ void main(void){
         writes("ok");  // <-- Falta chavetas
 }
 ──────────────────────────────
-
 Teste 7 – Ciclo While
 Regra: O ciclo while deve ter a forma “while (expressão) { bloco }”.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
 
@@ -177,11 +159,8 @@ void main(void){
         x = x - 1;
     }
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
 
@@ -192,16 +171,12 @@ void main(void){
         x = x - 1;
     }
 }
-──────────────────────────────
 
+──────────────────────────────
 Teste 8 – Ciclo For
 Regra: O ciclo for deve ter a forma “for (inicialização; condição; atualização) { bloco }” e não pode usar operadores não permitidos (como i++).
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
 
@@ -212,11 +187,8 @@ void main(void){
         s = s + i;
     }
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
 
@@ -227,16 +199,12 @@ void main(void){
         s = s + i;
     }
 }
-──────────────────────────────
 
+──────────────────────────────
 Teste 9 – Condições Simplificadas
 Regra: As condições devem ser simples (ou uma única expressão ou uma comparação simples “Expr op Expr”), sem composições ambíguas.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
 
@@ -247,11 +215,8 @@ void main(void){
         writes("ok");
     }
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
 
@@ -262,16 +227,12 @@ void main(void){
         writes("erro");
     }
 }
-──────────────────────────────
 
+──────────────────────────────
 Teste 10 – Função main com Protótipo
 Regra: A função main (ponto de entrada) deve ter o seu protótipo declarado antes de sua definição.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int fact(int);
 void main(void);
 
@@ -282,18 +243,14 @@ int fact(int k) {
         return k * fact(k - 1);
     }
 }
-
 void main(void) {
     int n;
     writes("Introduza inteiro: ");
     n = read();
     write(fact(n));
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int fact(int);  // Protótipo de fact está presente, mas...
 // Falta o protótipo de main!
     
@@ -304,17 +261,14 @@ int fact(int k) {
         return k * fact(k - 1);
     }
 }
-
 void main(void) {   // main definida, mas sem protótipo antecedente
     int n;
     writes("Introduza inteiro: ");
     n = read();
     write(fact(n));
 }
-Observação: Este exemplo deveria ser rejeitado pelo compilador semântico, mas sintaticamente, com a estrutura atual, pode ser aceito se a checagem semântica não for aplicada. Para forçar a rejeição usando apenas gramática, seria necessário separar as seções de protótipos dos demais elementos – o que, normalmente, recorre a verificações semânticas externas.
 
 ──────────────────────────────
-
 Teste 11 – Chamadas de Função vs. Acesso a Vetores
 Regra:
 
