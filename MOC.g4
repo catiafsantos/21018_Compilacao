@@ -249,6 +249,7 @@ expressaoMul
 // Operadores unários (ex.: negação !)
 expressaoUnaria
     : NAO expressaoUnaria                     # negacao
+    | MENOS expressaoUnaria                   # unarioNegativo
     | castExpr                                # unariaSimples
     ;
 
