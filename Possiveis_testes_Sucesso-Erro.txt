@@ -270,31 +270,19 @@ void main(void) {   // main definida, mas sem protótipo antecedente
 
 ──────────────────────────────
 Teste 11 – Chamadas de Função vs. Acesso a Vetores
-Regra:
-
-Uma chamada de função deve usar parênteses;
-
-O acesso a vetor deve usar colchetes.
+Regra: Uma chamada de função deve usar parênteses; O acesso a vetor deve usar colchetes.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int fact(int);
 void main(void);
-
 int fact(int k){ return k; }
 void main(void){
     int n = 5, v[5];
     fact(n);       // Correto: chamada de função
     v[0];          // Correto: acesso a vetor (com colchetes)
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int fact(int);
 void main(void);
 
@@ -310,32 +298,21 @@ Teste 12 – Casting
 Regra: Deve ser usado o casting com a sintaxe (tipo) expressão.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int foo(int a) {
     int b = (int) 3.14;
     return b;
 }
-
 void main(void) { }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
 int foo(int a) {
     int b = int(3.14);   // <-- Incorreto: não usa a forma (tipo) expressão
     return b;
 }
-
 void main(void) { }
 ──────────────────────────────
 
@@ -343,13 +320,8 @@ Teste 13 – Leitura de Vetor (Fluxo de Leitura)
 Regra: Para ler um vetor de inteiros ou reais, deve ser usado um ciclo (o read() lê apenas um valor por vez).
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int foo(int a){ return a; }
 void main(void){
     int v[10];
@@ -358,38 +330,23 @@ void main(void){
         v[i] = read();
     }
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
 // Tentativa incorreta: ler vetor diretamente sem ciclo
 int v[] = read();   // <-- Incorreto: read() lê apenas um valor por chamada
-
 int foo(int a){ return a; }
 void main(void){ }
+
 ──────────────────────────────
 
 Teste 14 – Escrita: Uso Adequado
-Regra:
-
-Use write() para variáveis simples,
-
-writev() para vetores,
-
-e writes() para strings.
+Regra: Use write() para variáveis simples, writev() para vetores, e writes() para strings.
 
 Exemplo de Sucesso:
-
-c
-Copiar
-Editar
 int foo(int);
 void main(void);
-
 int foo(int a){ return a; }
 void main(void){
     int v[3] = {97, 98, 99};
@@ -398,17 +355,14 @@ void main(void){
     writev(v);        // Escreve um vetor
     writes("abc");    // Escreve uma string literal
 }
-Exemplo de Falha:
 
-c
-Copiar
-Editar
+Exemplo de Falha:
 int foo(int);
 void main(void);
-
 int foo(int a){ return a; }
 void main(void){
     int v[3] = {97, 98, 99};
     write("abc");    // <-- Incorreto: para strings, usar writes()
 }
+
 ──────────────────────────────
