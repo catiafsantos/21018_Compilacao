@@ -179,15 +179,16 @@ listaVariaveis
 // variavel:
 // Define uma variável que pode ser declarada de diferentes formas:
 //   - Apenas um identificador
-//   - Com atribuição
-//   - Um vetor, com ou sem inicialização
+//   - Com atribuição a expressões comuns (ex: int x = 2;)
+//   - Vetor com tamanho fixo, com ou sem inicialização por bloco
+//   - Vetor com atribuição direta à função reads() (ex: s[] = reads();)    
 variavel
-    : IDENTIFICADOR
-    | IDENTIFICADOR ATRIBUICAO expressao
-    | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH
-    | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO expressao       // ex: s[] = reads();
-    | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO blocoArray      // ex: v[] = {1,2,3};
-    | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH ATRIBUICAO blocoArray // ex: v[3] = {97,98,99};
+    : IDENTIFICADOR                                      // ex: int x;
+    | IDENTIFICADOR ATRIBUICAO expressao                 // ex: int x = 2;
+    | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH          // ex: int v[10];
+    | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO chamadaReads  // ex: s[] = reads();
+    | IDENTIFICADOR ABRECOLCH FECHACOLCH ATRIBUICAO blocoArray    // ex: v[] = {1, 2, 3};
+    | IDENTIFICADOR ABRECOLCH NUMERO FECHACOLCH ATRIBUICAO blocoArray // ex: v[3] = {1, 2, 3};
     ;
 
 // Bloco de inicialização para arrays:
@@ -302,6 +303,12 @@ chamadaFuncao
     : READ ABREPAR FECHAPAR
     | READC ABREPAR FECHAPAR
     | READS ABREPAR FECHAPAR
+    ;
+
+// chamadaReads:
+// Permite unicamente a chamada à função reads(), usada para vetores de inteiros (como strings)
+chamadaReads
+    : READS ABREPAR FECHAPAR
     ;
 
 //---------------------------------------------------------
