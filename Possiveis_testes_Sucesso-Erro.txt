@@ -366,3 +366,76 @@ void main(void){
 }
 
 ──────────────────────────────
+Teste 15 - Exemplo extremo, profundamente aninhado e “estúpido”
+
+Exemplo de Sucesso:
+int foo(int, int);
+void printV(int[], int);
+void main(void);
+
+int v[] = reads();
+int n = read();
+int foo(int a, int b) {
+    if (a > b) {
+        return a + b;
+    } else {
+        return foo(a + 1, b + 2);
+    }
+}
+
+void printV(int vec[], int tam) {
+    int i, j, k;
+    for (i = 0; i < tam; i = i + 1) {
+        if (vec[i] == 97) {
+            writes("A");
+        } else {
+            for (j = 0; j < vec[i]; j = j + 1) {
+                if (j % 2 == 0) {
+                    for (k = 0; k < 2; k = k + 1) {
+                        write(j + k + vec[i]);
+                    }
+                } else {
+                    if ((j + i) % 3 == 0) {
+                        writec(vec[i]);
+                    } else {
+                        write(foo(i, j));
+                    }
+                }
+            }
+        }
+    }
+}
+
+void main(void) {
+    int i, j, k, m;
+    double x = 0.0;
+    
+    for (i = 0; i < n; i = i + 1) {
+        for (j = 0; j < n; j = j + 1) {
+            if (i != j) {
+                for (k = 0; k < 2; k = k + 1) {
+                    if ((i + j + k) % 2 == 0) {
+                        x = x + (double)(i * j * k);
+                    } else {
+                        if ((i + j) > k) {
+                            write((int)x);
+                        } else {
+                            for (m = 0; m < 1; m = m + 1) {
+                                write((int)x + m);
+                            }
+                        }
+                    }
+                }
+            } else {
+                if ((i + j) % 2 == 0) {
+                    x = x + 1;
+                } else {
+                    x = x + 0;
+                }
+            }
+        }
+    }
+
+    printV(v, n);
+}
+──────────────────────────────
