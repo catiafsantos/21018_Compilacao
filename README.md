@@ -49,14 +49,34 @@ Este projeto requer **Python 3.10** ou superior.
 ```bash
 python --version
 ```
+### Terminal recomendado: Git Bash
+
+Para que o comando `main.py -tree` funcione corretamente no Windows, é necessário usar um terminal compatível com comandos Unix, como `cat`. O terminal **Git Bash** é a forma mais simples de garantir essa compatibilidade.
+
+#### Como instalar o Git Bash:
+
+1. Vá a: [https://git-scm.com/download/win](https://git-scm.com/download/win)
+2. Faça o download do executável para Windows mais recente
+3. Durante a instalação, pode aceitar todas as opções por defeito
+4. Após a instalação, abra o **Git Bash** (procure "Git Bash" no menu Iniciar, ou altere o tipo de terminal no IDE que está a usar)
+
+#### Como utilizar:
+
+No Git Bash, pode executar os comandos do projeto normalmente. Exemplo:
+
+```
+python3 main.py Exemplos_Teste/exemplo1.txt -tree
+```
+---
 
 ### Linux (Debian/Ubuntu)
 
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip
+python3 --version
 ```
-
+---
 ### macOS
 
 ```bash
@@ -74,43 +94,45 @@ brew install python
 ```bash
 pip install antlr4-python3-runtime
 ```
+---
 ### Compilar
 ```bash
 antlr4 -Dlanguage=Python3 -visitor MOC.g4
 ```
 
 ### Executar exemplos com ErrorListener personalizado 
-#### Assume-se que tem um ficheiro `exemplo.txt` com o exemplo a testar
-> Valida o ficheiro `exemplo.txt` de acordo com a gramática.
+> Assume-se que o ficheiro `exemplo1.txt` contém um exemplo de código na linguagem definida.
+
+> Valida o ficheiro `exemplo1.txt` de acordo com a gramática.
 ```bash
-python3 main.py exemplo.txt
+python3 main.py Exemplos_Teste/exemplo1.txt 
 ```
 > Gera e imprime a árvore sintática textual (parse tree).
 
 ```bash
-python3 main.py exemplo.txt -tree
+python3 main.py Exemplos_Teste/exemplo1.txt -tree
 ```
 > Abre a árvore sintática numa interface gráfica (requer Java com GUI).
 
 ```bash
-python3 main.py exemplo.txt -gui
+python3 main.py Exemplos_Teste/exemplo1.txt -gui
 ```
 #### Executar exemplos com ErrorListener default do ANTLR
-#### Assume-se que tem um ficheiro `exemplo.txt` com o exemplo a testar
+> Assume-se que o ficheiro `exemplo1.txt` contém um exemplo de código na linguagem definida.
 
-> Valida o ficheiro `exemplo.txt` de acordo com a gramática.
+> Valida o ficheiro `exemplo1.txt` de acordo com a gramática.
 ```bash
-cat exemplo.txt | antlr4-parse MOC.g4 programa
+cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa
 ```
 > Gera e imprime a árvore sintática textual (parse tree).
 
 ```bash
-cat exemplo.txt | antlr4-parse MOC.g4 programa -tree
+cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -tree
 ```
 > Abre a árvore sintática numa interface gráfica (requer Java com GUI).
 
 ```bash
-cat exemplo.txt | antlr4-parse MOC.g4 programa -gui
+cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -gui
 ```
 
 ---
