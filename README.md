@@ -27,6 +27,9 @@ Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na 
 | `MOCVisitorDEBUG.py`  | Visitor alternativo com debug passo-a-passo (não usado por defeito) |
 | `reset_antlr.sh`      | Script utilitário para limpar e regenerar ficheiros do ANTLR        |
 | `README.md`           | Instruções de utilização e documentação técnica do projeto          |
+| `Exemplos_Teste/`     | Pasta com 6 ficheiros de testes:exemplo1 a exemplo3 -> enunciado    |
+|                       | :exemplo 4 e exemplo 4 -> testes extremos, sucesso e falha          |
+|                       | :Possiveis_testes_Sucesso-Erro -> todos os testes criados           |
 
 ---
 
