@@ -1,0 +1,195 @@
+cat exemplo1.txt | antlr4-parse MOC.g4 programa -tree
+
+cat exemplo1.txt | antlr4-parse MOC.g4 programa -gui
+
+#################### Estrutura de código ####################
+reset.antlr.sh ---> Script em bash para 
+limpar os ficheiros de antlr e voltar a carregar pela gramatica.
+MOC.g4 ---> A nossa gramatica
+MOCVisitorDEBUG.py ---> Visitor customizado com modo de DEBUG em todas as funcoes para conseguirmos verificar cenarios.
+MOCVisitor.py ---> Visitor customizado para pré-processamento de dados.
+
+#################### Métodos implementados no visitor para cada parte da gramatica #################### 
+#### Regra da gramatica  ---> Método no MOCVisitor	
+programa              ---> visitPrograma
+unidade               ---> visitUnidade
+prototipo             ---> visitPrototipo
+prototipoPrincipal    ---> visitPrototipoPrincipal
+funcaoPrincipal       ---> visitFuncaoPrincipal
+funcao                ---> visitFuncao
+parametros            ---> visitParametros
+parametro             ---> visitParametro
+tipo                  ---> visitTipo
+declaracao            ---> visitDeclaracao
+listaVariaveis        ---> visitListaVariaveis
+variavel              ---> visitVariavel
+blocoArray            ---> visitBlocoArray
+listaValores          ---> visitListaValores
+expressao (Negacao)           ---> visitNegacao
+expressao (Multiplicacao)     ---> visitMultiplicacao
+expressao (Divisao)           ---> visitDivisao
+expressao (Modulo)            ---> visitModulo
+expressao (Adicao)            ---> visitAdicao
+expressao (Subtracao)         ---> visitSubtracao
+expressao (Comparacao)        ---> visitComparacao
+expressao (ELogico)           ---> visitELogico
+expressao (OuLogico)          ---> visitOuLogico
+expressao (Parnteses)         ---> visitParnteses
+expressao (VariavelID)        ---> visitVariavelID
+expressao (AcessoVetor)       ---> visitAcessoVetor
+expressao (Numero)            ---> visitNumero
+expressao (NumeroReal)        ---> visitNumeroReal
+expressao (ChamadaLeitura)    ---> visitChamadaLeitura
+expressao (ChamadaGenerica)   ---> visitChamadaGenerica
+expressao (Casting)           ---> visitCasting
+argumentos            ---> visitArgumentos
+opRelacional          ---> visitOpRelacional
+chamadaFuncao         ---> visitChamadaFuncao
+bloco                 ---> visitBloco
+instrucoes            ---> visitInstrucoes
+instrucao             ---> visitInstrucao
+instrucaoEmparelhada  ---> visitInstrucaoEmparelhada
+instrucaoPorEmparelhar---> visitInstrucaoPorEmparelhar
+outraInstrucao        ---> visitOutraInstrucao
+instrucaoWhile        ---> visitInstrucaoWhile
+instrucaoFor          ---> visitInstrucaoFor
+expressaoOuAtribuicao ---> visitExpressaoOuAtribuicao
+instrucaoEscrita      ---> visitInstrucaoEscrita
+instrucaoReturn       ---> visitInstrucaoReturn
+instrucaoAtribuicao   ---> visitInstrucaoAtribuicao
+argumentoString       ---> visitArgumentoString
+
+############################# Exemplos do EfolioA #############################
+Exemplo1 1:
+int fact(int k) { if (k <= 1) { return 1; } else { return k * fact(k - 1); } } void main(void) { int n; writes("Introduza inteiro: "); n = read(); write(fact(n)); }
+
+Exemplo 2: 
+int fact(int); void main(void); int fact(int k) { int i, n = 1; for (i = 2; i <= k; i = i + 1) { n = n * i; } return n; } void main(void) { int n; writes("Introduza inteiro: "); n = read(); write(fact(n)); }
+
+Exemplo 3:
+double avg(double v[], int size); void main(void); double avg(double v[], int size) { int i; double sum = 0; for (i = 0; i < size; i = i + 1) { sum = sum + v[i]; } return sum / size; } void main(void) { int i, n; double v[100]; writes("Introduza tamanho do vetor, seguido dos respetivos valores: "); n = read(); for (i = 0; i < n; i = i + 1) { v[i] = read(); } write(avg(v, n)); }
+
+#################### Validacoes ja tratadas e testadas com sucesso #################### 
+
+#### Declaracoes e atribuicoes  --->  visitDeclaracao, visitInstrucaoAtribuicao, visitAdicao, visitMultiplicacao, visitSubtracao
+void main() { int x = 2 + 3; x = x * 4; write(x); } → Resultado: 20 
+void main() { int x = 5; int y = x + 3; x = y * 2; write(x); } → Resultado: 16 
+int main() { double x = 2 + 3.5; write(x); } → Resultado: 5.5
+
+#### Escrita (write)  --->  visitInstrucaoEscrita, visitVariavelID
+void main() { int x = 42; write(x); } → Resultado: 42 
+
+#### Parênteses e precedência  --->  visitParnteses, visitAdicao, visitMultiplicacao
+void main() { int x = (2 + 3) * 2; write(x); } → Resultado: 10 
+
+#### double e int com casting  --->  visitCasting, visitInstrucaoEscrita
+void main() { double x = 5.9; int y = (int) x; write(y); double z = (double) x / y; write(z); } → Resultado: 5 
+void main() { int x = 5; int y = 2; double z = (double) x / y; write(z); }  → Resultado: 2.5 
+    Operacoes com mistura int + double:
+    int main() { int x = 5; double y = (double)x / 2; write(y); } → Resultado: 2.5 
+
+#### Aceitar e "ignorar" return  --->  visitInstrucaoReturn
+int main() { int x = 10; return x; }  → Sem resultado (Em DEBUG Return: 10)
+
+#### read()  --->  visitChamadaLeitura
+int main() { int x = read(); write(x); }
+Introduz valor: 42 → Resultado: 42 
+
+#### readc()  --->  visitChamadaLeitura, visitInstrucaoEscrita
+char c = readc(); writec(c);
+void main() { int c = readc(); writec(c); }
+Introduz valor: a → a
+Introduz valor: 1 → 1
+void main() { int c = readc(); write(c); }
+Introduz valor: a → 97
+Introduz valor: 1 → 49
+    Operacoes invalidas:
+    Introduz valor: abc → [Erro de Execucao] readc() espera apenas um único carater. 
+    Introduz valor: 100 → [Erro de Execucao] readc() espera apenas um único carater. 
+
+#### Redeclaracao de variaveis  --->  visitDeclaracao
+int main() { int x = 5; int x = 10; write(x); }
+[Erro de Execucao] Variavel 'x' ja foi declarada. 
+
+#### Uso de variaveis nao declaradas  --->  visitVariavelID
+int main() { write(x); }
+[Erro de Execucao] Variavel 'x' nao declarada
+
+#### Escrita com writec, writev, writes  --->  visitInstrucaoEscrita, visitArgumentoString
+int main() { int c = 97; writec(c); } → Resultado:9 7
+int main() { int v[] = {1, 2, 3, 0}; writev(v); } → Resultado: {1,2,3,0}
+int main() { int c = 97; writec(c); } → Resultado:  a
+int main() { int s[] = {97, 98, 99, 0}; writes(s); } → Resultado: abc
+int main() { writes("Hello, World!"); }  → Resultado: Hello, World!
+
+
+############################# Validacoes por tratar / por testar #################### 
+Chamadas a funcoes sem protótipos, se os protótipos nao forem declarados o programa nao corre.
+int main() { int x = soma(2, 3); write(x); } int soma(int a, int b) { return a + b; }  
+[Erro de Execucao] Funcao 'soma' nao encontrada.
+
+
+Condicionais (if / if-else)
+⚠️ Comportamento incorreto — executava sempre o if e o else ou ambos → A rever
+
+Ciclos while
+⚠️ Loop parcial ou crash (erro list has no attribute accept) → A rever
+
+Ciclos for
+
+Vetores (declaracao, leitura, escrita)  ---> visitDeclaracao (?), visitAcessoVetor, visitInstrucaoEscrita
+int main() { int v[] = {1, 2, 3, 0}; write(v[0]); write(v[2]); writev(v); } → Resultado: 1 3 {1,2,3,0}
+int main() { int v[] = {1, 2, 3}; write(v[3]); }  
+[Erro de Execucao] Índice fora dos limites do vetor 'v'.
+
+int main() { int x = 5; write(x[0]); }
+[Erro de Execucao] 'x' nao é um vetor.
+
+int main() { write(v[0]); }
+[Erro de Execucao] Vetor 'v' nao declarado.
+
+int main() { double s[] = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { int v[] = {1,2,3}; v = 10; }
+[Erro de Execucao] 'v' é um vetor, não pode ser atribuído diretamente.
+
+int main() { int v[] = {1,2,3}; int x = v + 1; }
+[Erro de Execucao] Não é possível usar o vetor 'v' como um valor numérico.
+
+
+Indentacoes / múltiplas linhas / formatacao livre
+
+Número e tipo de argumentos nas funcoes ---> visitChamadaGenerica, visitParametros, visitArgumentos
+(Sucesso)
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2, 3); write(x); } → Resultado: 5
+
+double div(int a, double b) { return a / b; } void main(void) { write(div(4, 2.0)); } → Resultado: 2.0
+
+(Falha)
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2, 3, 4); write(x); }
+[Erro de Execucao] Número incorreto de argumentos na chamada 'soma'
+
+int soma(int a, int b) { return a + b; } void main(void) { int x = soma(2); write(x); }
+[Erro de Execucao] Número incorreto de argumentos na chamada 'soma'
+
+double div(int a, double b) { return a / b; } void main(void) { write(div(2.0, 4)); }
+→ Pode dar erro de execução ou resultado incorreto (dependendo da implementação). Ordem e tipo de argumentos trocados (esperado int, double)
+
+
+
+Uso incorreto de reads() (só em vetores int) ---> visitDeclaracao (?), visitVariavel, visitChamadaLeitura, visitInstrucaoAtribuicao
+(Sucesso)
+int main() { int s[] = reads(); writev(s); } → Resultado: (depende da entrada, ex: `abc` → {97,98,99,0})
+
+(Falha)
+int main() { double s[] = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { int x = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+int main() { double x = reads(); }
+[Erro de Execucao] reads() só pode ser usado para vetores de inteiros.
+
+ 
