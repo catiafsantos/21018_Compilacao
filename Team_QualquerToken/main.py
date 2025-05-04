@@ -6,15 +6,14 @@ from antlr4 import *
 from MOCLexer import MOCLexer
 from MOCParser import MOCParser
 from MOCErrorListener import MOCErrorListener
-from MOCVisitorDEBUG import MOCVisitor
-
+from VisitorTAC import VisitorTAC, gerar_texto_tac
+from OtimizadorTAC import otimizar_completo
 
 def run_antlr4_parse(file_path, option):
     cmd = f"cat {file_path} | antlr4-parse MOC.g4 programa {option}"
     subprocess.run(cmd, shell=True)
 
 def main():
-    global tree
     if len(sys.argv) < 2:
         print("Uso: python3 main.py <ficheiro> [-tree | -gui]")
         return
@@ -29,45 +28,52 @@ def main():
         run_antlr4_parse(input_file, "-gui")
         return
 
-    # Execução com listener de erro personalizado
+    # --- Fase de Análise Sintática ---
     input_stream = FileStream(input_file, encoding='utf-8')
     lexer = MOCLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
 
     lexer.removeErrorListeners()
-    lexer.addErrorListener(MOCErrorListener())  # Para erros léxicos
+    lexer.addErrorListener(MOCErrorListener())
 
     parser = MOCParser(token_stream)
-    parser.removeErrorListeners()  # Remove os listeners padrão
-    parser.addErrorListener(MOCErrorListener())  # Para erros sintaxicos
+    parser.removeErrorListeners()
+    parser.addErrorListener(MOCErrorListener())
 
     try:
-        tree = parser.programa() # Obtém a Parse Tree
+        tree = parser.programa()
     except Exception as e:
         print(f"\n[Parsing interrompido]: {e}")
+        return
+
     print("--- Análise sintática concluída ---")
 
-    # Verifica se houve erros de sintaxe ANTES de tentar visitar
     if parser.getNumberOfSyntaxErrors() > 0:
         print("\n!!! Erros de sintaxe encontrados. Abortando geração de código intermédio. !!!")
         sys.exit(1)
 
-    # --- GERAÇÃO DO CÓDIGO INTERMÉDIO ---
+    # --- GERAÇÃO DE CÓDIGO INTERMÉDIO ---
     print("\n--- A iniciar Geração de Código Intermédio ---")
-    # 1. Criar uma instância do seu Visitor customizado
-    visitor = MOCVisitor()
-
-    # 2. Chamar o método visit na raiz da árvore
-    codigo_intermedio_final = visitor.visit(tree) # O método visitPrograma retorna a lista
-
+    visitor = VisitorTAC()
+    try:
+        visitor.visit(tree)
+    except Exception as e:
+        print(f"\nErro semântico durante geração de TAC: {e}")
+        return
     print("--- Geração de Código Intermédio Concluída ---")
 
-    # 3. Imprimir ou processar o código intermédio gerado
-    print("\n--- Código Intermédio Resultante ---")
-    if codigo_intermedio_final: # Verifica se algo foi retornado/gerado
-        for instrucao in codigo_intermedio_final:
-            print(instrucao)
-    else:
-        print("(Nenhuma instrução gerada ou retornada pelo visitor principal)")
+    # --- Exibir TAC Gerado ---
+    print("\n==== CÓDIGO TAC GERADO ====")
+    tac_original = gerar_texto_tac(visitor.tac_quadruplos)
+    for linha in tac_original:
+        print(linha)
+
+    # --- Otimização ---
+    print("\n==== CÓDIGO TAC OTIMIZADO ====")
+    tac_otimizado = otimizar_completo(visitor.tac_quadruplos)
+    tac_otimizado_txt = gerar_texto_tac(tac_otimizado)
+    for linha in tac_otimizado_txt:
+        print(linha)
+
 if __name__ == '__main__':
     main()
