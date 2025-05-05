@@ -1,0 +1,19 @@
+/* exemplo com variável duplicada */
+int fact(int);
+void main(void);
+
+int fact(int k) {
+    if (k <= 1) {
+        return 1;
+    } else {
+        return k * fact(k - 1);
+    }
+}
+
+void main(void) {
+    int n;
+    int n;  // <- erro semântico: variável duplicada
+    writes("Introduza inteiro: ");
+    n = read();
+    write(fact(n));
+}

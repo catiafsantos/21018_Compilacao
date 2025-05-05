@@ -8,6 +8,8 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita o nó 'programa' (nó raiz da árvore)
     def visitPrograma(self, ctx):
+        if ctx.prototipos():
+            self.visit(ctx.prototipos())
         if ctx.corpo():
             self.visit(ctx.corpo())
 
@@ -23,6 +25,10 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita uma função comum (não principal)
     def visitFuncao(self, ctx):
+        if ctx.parametros():
+            for p in ctx.parametros().parametro():
+                if p.IDENTIFICADOR():
+                    self.tabela_simbolos.add(p.IDENTIFICADOR().getText())
         self.visit(ctx.bloco())
 
     # Visita um bloco de código entre chavetas
@@ -161,3 +167,12 @@ class VisitorSemantico(MOCVisitor):
         if nome not in self.tabela_simbolos:
             raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
         self.visit(ctx.expressao())  # Verifica o índice
+
+    # Visita um protótipo de função e regista o nome
+    def visitPrototipo(self, ctx):
+        nome = ctx.IDENTIFICADOR().getText()
+        self.tabela_simbolos.add(nome)
+
+    # Visita o protótipo da função principal (main)
+    def visitPrototipoPrincipal(self, ctx):
+        self.tabela_simbolos.add("main")
