@@ -4,7 +4,7 @@ from MOCVisitor import MOCVisitor
 class VisitorSemantico(MOCVisitor):
     def __init__(self):
         self.tabela_simbolos = set()  # Conjunto com os nomes das variáveis declaradas
-        self.erros = []               # Lista de mensagens de erro semântico
+        self.erros = []               # Lista de mensagens de [Erro semântico] (não usada com raise)
 
     # Visita o nó 'programa' (nó raiz da árvore)
     def visitPrograma(self, ctx):
@@ -79,7 +79,7 @@ class VisitorSemantico(MOCVisitor):
         for var in ctx.listaVariaveis().variavel():
             nome = var.IDENTIFICADOR().getText()
             if nome in self.tabela_simbolos:
-                self.erros.append(f"Variável '{nome}' já foi declarada.")
+                raise Exception(f"[Erro semântico]: variável '{nome}' já foi declarada.")
             else:
                 self.tabela_simbolos.add(nome)
             self.visit(var)  # Visita a possível inicialização
@@ -103,7 +103,7 @@ class VisitorSemantico(MOCVisitor):
     def visitInstrucaoAtribuicao(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
         if nome not in self.tabela_simbolos:
-            self.erros.append(f"Variável '{nome}' usada antes de ser declarada.")
+            raise Exception(f"[Erro semântico]: variável '{nome}' usada antes de ser declarada.")
         self.visit(ctx.expressao(0))  # Valor atribuído
         if ctx.ABRECOLCH():
             self.visit(ctx.expressao(1))  # Índice, se for acesso a vetor
@@ -131,6 +131,10 @@ class VisitorSemantico(MOCVisitor):
     def visitInstrucaoEscrita(self, ctx):
         if ctx.expressao():
             self.visit(ctx.expressao())
+        elif ctx.WRITEV():
+            nome = ctx.IDENTIFICADOR().getText()
+            if nome not in self.tabela_simbolos:
+                raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
 
     # Visita expressões usadas isoladamente ou em atribuições
     def visitExpressaoOuAtribuicao(self, ctx):
@@ -140,3 +144,20 @@ class VisitorSemantico(MOCVisitor):
     # Encaminha a visita da expressão para os filhos
     def visitExpressao(self, ctx):
         self.visitChildren(ctx)
+
+    def visitIdComPrefixo(self, ctx):
+        nome = ctx.IDENTIFICADOR().getText()
+        if nome not in self.tabela_simbolos:
+            raise Exception(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
+
+    def visitChamadaFuncao(self, ctx):
+        pass  # Funções built-in como read(), readc(), reads() não precisam de validação aqui
+
+    def visitChamadaReads(self, ctx):
+        pass
+
+    def visitAcessoVetor(self, ctx):
+        nome = ctx.IDENTIFICADOR().getText()
+        if nome not in self.tabela_simbolos:
+            raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
+        self.visit(ctx.expressao())  # Verifica o índice

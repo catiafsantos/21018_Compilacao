@@ -55,14 +55,13 @@ def main():
 
     # --- Análise Semântica ---
     print("\n--- A iniciar Análise Semântica ---")
+    
     semantico = VisitorSemantico()
-    semantico.visit(tree)
-
-    if semantico.erros:
-        print("\n!!! Erros semânticos encontrados. Abortando geração de código intermédio. !!!")
-        for erro in semantico.erros:
-            print(" -", erro)
-        sys.exit(1)
+    try:
+        semantico.visit(tree)
+    except Exception as e:
+        print(f"\n{e}")  # Só imprime a mensagem
+        return
 
     print("--- Análise Semântica concluída ---")
 
