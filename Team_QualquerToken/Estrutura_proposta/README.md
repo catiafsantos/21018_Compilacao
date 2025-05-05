@@ -3,6 +3,7 @@
 
 Este projeto consiste no desenvolvimento de um compilador para a linguagem **MOC (My Own C)**, uma linguagem fictícia inspirada em C, com uma gramática simplificada adaptada para o ensino e análise de compiladores.
 
+
 ## Introdução
 
 A linguagem MOC tem como objetivo permitir a exploração dos conceitos de análise léxica e sintática com ferramentas modernas como **ANTLR4**. Este repositório contém a gramática completa em ANTLR, bem como os scripts necessários para compilar, analisar e validar código-fonte nesta linguagem.
@@ -18,6 +19,12 @@ Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na 
 ---
 
 ## Estrutura do Projeto
+
+Este projeto insere-se no eFolio B, continuação do eFolio A com a fusão de dois grupos para a continuação do projeto.
+
+- [Grupo: Qualquer] - [Andreia Romão - 1702430 / Cátia Santos - 1702194]
+- [Grupo: Token] - [Rui Menino - 1103425 / Luís Tavares - 1803237 / José Augusto Azevedo - 2200655]
+
 
 | Ficheiro              | Descrição                                                           |
 |-----------------------|---------------------------------------------------------------------|
@@ -184,5 +191,7 @@ Este script remove os ficheiros antigos e regenera todos os `.py` a partir do `M
 
 ## Autores
 
-- [Grupo: Qualquer] - [Andreia Romão - 1702430 / Cátia Santos - 1702194]
+- [Grupo: Qualquer Token] - [Andreia Romão - 1702430 / Cátia Santos - 1702194 / Rui Menino - 1103425 / Luís Tavares - 1803237 / José Augusto Azevedo - 2200655]
+
+
 - UC de Compilação – Universidade Aberta, 2024/2025
