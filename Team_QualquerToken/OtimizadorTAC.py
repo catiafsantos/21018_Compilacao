@@ -1,189 +1,295 @@
-# Elimina instruções TAC com resultados em temporários que nunca são usados
-def otimizar_tac(lista_quadruplos):
-    usados = set()
+import copy
 
-    # Recolhe os temporários que são usados como argumento em algum quadruplo
-    for q in lista_quadruplos:
-        for campo in ["arg1", "arg2"]:
-            v = q.get(campo)
-            if v and isinstance(v, str) and v.startswith("t"):
-                usados.add(v)
+# Classe OtimizadorTAC: responsável por aplicar otimizações ao código intermédio em formato de quadruplos (TAC)
+class OtimizadorTAC:
+    def __init__(self, tac_quadruplos, variaveis_utilizador=None):
+        # Cria uma cópia profunda dos quadruplos para garantir que os dados originais não são alterados durante a otimização
+        self.quadruplos = copy.deepcopy(tac_quadruplos)
 
-    # Remove as instruções cujo resultado é um temporário não usado
-    return [
-        q for q in lista_quadruplos
-        if not (isinstance(q.get("res"), str) and q["res"].startswith("t") and q["res"] not in usados)
-    ]
+        # Conjunto de variáveis que devem ser preservadas mesmo que pareçam não ser usadas (ex: outputs do utilizador)
+        self.variaveis_utilizador = variaveis_utilizador or set()
 
-# Elimina variáveis que foram atribuídas mas nunca usadas (versão mais segura)
-def eliminar_variaveis_mortas(quadruplos):
-    usados = set()
+    # Método eliminar_codigo_morto: remove instruções cujo resultado não tem impacto no restante do programa
+    def eliminar_codigo_morto(self):
+        vivas = set()      # Conjunto de variáveis "vivas", ou seja, cujo valor ainda vai ser utilizado mais à frente
+        otimizados = []    # Lista de quadruplos que serão mantidos após a otimização
 
-    # Recolhe todas as variáveis que aparecem como argumento em alguma operação
-    for q in quadruplos:
-        for campo in ["arg1", "arg2"]:
-            v = q.get(campo)
-            if v:
-                usados.add(v)
+        # Primeiro passo: identificar todas as variáveis que são utilizadas como argumentos nos quadruplos
+        usados = set()
+        for q in self.quadruplos:
+            for arg in ("arg1", "arg2"):
+                if isinstance(q.get(arg), str):  # Só se for string (nome de variável)
+                    usados.add(q[arg])           # Adiciona ao conjunto de variáveis potencialmente relevantes
 
-    resultado = []
-    for q in quadruplos:
-        res = q.get("res")
-        op  = q.get("op")
+        # Segundo passo: percorre os quadruplos de trás para a frente (técnica comum para análise de liveness)
+        for q in reversed(self.quadruplos):
+            op = q["op"]
+            res = q.get("res")    # Resultado do quadruplo (variável que recebe o valor)
+            arg1 = q.get("arg1")  # Primeiro argumento (ex: operando esquerdo)
+            arg2 = q.get("arg2")  # Segundo argumento (ex: operando direito)
 
-        # Instruções sem destino devem ser mantidas (por exemplo: goto, label, return)
-        if res is None:
-            resultado.append(q)
+            # Define se a operação tem efeitos colaterais — neste caso, a instrução deve ser sempre preservada
+            efeito_colateral = op in {
+                "call", "return", "write", "writes", "writec", "writev",
+                "goto", "ifgoto", "ifFalse", "label", "alloc", "[]="
+            }
 
-        # Se o resultado é um temporário, mantém a instrução
-        elif isinstance(res, str) and res.startswith("t"):
-            resultado.append(q)
+            # Verifica se a instrução é uma atribuição direta desnecessária, ou seja:
+            # - do tipo `res = arg1`
+            # - `res` não está em uso
+            # - não tem efeito colateral
+            atribuicao_direta_inutil = (
+                op == "=" and
+                isinstance(res, str) and
+                res not in usados and
+                not efeito_colateral
+            )
 
-        # Se a variável atribuída for usada em algum outro lugar, mantém
-        elif res in usados:
-            resultado.append(q)
+            # Três casos principais em que a instrução é preservada:
 
-        # Também mantém instruções com efeitos laterais mesmo que o resultado não seja usado
-        elif op in {"param", "call", "return", "write", "writes", "writec", "writev", "label", "goto", "ifFalse", "ifgoto"}:
-            resultado.append(q)
+            # 1. Se tiver efeito colateral, ou a variável de resultado for usada, ou estiver na lista de variáveis do utilizador
+            if efeito_colateral or (res and res in vivas) or (res in self.variaveis_utilizador):
+                otimizados.append(q)
+                # Atualiza o conjunto de variáveis vivas com os argumentos da operação
+                if isinstance(arg1, str):
+                    vivas.add(arg1)
+                if isinstance(arg2, str):
+                    vivas.add(arg2)
 
-        # Caso contrário, a atribuição é inútil e é eliminada
+            # 2. Se a instrução não tem resultado (como labels, goto, etc.), assume-se que tem utilidade estrutural
+            elif not res:
+                otimizados.append(q)
+                if isinstance(arg1, str):
+                    vivas.add(arg1)
+                if isinstance(arg2, str):
+                    vivas.add(arg2)
 
-    return resultado
+            # 3. Se não for uma atribuição direta inútil (ou seja, tem alguma utilidade), também é mantida
+            elif not atribuicao_direta_inutil:
+                otimizados.append(q)
+                if isinstance(arg1, str):
+                    vivas.add(arg1)
+                if isinstance(arg2, str):
+                    vivas.add(arg2)
 
-# Aplica propagação de cópias no TAC (substitui variáveis redundantes)
-def propagacao_copias(quadruplos):
-    tabela_copias = {}
+        # Por ter sido percorrido de trás para a frente, é necessário inverter a lista final para restaurar a ordem original
+        self.quadruplos_otimizados = list(reversed(otimizados))
 
-    # Etapa 1: constrói uma tabela com cópias diretas do tipo x = y
-    for q in quadruplos:
-        if q["op"] == "=" and q.get("arg2") is None:
-            arg1 = q.get("arg1")
+        # Devolve a lista de quadruplos depois da otimização
+        return self.quadruplos_otimizados
+
+     # Método propagacao_copias: substitui variáveis copiadas por outras equivalentes quando é seguro fazê-lo
+    def propagacao_copias(self):
+        substituicoes = {}              # Mapeia variáveis de destino para o valor original copiado (ex: b = a → substituicoes[b] = a)
+        resultado = []                  # Lista final de quadruplos com as substituições aplicadas
+        atribuicoes = {}                # Conta quantas vezes cada variável é atribuída (útil para saber se é seguro substituir)
+        modificadas_em_ciclos = set()  # Conjunto de variáveis que são modificadas dentro de ciclos (ramos, saltos, etc.)
+
+        # 1. Recolher estatísticas sobre atribuições
+        for q in self.quadruplos:
             res = q.get("res")
-            if arg1 and res and arg1 != res:
-                tabela_copias[res] = arg1
+            if res:
+                # Conta quantas vezes cada variável foi atribuída
+                atribuicoes[res] = atribuicoes.get(res, 0) + 1
 
-    # Etapa 2: resolve cadeias de cópias (ex: x = y, y = z → x = z)
-    def resolver(v):
-        while v in tabela_copias:
-            v = tabela_copias[v]
-        return v
+            # Se a operação estiver relacionada com controlo de fluxo,
+            # considera que a variável foi modificada num ciclo
+            if q["op"] in {"goto", "ifFalse", "ifgoto", "label"}:
+                if res:
+                    modificadas_em_ciclos.add(res)
 
-    for k in list(tabela_copias):
-        tabela_copias[k] = resolver(tabela_copias[k])
+        # 2. Substituir apenas variáveis seguras (atribuídas 1 vez e fora de ciclos)
+        for q in self.quadruplos:
+            op = q["op"]
+            arg1 = q.get("arg1")
+            arg2 = q.get("arg2")
+            res = q.get("res")
 
-    resultado = []
-    for q in quadruplos:
-        novo = dict(q)  # Cópia do quadruplo atual
+            # Substitui os argumentos se forem variáveis com cópia conhecida (já propagada)
+            if isinstance(arg1, str) and arg1 in substituicoes:
+                q["arg1"] = substituicoes[arg1]
+            if isinstance(arg2, str) and arg2 in substituicoes:
+                q["arg2"] = substituicoes[arg2]
 
-        # Substitui argumentos por versões finais
-        if novo.get("arg1"):
-            novo["arg1"] = resolver(novo["arg1"])
-        if novo.get("arg2"):
-            novo["arg2"] = resolver(novo["arg2"])
-
-        # Se for uma cópia direta (x = y), substitui também o destino se for temporário
-        if q["op"] == "=" and q.get("arg2") is None:
-            destino = novo.get("res")
-            origem = novo.get("arg1")
-            if destino and origem and destino != origem:
-                final = resolver(origem)
-                if destino.startswith("t"):
-                    # Substitui completamente a variável temporária redundante
-                    novo["res"] = final
+            # Propagação direta de cópia: se for uma atribuição simples (res = arg1)
+            if op == "=" and arg1 and res:
+                # Só propaga se:
+                # - a variável de destino (res) foi atribuída **apenas uma vez**
+                # - **não** foi usada em instruções de controlo de fluxo (ciclos)
+                if atribuicoes.get(res, 0) == 1 and res not in modificadas_em_ciclos:
+                    # Adiciona a substituição: res ≡ arg1 (usa-se o valor original de arg1)
+                    substituicoes[res] = substituicoes.get(arg1, arg1)
                 else:
-                    # Mantém nome visível do programa original (ex: total)
-                    novo["res"] = destino
-                    novo["arg1"] = final
+                    # Se não for seguro, remove substituição existente para evitar erro
+                    if res in substituicoes:
+                        del substituicoes[res]
+            else:
+                # Qualquer operação que escreva em `res` invalida substituições anteriores
+                if res and res in substituicoes:
+                    del substituicoes[res]
 
-        resultado.append(novo)
+            # Adiciona a instrução (eventualmente com substituições aplicadas)
+            resultado.append(q)
 
-    return resultado
+        # Atualiza a lista de quadruplos otimizada
+        self.quadruplos = resultado
+        return self.quadruplos
+    
+    # Método constant_folding: avalia operações com constantes em tempo de compilação, substituindo-as pelo valor calculado
+    def constant_folding(self):
+        novos_quadruplos = []             # Lista final de quadruplos com constantes já resolvidas
+        constantes_resolvidas = {}        # Dicionário que associa variáveis a valores constantes já avaliados
 
-# Elimina instruções que definem variáveis temporárias que nunca são usadas posteriormente
-def remover_definicoes_inuteis(quadruplos):
-    usados = set()
+        for q in self.quadruplos:
+            op = q["op"]
+            arg1 = q.get("arg1")
+            arg2 = q.get("arg2")
+            res = q.get("res")
 
-    # Recolhe todas as variáveis usadas como argumentos em qualquer instrução
-    for q in quadruplos:
-        for campo in ("arg1", "arg2"):
-            v = q.get(campo)
-            if v:
-                usados.add(v)
-
-    resultado = []
-
-    # Percorre os quadruplos de trás para a frente (análise backward)
-    for q in reversed(quadruplos):
-        res = q.get("res")
-
-        # Ignora definições de temporários que não são usados
-        if res and res.startswith("t") and res not in usados:
-            continue
-
-        # Mantém a instrução e regista o destino como usado
-        resultado.insert(0, q)
-        if res:
-            usados.add(res)
-
-    return resultado
-
-# Realiza "constant folding": avalia expressões constantes em tempo de compilação
-def constant_folding(quadruplos):
-    resultado = []
-
-    for q in quadruplos:
-        op = q['op']
-        a1 = q.get('arg1')
-        a2 = q.get('arg2')
-        res = q.get('res')
-
-        # Verifica se é uma operação aritmética binária e ambos os argumentos são constantes inteiras
-        if op in {"+", "-", "*", "/", "%"} and a1 and a2:
-            if a1.isdigit() and a2.isdigit():
-                v1 = int(a1)
-                v2 = int(a2)
+            # Aplica a operadores binários com dois operandos constantes (ex: 3 + 4)
+            if op in {"+", "-", "*", "/", "%"} and self._is_const(arg1) and self._is_const(arg2):
                 try:
-                    # Avalia a operação e gera um novo quadruplo como atribuição direta do valor calculado
-                    if op == "+": val = str(v1 + v2)
-                    elif op == "-": val = str(v1 - v2)
-                    elif op == "*": val = str(v1 * v2)
-                    elif op == "/" and v2 != 0: val = str(v1 // v2)
-                    elif op == "%" and v2 != 0: val = str(v1 % v2)
-                    else:
-                        resultado.append(q)  # Não otimiza se houver divisão por zero ou casos inválidos
-                        continue
+                    # Converte os valores para inteiro ou float
+                    val1 = float(arg1) if "." in arg1 else int(arg1)
+                    val2 = float(arg2) if "." in arg2 else int(arg2)
 
-                    # Substitui por instrução simples: res = val
-                    resultado.append({"op": "=", "arg1": val, "arg2": None, "res": res})
-                    continue  # Avança para o próximo quadruplo
-                except:
-                    pass  # Em caso de erro (ex: divisão por zero), mantém original
+                    # Calcula o resultado da operação entre constantes
+                    resultado = self._avaliar_constante(op, val1, val2)
 
-        # Se não for possível otimizar, mantém o quadruplo original
-        resultado.append(q)
+                    # Guarda o resultado como valor constante associado à variável res
+                    constantes_resolvidas[res] = resultado
 
-    return resultado
+                    # Substitui a operação pelo resultado direto: res = valor
+                    novos_quadruplos.append({"op": "=", "arg1": str(resultado), "res": res})
+                    continue  # Passa ao próximo quadruplo
+                except ZeroDivisionError:
+                    pass  # Em caso de divisão por zero, mantém a instrução original
 
-# Aplica todas as otimizações conhecidas até o código estabilizar
-def otimizar_completo(quadruplos):
-    """ Aplica todas as otimizações de forma iterativa até estabilizar """
+            # Substitui índices de vetor se o índice (arg1) já tiver sido resolvido como constante
+            elif op == "[]=" and arg1 in constantes_resolvidas:
+                idx = constantes_resolvidas[arg1]
+                novos_quadruplos.append({"op": "[]=", "arg1": str(idx), "arg2": arg2, "res": res})
+                continue
 
-    anterior = None
-    atual = quadruplos
+            # Caso não se aplique nenhuma substituição, mantém a instrução original
+            novos_quadruplos.append(q)
 
-    while True:
-        anterior = atual
+        # Atualiza os quadruplos com os novos, otimizados
+        self.quadruplos = novos_quadruplos
+        return self.quadruplos
 
-        # Executa as otimizações em cadeia
-        atual = propagacao_copias(atual)               # Propaga variáveis redundantes
-        atual = constant_folding(atual)                # Avalia expressões com constantes
-        atual = eliminar_variaveis_mortas(atual)       # Remove variáveis atribuídas mas não usadas
-        atual = remover_definicoes_inuteis(atual)      # Elimina temporários nunca usados
-        atual = otimizar_tac(atual)                    # Limpeza final de temporários não usados
 
-        # Se não houve mudanças desde a última iteração, termina
-        if atual == anterior:
-            break
+    # Método eliminar_subexpressoes_comuns_CSE: evita recalcular expressões já computadas anteriormente com os mesmos operandos
+    def eliminar_subexpressoes_comuns_CSE(self):
+        expressoes_vistas = {}   # Dicionário que mapeia expressão (com versão) para o resultado previamente calculado
+        versao_vars = {}         # Registo das versões de cada variável (muda sempre que a variável é modificada)
+        resultado = []           # Lista de quadruplos com subexpressões redundantes substituídas
 
+        # Função auxiliar para normalizar expressões comutativas (ordem dos operandos não importa)
+        def normalizar(op, arg1, arg2):
+            if op in {"+", "*", "==", "!=", "<=", ">="} and arg1 and arg2:
+                return (op, *sorted([arg1, arg2]))
+            return (op, arg1, arg2)
+
+        # Função auxiliar para gerar a chave única que representa uma expressão com a versão atual dos seus operandos
+        def chave_versao(expr):
+            op, a1, a2 = expr
+            v1 = versao_vars.get(a1, 0) if isinstance(a1, str) else 0
+            v2 = versao_vars.get(a2, 0) if isinstance(a2, str) else 0
+            return (op, a1, v1, a2, v2)
+
+        for q in self.quadruplos:
+            op = q["op"]
+            arg1 = q.get("arg1")
+            arg2 = q.get("arg2")
+            res = q.get("res")
+
+            # Se for uma operação binária com resultado (elegível para eliminação de subexpressão)
+            if op in {"+", "-", "*", "/", "%", "==", "!=", "<", "<=", ">", ">="} and res:
+                expr = normalizar(op, arg1, arg2)
+                expr_com_versao = chave_versao(expr)
+
+                # Se já foi vista a mesma expressão com os mesmos operandos e versões,
+                # então não vale a pena calcular de novo: usa o resultado anterior
+                if expr_com_versao in expressoes_vistas:
+                    res_antigo = expressoes_vistas[expr_com_versao]
+                    resultado.append({"op": "=", "arg1": res_antigo, "res": res})
+                else:
+                    # Caso contrário, regista esta nova expressão como já vista
+                    expressoes_vistas[expr_com_versao] = res
+                    resultado.append(q)
+            else:
+                # Se não for uma operação elegível, mantém a instrução como está
+                resultado.append(q)
+
+            # Se a variável res for modificada, incrementa a sua versão
+            if res and isinstance(res, str):
+                versao_vars[res] = versao_vars.get(res, 0) + 1
+
+        # Substitui os quadruplos antigos pelos otimizados
+        self.quadruplos = resultado
+        return self.quadruplos
+
+
+    # Método eliminar_codigo_inatingivel: remove instruções que nunca poderão ser executadas (por exemplo, após um return ou goto)
+    def eliminar_codigo_inatingivel(self):
+        novos_quadruplos = []  # Lista de instruções que devem ser mantidas
+        ignorar = False        # Flag para indicar se estamos num bloco de código inatingível
+
+        for q in self.quadruplos:
+            if ignorar:
+                if q["op"] == "label":
+                    # Encontrou uma label — é um ponto de entrada possível via salto → volta a aceitar código
+                    ignorar = False
+                    novos_quadruplos.append(q)
+                else:
+                    # Está num bloco inatingível (após um salto ou return) → ignora esta instrução
+                    continue
+            else:
+                # Está num bloco executável — mantém a instrução
+                novos_quadruplos.append(q)
+                if q["op"] in {"goto", "return"}:
+                    # Após um salto ou return, presume que o próximo código é inatingível até encontrar uma label
+                    ignorar = True
+
+        # Atualiza os quadruplos com os que ainda são atingíveis
+        self.quadruplos = novos_quadruplos
+        return self.quadruplos
+
+    # Método auxiliar _is_const: verifica se o argumento representa uma constante numérica (int ou float)
+    def _is_const(self, val):
+        if not isinstance(val, str): return False
+        try:
+            float(val)  # Tenta converter para número
+            return True
+        except ValueError:
+            return False
+
+    # Método auxiliar _avaliar_constante: realiza a operação entre duas constantes e devolve o resultado
+    def _avaliar_constante(self, op, v1, v2):
+        if op == "+": return v1 + v2
+        if op == "-": return v1 - v2
+        if op == "*": return v1 * v2
+        if op == "/": return v1 / v2
+        if op == "%": return v1 % v2
+
+
+# Função de conveniência otimizar_completo: aplica todas as otimizações ao código TAC fornecido
+def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
+    otimizador = OtimizadorTAC(tac_quadruplos, variaveis_utilizador)
+
+    # Fase 1 — aplica várias otimizações independentes
+    otimizador.constant_folding()                     # Substitui expressões com constantes
+    otimizador.propagacao_copias()                    # Substitui variáveis copiadas por originais
+    otimizador.eliminar_subexpressoes_comuns_CSE()    # Evita repetir expressões redundantes
+    otimizador.eliminar_codigo_inatingivel()          # Remove código após saltos sem label
+
+    # Fase 2 — aplica a eliminação de código morto em loop até estabilizar (ponto fixo)
+    prev = None
+    atual = otimizador.eliminar_codigo_morto()
+    while prev != atual:
+        prev = atual
+        atual = otimizador.eliminar_codigo_morto()
+
+    # Retorna o código otimizado final
     return atual
