@@ -68,7 +68,7 @@ def main():
     # --- GERAÇÃO DE CÓDIGO INTERMÉDIO ---
     print("\n--- A iniciar Geração de Código Intermédio ---")
     visitor = VisitorTAC()
-    visitor.variaveis_declaradas = semantico.tabela_simbolos
+    visitor.variaveis_declaradas = set().union(*semantico.escopos) if semantico.escopos else set()
     try:
         visitor.visit(tree)
     except Exception as e:

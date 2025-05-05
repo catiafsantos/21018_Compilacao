@@ -3,11 +3,14 @@ from MOCVisitor import MOCVisitor
 # Classe responsável pela análise semântica do programa
 class VisitorSemantico(MOCVisitor):
     def __init__(self):
-        self.tabela_simbolos = set()  # Conjunto com os nomes das variáveis declaradas
+        self.escopos = []             # Pilha de escopos de variáveis
         self.erros = []               # Lista de mensagens de [Erro semântico] (não usada com raise)
+        self.funcoes_declaradas = set()  # Guarda os nomes de funções declaradas (prototipos + definidas)
 
     # Visita o nó 'programa' (nó raiz da árvore)
     def visitPrograma(self, ctx):
+        if ctx.prototipos():
+            self.visit(ctx.prototipos())
         if ctx.corpo():
             self.visit(ctx.corpo())
 
@@ -19,11 +22,23 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita a função principal
     def visitFuncaoPrincipal(self, ctx):
+        self.escopos.append(set())  # Novo escopo
+        if ctx.parametros():
+            for p in ctx.parametros().parametro():
+                if p.IDENTIFICADOR():
+                    self.escopos[-1].add(p.IDENTIFICADOR().getText())
         self.visit(ctx.bloco())
+        self.escopos.pop()
 
     # Visita uma função comum (não principal)
     def visitFuncao(self, ctx):
+        self.escopos.append(set())  # Novo escopo
+        if ctx.parametros():
+            for p in ctx.parametros().parametro():
+                if p.IDENTIFICADOR():
+                    self.escopos[-1].add(p.IDENTIFICADOR().getText())
         self.visit(ctx.bloco())
+        self.escopos.pop()
 
     # Visita um bloco de código entre chavetas
     def visitBloco(self, ctx):
@@ -78,10 +93,10 @@ class VisitorSemantico(MOCVisitor):
     def visitDeclaracao(self, ctx):
         for var in ctx.listaVariaveis().variavel():
             nome = var.IDENTIFICADOR().getText()
-            if nome in self.tabela_simbolos:
+            if nome in self.escopos[-1]:
                 raise Exception(f"[Erro semântico]: variável '{nome}' já foi declarada.")
             else:
-                self.tabela_simbolos.add(nome)
+                self.escopos[-1].add(nome)
             self.visit(var)  # Visita a possível inicialização
 
     # Visita uma variável dentro de uma declaração (com ou sem inicialização)
@@ -102,7 +117,7 @@ class VisitorSemantico(MOCVisitor):
     # Verifica se a variável usada numa atribuição foi declarada
     def visitInstrucaoAtribuicao(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if nome not in self.tabela_simbolos:
+        if not any(nome in escopo for escopo in reversed(self.escopos)):
             raise Exception(f"[Erro semântico]: variável '{nome}' usada antes de ser declarada.")
         self.visit(ctx.expressao(0))  # Valor atribuído
         if ctx.ABRECOLCH():
@@ -133,7 +148,7 @@ class VisitorSemantico(MOCVisitor):
             self.visit(ctx.expressao())
         elif ctx.WRITEV():
             nome = ctx.IDENTIFICADOR().getText()
-            if nome not in self.tabela_simbolos:
+            if not any(nome in escopo for escopo in reversed(self.escopos)):
                 raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
 
     # Visita expressões usadas isoladamente ou em atribuições
@@ -147,7 +162,7 @@ class VisitorSemantico(MOCVisitor):
 
     def visitIdComPrefixo(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if nome not in self.tabela_simbolos:
+        if nome not in self.funcoes_declaradas and not any(nome in escopo for escopo in reversed(self.escopos)):
             raise Exception(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
 
     def visitChamadaFuncao(self, ctx):
@@ -158,6 +173,15 @@ class VisitorSemantico(MOCVisitor):
 
     def visitAcessoVetor(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if nome not in self.tabela_simbolos:
+        if not any(nome in escopo for escopo in reversed(self.escopos)):
             raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
         self.visit(ctx.expressao())  # Verifica o índice
+
+    # Visita um protótipo de função e regista o nome
+    def visitPrototipo(self, ctx):
+        nome = ctx.IDENTIFICADOR().getText()
+        self.funcoes_declaradas.add(nome)
+
+    # Visita o protótipo da função principal (main)
+    def visitPrototipoPrincipal(self, ctx):
+        self.funcoes_declaradas.add("main")
