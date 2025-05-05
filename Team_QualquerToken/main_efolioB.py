@@ -38,5 +38,9 @@ def compilar_tac(ficheiro_moc):
     for linha in linhas:
         print(linha)
 
-if __name__ == "__main__":
-    compilar_tac("teste_geral.moc")
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) < 2:
+        print("Uso: python3 nome_do_script.py <ficheiro.moc>")
+    else:
+        compilar_tac(sys.argv[1])
