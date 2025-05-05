@@ -16,6 +16,9 @@ class VisitorTAC(MOCVisitor):
         # Tabela de variáveis declaradas (para verificação semântica)
         self.variaveis_declaradas = set()
 
+        # Conjunto de funções declaradas (para evitar redefinições)
+        self.funcoes_declaradas = set()
+
     # Gera um novo nome de variável temporária e incrementa o contador
     def novo_temp(self):
         self.temp_count += 1
@@ -51,6 +54,11 @@ class VisitorTAC(MOCVisitor):
 
     # Visita o nó 'programa' da árvore de parsing, que representa o programa inteiro
     def visitPrograma(self, ctx):
+        # Guarda os nomes das funções declaradas nos protótipos
+        for prot in ctx.prototipos().prototipo():
+            nome = prot.IDENTIFICADOR().getText()
+            self.funcoes_declaradas.add(nome)
+
         # Visita os protótipos de funções (declarações sem corpo)
         self.visit(ctx.prototipos())
 
@@ -68,6 +76,9 @@ class VisitorTAC(MOCVisitor):
 
     # Geração de TAC para a função principal do programa
     def visitFuncaoPrincipal(self, ctx):
+        # Adiciona "main" à lista de funções declaradas (mesmo que seja redundante)
+        self.funcoes_declaradas.add("main")
+
         # Marca o início da função principal com um label "main"
         self.adicionar_quadruplo("label", res="main")
 
@@ -75,12 +86,14 @@ class VisitorTAC(MOCVisitor):
         if ctx.parametros():
             for i, p in enumerate(ctx.parametros().parametro()):
                 if p.IDENTIFICADOR():
-                    # Cria um quadruplo de atribuição que associa o parâmetro recebido (param1, param2, ...)
-                    # ao identificador real no corpo da função
+                    self.variaveis_declaradas.add(p.IDENTIFICADOR().getText())  # NOVO: regista como variável
                     self.adicionar_quadruplo("=", f"param{i+1}", res=p.IDENTIFICADOR().getText())
 
         # Visita o bloco principal da função (instruções)
         self.visit(ctx.bloco())
+
+        # Gera o quadruplo "halt" para indicar o fim da execução do programa
+        self.adicionar_quadruplo("halt")
 
         # Marca o fim da função principal com um label "end_main"
         self.adicionar_quadruplo("label", res="end_main")
@@ -89,6 +102,7 @@ class VisitorTAC(MOCVisitor):
     def visitFuncao(self, ctx):
         # Obtém o nome da função a partir do identificador
         nome = ctx.IDENTIFICADOR().getText()
+        self.funcoes_declaradas.add(nome)
 
         # Marca o início da função com um label com o nome da função
         self.adicionar_quadruplo("label", res=nome)
@@ -97,8 +111,10 @@ class VisitorTAC(MOCVisitor):
         if ctx.parametros():
             for i, p in enumerate(ctx.parametros().parametro()):
                 if p.IDENTIFICADOR():
+                    nome_param = p.IDENTIFICADOR().getText()
                     # Atribui param1, param2, etc. aos nomes dos parâmetros declarados
                     self.adicionar_quadruplo("=", f"param{i+1}", res=p.IDENTIFICADOR().getText())
+                    self.variaveis_declaradas.add(nome_param)
 
         # Visita o corpo da função
         self.visit(ctx.bloco())
@@ -407,7 +423,8 @@ class VisitorTAC(MOCVisitor):
     def visitIdComPrefixo(self, ctx):
         # Se for um identificador simples, verifica se foi declarado
         nome = ctx.IDENTIFICADOR().getText()
-        self.verificar_variavel_declarada(nome)
+        if nome not in self.variaveis_declaradas and nome not in self.funcoes_declaradas:
+            raise Exception(f"Erro semântico: identificador '{nome}' usado sem ter sido declarado.")
 
         if ctx.primaryRest():
             # Se houver um sufixo (ex: chamada ou acesso), processa-o
@@ -650,6 +667,8 @@ def gerar_texto_tac(quadruplos):
             linhas.append(f"{a1}[{a2}] = {r}")
         elif op == "alloc":
             linhas.append(f"alloc {a1}, {a2}")
+        elif op == "halt":
+            linhas.append("halt")
         else:
             linhas.append(f"{r} = {a1} {op} {a2}")
 
