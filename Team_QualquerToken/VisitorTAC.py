@@ -1,9 +1,11 @@
-from MOCVisitor import MOCVisitor
-from MOCParser import MOCParser
+from VisitorSemantico import VisitorSemantico
 
 # Classe que herda do MOCVisitor gerado pelo ANTLR e é responsável por gerar código intermédio (TAC)
-class VisitorTAC(MOCVisitor):
+class VisitorTAC(VisitorSemantico):
     def __init__(self):
+        # inicializa tabela_simbolos, erros, etc.
+        super().__init__()        
+           
         # Lista onde se armazenam os quadruplos (código de três endereços) gerados
         self.tac_quadruplos = []
 

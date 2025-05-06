@@ -273,6 +273,92 @@ class OtimizadorTAC:
         if op == "/": return v1 / v2
         if op == "%": return v1 % v2
 
+    # Método mover_invariantes: Loop-Invariant Code Motion - move instruções que são invariantes dentro de ciclos para fora do loop
+    def mover_invariantes(self):
+        # 1) Construir um dicionário que associa o nome dos labels aos seus índices na lista de quadruplos
+        label_idx = {
+            q["res"]: i
+            for i, q in enumerate(self.quadruplos)
+            if q["op"] == "label" and isinstance(q.get("res"), str)
+        }
+
+        # Conjunto com operações que têm efeitos colaterais e que não podem ser movidas
+        side_effects = {
+            "call", "return", "write", "writes", "writec", "writev",
+            "alloc", "[]=", "goto", "ifgoto", "ifFalse", "label"
+        }
+
+        # Lista onde vamos guardar instruções consideradas invariantes
+        invariantes = []
+
+        # 2) Procurar loops detetando saltos para trás (back-edges)
+        for i, q in enumerate(self.quadruplos):
+            op = q["op"]
+            # Só nos interessam saltos (possíveis inícios de loops)
+            if op not in {"goto", "ifgoto", "ifFalse"}:
+                continue
+
+            # Verificar qual campo da instrução contém o destino (label)
+            possiveis = [
+                (campo, q[campo])
+                for campo in ("arg1", "arg2", "res")
+                if isinstance(q.get(campo), str) and q[campo] in label_idx
+            ]
+            if not possiveis:
+                continue
+
+            # Extrair o campo que contém o rótulo de destino e o nome desse rótulo
+            campo_label, target = possiveis[0]
+            start, end = label_idx[target], i
+
+            # Só consideramos loops com back-edge (target anterior ao salto)
+            if start >= end:
+                continue
+
+            # 3) Recolher todas as variáveis que são atribuídas dentro do loop
+            defs = {
+                r["res"]
+                for r in self.quadruplos[start:end+1]
+                if isinstance(r.get("res"), str)
+            }
+
+            # 4) Procurar instruções que são invariantes no loop
+            for j in range(start, end):
+                instr = self.quadruplos[j]
+                # Ignorar instruções com efeitos colaterais
+                if instr["op"] in side_effects:
+                    continue
+
+                # Obter os argumentos usados na instrução
+                args = [
+                    a for a in (instr.get("arg1"), instr.get("arg2"))
+                    if isinstance(a, str)
+                ]
+
+                # A instrução é invariante se nenhum dos argumentos for alterado no loop
+                if all(a not in defs for a in args):
+                    invariantes.append((start, j, instr))
+
+        # 5) Remover instruções invariantes do corpo do loop (de trás para a frente)
+        for _, j, instr in sorted(invariantes, key=lambda x: x[1], reverse=True):
+            self.quadruplos.pop(j)
+
+        # 6) Agrupar as instruções invariantes por label de início de loop
+        from collections import defaultdict
+        grupos = defaultdict(list)
+        for start, _, instr in invariantes:
+            grupos[start].append(instr)
+
+        # Inserir cada grupo de instruções antes do início do loop respetivo
+        for start, insts in grupos.items():
+            offset = 0
+            for instr in insts:
+                idx = start + offset
+                self.quadruplos.insert(idx, instr)
+                offset += 1
+
+        # Devolver a nova lista de quadruplos com as invariantes movidas
+        return self.quadruplos
 
 # Função de conveniência otimizar_completo: aplica todas as otimizações ao código TAC fornecido
 def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
@@ -282,7 +368,11 @@ def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     otimizador.constant_folding()                     # Substitui expressões com constantes
     otimizador.propagacao_copias()                    # Substitui variáveis copiadas por originais
     otimizador.eliminar_subexpressoes_comuns_CSE()    # Evita repetir expressões redundantes
+    otimizador.mover_invariantes()                   # Move invariantes para fora de loops
+    otimizador.constant_folding()                     # Aplica folding novamente após mover invariantes
     otimizador.eliminar_codigo_inatingivel()          # Remove código após saltos sem label
+
+    
 
     # Fase 2 — aplica a eliminação de código morto em loop até estabilizar (ponto fixo)
     prev = None
