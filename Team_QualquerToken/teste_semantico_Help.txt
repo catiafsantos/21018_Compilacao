@@ -1,0 +1,44 @@
+
+Como funciona o teste_semantico.py
+
+As funções de teste dentro de uma classe que herda de unittest.TestCase (como a sua TestVisitorSemantico)
+
+são executadas automaticamente por um "test runner" (executor de testes) do unittest.
+
+Quando se executa o ficheiro
+(por exemplo, com python -m unittest test_semantico.py ou
+quando unittest.main() é chamado no final do ficheiro), acontece o seguinte:
+
+Descoberta de Testes:
+*****************************************
+O framework unittest procura por classes no ficheiro que herdem de unittest.TestCase.
+Ele encontra a classe TestVisitorSemantico.
+
+
+Identificação dos Métodos de Teste:
+*****************************************
+Dentro da classe TestVisitorSemantico, o framework procura por todos os métodos cujos nomes
+comecem com o prefixo test_.
+Ele encontra test_declaracao_simples_valida, test_atribuicao_valida, test_erro_variavel_nao_declarada_atribuicao, etc.
+
+Execução Individual:
+*****************************************
+Para cada método de teste encontrado (como test_declaracao_simples_valida), o framework:
+Cria uma nova instância da classe TestVisitorSemantico.
+Chama o método de teste específico nessa instância (ex: instancia.test_declaracao_simples_valida()).
+Código Dentro do Método: O código dentro da função test_declaracao_simples_valida é então executado sequencialmente:
+Define a string codigo com o código MOC a ser testado.
+Chama a função auxiliar self._parse_e_visita(codigo).
+Esta função, por sua vez, faz o parse do código e executa o VisitorSemantico, retornando True ou uma Exception.
+Executa a asserção self.assertTrue(resultado, ...).
+O unittest verifica se o primeiro argumento (resultado) é verdadeiro.
+Se for, o teste passa. Se for falso ou uma exceção (que não seja a esperada num assertRaises), o teste falha.
+
+Relatório:
+*****************************************
+O framework recolhe os resultados de todos os métodos test_* executados (passou, falhou, erro) e
+apresenta um sumário no final.
+
+Portanto, a função test_declaracao_simples_valida(self) é executada porque o seu nome segue a
+convenção (test_...) e ela pertence a uma classe de teste (unittest.TestCase),
+sendo chamada automaticamente pelo executor do unittest.
