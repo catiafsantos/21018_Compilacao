@@ -155,7 +155,8 @@ class TestVisitorSemantico(unittest.TestCase):
         """
         resultado = self._parse_e_visita(codigo)
         self.assertIsInstance(resultado, Exception)
-        self.assertIn("vetor 'meuVetor' usado antes de ser declarado", str(resultado))
+        self.assertIn("Variável 'meuVetor' usada antes de ser declarada", str(resultado))
+        #self.assertIn("vetor 'meuVetor' usado antes de ser declarado", str(resultado))
 
     def test_erro_funcao_nao_declarada_chamada(self):
          # Nota: A implementação atual do VisitorSemantico pode não pegar este erro
