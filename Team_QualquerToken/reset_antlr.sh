@@ -23,8 +23,8 @@ if ! command -v antlr4 &> /dev/null; then
     echo "Erro: antlr4 não está instalado ou não está no PATH."
     exit 1
 fi
-
-antlr4 -Dlanguage=Python3 MOC.g4
+#verificar se o caminho está bem
+antlr4 -Dlanguage=Python3 ./gramatica_moc/MOC.g4
 
 if [ $? -eq 0 ]; then
     echo "Ficheiros gerados com sucesso!"
