@@ -186,18 +186,35 @@ class VisitorSemantico(MOCVisitor):
 
     def visitIdComPrefixo(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
+        resto = ctx.primaryRest()
     
-        # Se o nome for de uma função declarada, não é erro
-        if nome in self.funcoes_declaradas:
-            return
-    
-        # Verifica se a variável foi declarada em algum contexto válido 
-        if not any(nome in contexto for contexto in reversed(self.contexto)):
-            # Evita reportar múltiplas vezes o mesmo erro para a mesma variável
+        # Tem sufixo? Pode ser chamada ou acesso a vetor
+        if resto and resto.getChildCount() > 0:
+            primeiro = resto.getChild(0).getText()
+
+            if primeiro == "(":  # chamada a função
+                if nome not in self.funcoes_declaradas and nome not in self.variaveis_com_erro:
+                    self.lista_erros.append(f"[Erro semântico] Função '{nome}' chamada mas não foi declarada.")
+                    self.variaveis_com_erro.add(nome)
+                # Visitamos todos os argumentos (se houver)
+                if resto.getChildCount() > 2:  # Há algo entre parênteses
+                    argumentos = resto.getChild(1)
+                    if hasattr(argumentos, "expressao"):
+                        for expr in argumentos.expressao():
+                            self.visit(expr)
+                return
+
+            elif primeiro == "[":  # acesso a vetor
+                self.visit(resto.expressao())  # visitar o índice
+                return
+
+        # Caso contrário: é apenas uma variável isolada
+        if nome not in self.funcoes_declaradas and not any(nome in contexto for contexto in reversed(self.contexto)):
             if nome not in self.variaveis_com_erro:
                 self.lista_erros.append(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
                 self.variaveis_com_erro.add(nome)
-    
+
+
     def visitChamadaFuncao(self, ctx):
         pass  # Funções built-in como read(), readc(), reads() não precisam de validação aqui
 
