@@ -3,9 +3,10 @@ from MOCVisitor import MOCVisitor
 # Classe responsável pela análise semântica do programa
 class VisitorSemantico(MOCVisitor):
     def __init__(self):
-        self.escopos = []             # Pilha de escopos de variáveis
-        self.erros = []               # Lista de mensagens de [Erro semântico] (não usada com raise)
+        self.contexto = []             # Pilha de contexto de variáveis
+        self.erros = []               # Lista de mensagens de erro semântico
         self.funcoes_declaradas = set()  # Guarda os nomes de funções declaradas (prototipos + definidas)
+        self.variaveis_com_erro = set()  # # Guarda os nomes de funções declaradas (prototipos + definidas)
 
     # Visita o nó 'programa' (nó raiz da árvore)
     def visitPrograma(self, ctx):
@@ -22,23 +23,23 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita a função principal
     def visitFuncaoPrincipal(self, ctx):
-        self.escopos.append(set())  # Novo escopo
+        self.contexto.append(set())  # Novo contexto
         if ctx.parametros():
             for p in ctx.parametros().parametro():
                 if p.IDENTIFICADOR():
-                    self.escopos[-1].add(p.IDENTIFICADOR().getText())
+                    self.contexto[-1].add(p.IDENTIFICADOR().getText())
         self.visit(ctx.bloco())
-        self.escopos.pop()
+        self.contexto.pop()
 
     # Visita uma função comum (não principal)
     def visitFuncao(self, ctx):
-        self.escopos.append(set())  # Novo escopo
+        self.contexto.append(set())  # Novo contexto
         if ctx.parametros():
             for p in ctx.parametros().parametro():
                 if p.IDENTIFICADOR():
-                    self.escopos[-1].add(p.IDENTIFICADOR().getText())
+                    self.contexto[-1].add(p.IDENTIFICADOR().getText())
         self.visit(ctx.bloco())
-        self.escopos.pop()
+        self.contexto.pop()
 
     # Visita um bloco de código entre chavetas
     def visitBloco(self, ctx):
@@ -93,13 +94,13 @@ class VisitorSemantico(MOCVisitor):
     def visitDeclaracao(self, ctx):
         for var in ctx.listaVariaveis().variavel():
             nome = var.IDENTIFICADOR().getText()
-            if nome in self.escopos[-1]:
-                raise Exception(f"[Erro semântico]: variável '{nome}' já foi declarada.")
+            if nome in self.contexto[-1]:
+               self.erros.append(f"[Erro semântico] Variável '{nome}' já foi declarada.")
             else:
-                self.escopos[-1].add(nome)
+                self.contexto[-1].add(nome)
             self.visit(var)  # Visita a possível inicialização
 
-    # Visita uma variável dentro de uma declaração (com ou sem inicialização)
+    # Visita uma Variável dentro de uma declaração (com ou sem inicialização)
     def visitVariavel(self, ctx):
         if ctx.expressao():
             self.visit(ctx.expressao())
@@ -108,20 +109,20 @@ class VisitorSemantico(MOCVisitor):
         elif ctx.chamadaReads():
             self.visit(ctx.chamadaReads())
 
-    # Visita um bloco de inicialização de vetor (ex: {1,2,3})
+    # Visita um bloco de inicialização de Vetor (ex: {1,2,3})
     def visitBlocoArray(self, ctx):
         if ctx.listaValores():
             for expr in ctx.listaValores().expressao():
                 self.visit(expr)
 
-    # Verifica se a variável usada numa atribuição foi declarada
+    # Verifica se a Variável usada numa atribuição foi declarada
     def visitInstrucaoAtribuicao(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if not any(nome in escopo for escopo in reversed(self.escopos)):
-            raise Exception(f"[Erro semântico]: variável '{nome}' usada antes de ser declarada.")
+        if not any(nome in contexto for contexto in reversed(self.contexto)):
+           self.erros.append(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
         self.visit(ctx.expressao(0))  # Valor atribuído
         if ctx.ABRECOLCH():
-            self.visit(ctx.expressao(1))  # Índice, se for acesso a vetor
+            self.visit(ctx.expressao(1))  # Índice, se for acesso a Vetor
 
     # Visita uma instrução 'while'
     def visitInstrucaoWhile(self, ctx):
@@ -148,8 +149,8 @@ class VisitorSemantico(MOCVisitor):
             self.visit(ctx.expressao())
         elif ctx.WRITEV():
             nome = ctx.IDENTIFICADOR().getText()
-            if not any(nome in escopo for escopo in reversed(self.escopos)):
-                raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
+            if not any(nome in contexto for contexto in reversed(self.contexto)):
+               self.erros.append(f"[Erro semântico] Vetor '{nome}' usado antes de ser declarado.")
 
     # Visita expressões usadas isoladamente ou em atribuições
     def visitExpressaoOuAtribuicao(self, ctx):
@@ -162,9 +163,18 @@ class VisitorSemantico(MOCVisitor):
 
     def visitIdComPrefixo(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if nome not in self.funcoes_declaradas and not any(nome in escopo for escopo in reversed(self.escopos)):
-            raise Exception(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
-
+    
+        # Se o nome for de uma função declarada, não é erro
+        if nome in self.funcoes_declaradas:
+            return
+    
+        # Verifica se a variável foi declarada em algum contexto válido 
+        if not any(nome in contexto for contexto in reversed(self.contexto)):
+            # Evita reportar múltiplas vezes o mesmo erro para a mesma variável
+            if nome not in self.variaveis_com_erro:
+                self.erros.append(f"[Erro semântico] Variável '{nome}' usada antes de ser declarada.")
+                self.variaveis_com_erro.add(nome)
+    
     def visitChamadaFuncao(self, ctx):
         pass  # Funções built-in como read(), readc(), reads() não precisam de validação aqui
 
@@ -173,8 +183,8 @@ class VisitorSemantico(MOCVisitor):
 
     def visitAcessoVetor(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if not any(nome in escopo for escopo in reversed(self.escopos)):
-            raise Exception(f"[Erro semântico]: vetor '{nome}' usado antes de ser declarado.")
+        if not any(nome in contexto for contexto in reversed(self.contexto)):
+           self.erros.append(f"[Erro semântico] Vetor '{nome}' usado antes de ser declarado.")
         self.visit(ctx.expressao())  # Verifica o índice
 
     # Visita um protótipo de função e regista o nome

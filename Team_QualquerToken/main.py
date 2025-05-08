@@ -50,25 +50,32 @@ def main():
     print("--- Análise sintática concluída ---")
 
     if parser.getNumberOfSyntaxErrors() > 0:
-        print("\n!!! Erros de sintaxe encontrados. Abortando geração de código intermédio. !!!")
+        print("\nErros de sintaxe encontrados. A abortar o processo de geração de código intermédio.")
         sys.exit(1)
 
     # --- Análise Semântica ---
     print("\n--- A iniciar Análise Semântica ---")
     
-    semantico = VisitorSemantico()
     try:
+        semantico = VisitorSemantico()
         semantico.visit(tree)
-    except Exception as e:
-        print(f"\n{e}")  # Só imprime a mensagem
-        return
 
-    print("--- Análise Semântica concluída ---")
+        # Verifica se foram acumulados erros semânticos
+        if semantico.erros:
+            for erro in semantico.erros:
+                print(erro)
+            print("\nErros semânticos encontrados. A abortar o processo de geração de código intermédio.")
+            exit(1)
+
+        print("\n--- Análise Semântica concluída ---")
+    except Exception as e:
+        print(e)
+        exit(1)
 
     # --- GERAÇÃO DE CÓDIGO INTERMÉDIO ---
     print("\n--- A iniciar Geração de Código Intermédio ---")
     visitor = VisitorTAC()
-    visitor.variaveis_declaradas = set().union(*semantico.escopos) if semantico.escopos else set()
+    visitor.variaveis_declaradas = set().union(*semantico.contexto) if semantico.contexto else set()
     try:
         visitor.visit(tree)
     except Exception as e:

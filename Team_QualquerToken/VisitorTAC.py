@@ -1,7 +1,7 @@
-from VisitorSemantico import VisitorSemantico
+from MOCVisitor import MOCVisitor
 
 # Classe que herda do MOCVisitor gerado pelo ANTLR e é responsável por gerar código intermédio (TAC)
-class VisitorTAC(VisitorSemantico):
+class VisitorTAC(MOCVisitor):
     def __init__(self):
         # inicializa tabela_simbolos, erros, etc.
         super().__init__()        
@@ -30,11 +30,6 @@ class VisitorTAC(VisitorSemantico):
     def nova_label(self):
         self.label_count += 1
         return f"L{self.label_count}"
-    
-    # Verifica se uma variável foi previamente declarada
-    def verificar_variavel_declarada(self, nome):
-        if nome not in self.variaveis_declaradas:
-            raise Exception(f"Erro semântico: variável '{nome}' usada sem ter sido declarada.")
 
     # Adiciona um quadruplo (operação TAC) à lista
     # Se não for especificado um resultado ('res') e a operação exigir um, gera um temporário
@@ -144,9 +139,6 @@ class VisitorTAC(VisitorSemantico):
         # Obtém o nome da variável a ser atribuída
         nome = ctx.IDENTIFICADOR().getText()
 
-        # Se a variável ainda não foi declarada, regista-a (permite declaração implícita como no C, opcional)
-        self.verificar_variavel_declarada(nome)
-
         # Caso especial: atribuição a uma posição de vetor (ex: v[i] = ...)
         if ctx.ABRECOLCH():
             # Primeiro avalia a expressão do índice do vetor
@@ -200,8 +192,6 @@ class VisitorTAC(VisitorSemantico):
             self.adicionar_quadruplo("writec", arg1=valor)
 
         elif ctx.WRITEV():
-            # Caso seja writev(expr), avalia a expressão
-            self.verificar_variavel_declarada(nome)
             # Caso seja writev(vetor), obtém o nome do vetor
             nome = ctx.IDENTIFICADOR().getText()
 
@@ -425,8 +415,6 @@ class VisitorTAC(VisitorSemantico):
     def visitIdComPrefixo(self, ctx):
         # Se for um identificador simples, verifica se foi declarado
         nome = ctx.IDENTIFICADOR().getText()
-        if nome not in self.variaveis_declaradas and nome not in self.funcoes_declaradas:
-            raise Exception(f"Erro semântico: identificador '{nome}' usado sem ter sido declarado.")
 
         if ctx.primaryRest():
             # Se houver um sufixo (ex: chamada ou acesso), processa-o
@@ -434,7 +422,7 @@ class VisitorTAC(VisitorSemantico):
             if resultado is not None:
                 return resultado
         # Caso contrário, devolve o identificador diretamente
-        return ctx.IDENTIFICADOR().getText()
+        return nome
 
     # Geração de TAC para chamadas especiais (read, reads, readc)
     def visitChamadaFuncao(self, ctx):
