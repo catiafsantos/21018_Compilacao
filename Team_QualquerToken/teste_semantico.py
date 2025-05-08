@@ -36,7 +36,7 @@ class TestVisitorSemantico(unittest.TestCase):
 
         visitor = VisitorSemantico()
         try:
-            visitor.visit(tree)
+            visitor.erros(tree)
             return True # Passou sem erros semânticos
         except Exception as e:
             return e # Retorna a exceção para análise no teste
@@ -115,7 +115,7 @@ class TestVisitorSemantico(unittest.TestCase):
         """
         resultado = self._parse_e_visita(codigo)
         self.assertIsInstance(resultado, Exception)
-        self.assertIn("variável 'x' usada antes de ser declarada", str(resultado))
+        self.assertIn("Variável 'x' usada antes de ser declarada", str(resultado))
 
     def test_erro_variavel_nao_declarada_expressao(self):
         codigo = """
@@ -143,7 +143,7 @@ class TestVisitorSemantico(unittest.TestCase):
         """
         resultado = self._parse_e_visita(codigo)
         self.assertIsInstance(resultado, Exception)
-        self.assertIn("variável 'x' já foi declarada", str(resultado))
+        self.assertIn("Variável 'x' já foi declarada", str(resultado))
 
     def test_erro_vetor_nao_declarado_acesso(self):
         codigo = """
@@ -176,7 +176,7 @@ class TestVisitorSemantico(unittest.TestCase):
          self.assertIn("'funcaoInexistente'", str(resultado))
 
     # Adicione mais testes para outros cenários:
-    # - Acesso a variável fora do escopo
+    # - Acesso a Variável fora do escopo
     # - Erros em loops for/while
     # - Erros em if/else
     # - (Futuro) Erros de tipo
