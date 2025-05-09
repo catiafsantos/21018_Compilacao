@@ -6,6 +6,7 @@ from antlr4 import *
 from MOCLexer import MOCLexer
 from MOCParser import MOCParser
 from MOCErrorListener import MOCErrorListener
+from TabelaSimbolos import TabelaDeSimbolos
 from VisitorSemantico import VisitorSemantico  
 from VisitorTAC import VisitorTAC, gerar_texto_tac
 from OtimizadorTAC import otimizar_completo
@@ -53,11 +54,14 @@ def main():
         print("\nErros de sintaxe encontrados. A abortar o processo de geração de código intermédio.")
         sys.exit(1)
 
+    # 1. Criação da Tabela de Símbolos
+    tabela_de_simbolos_principal = TabelaDeSimbolos()
+
     # --- Análise Semântica ---
     print("\n--- A iniciar Análise Semântica ---")
 
     try:
-        semantico = VisitorSemantico()
+        semantico = VisitorSemantico(tabela_de_simbolos_principal)
         semantico.erros(tree)
         print("\n--- Análise Semântica concluída ---")
     except Exception as e:
@@ -68,7 +72,7 @@ def main():
 
     # --- GERAÇÃO DE CÓDIGO INTERMÉDIO ---
     print("\n--- A iniciar Geração de Código Intermédio ---")
-    visitor = VisitorTAC()
+    visitor = VisitorTAC(tabela_de_simbolos_principal)
     visitor.variaveis_declaradas = set().union(*semantico.contexto) if semantico.contexto else set()
     try:
         visitor.visit(tree)

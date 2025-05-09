@@ -1,12 +1,16 @@
 from MOCVisitor import MOCVisitor
+from TabelaSimbolos import TabelaDeSimbolos
+
 
 # Classe responsável pela análise semântica do programa
 class VisitorSemantico(MOCVisitor):
-    def __init__(self):
+    def __init__(self, tabela_simbolos: TabelaDeSimbolos):
         self.contexto = []             # Pilha de contexto de variáveis
         self.lista_erros = []               # Lista de mensagens de erro semântico
         self.funcoes_declaradas = set()  # Guarda os nomes de funções declaradas (prototipos + definidas)
         self.variaveis_com_erro = set()  # # Guarda os nomes de funções declaradas (prototipos + definidas)
+
+        self.tabela_simbolos = tabela_simbolos # Tabela de simbolos
 
     def erros(self, arvore):
         self.visit(arvore)
@@ -229,9 +233,51 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita um protótipo de função e regista o nome
     def visitPrototipo(self, ctx):
-        nome = ctx.IDENTIFICADOR().getText()
-        self.funcoes_declaradas.add(nome)
+        nome_funcao = ctx.IDENTIFICADOR().getText()
+        tipo_funcao = ctx.tipo().getText()
+        linha_declaracao = ctx.IDENTIFICADOR().getSymbol().line
+        self.funcoes_declaradas.add(nome_funcao)
+
+        # Obtém o tipo de retorno usando o método visitTipo para consistência
+        # Assumindo que ctx.tipo() retorna o contexto do nó do tipo de retorno
+        tipo_retorno_str = "void" # Valor padrão se não especificado ou não encontrado
+        if hasattr(ctx, 'tipo') and ctx.tipo(): # Verifica se o nó 'tipo' existe no contexto do protótipo
+            tipo_retorno_str = ctx.tipo().getText() #self.visit(ctx.tipo())
+        # Obtém os tipos dos parâmetros
+        tipos_parametros = []
+        if hasattr(ctx, 'parametros') and ctx.parametros():  # Verifica se o nó 'parametros' existe
+            tipos_parametros = ctx.parametros().getText()# self.visitParametros(ctx.parametros())
+
+        # Constrói uma representação da assinatura/tipo da função
+        # Exemplo: "funcao(inteiro,string)->flutuante"
+        assinatura_funcao = f"funcao({tipos_parametros})->{tipo_retorno_str}"
+
+        # Informações adicionais para armazenar na tabela de símbolos
+        info_adicional = {
+            'natureza': 'prototipo_funcao',
+            'tipo_retorno': tipo_retorno_str,
+            'tipos_parametros': tipos_parametros  # Lista dos tipos dos parâmetros
+        }
+        # Tenta declarar o protótipo da função na tabela de símbolos
+        # O método declarar_simbolo da TabelaDeSimbolos (do artefato) já verifica
+        # se o símbolo existe no escopo atual. Para protótipos, que geralmente
+        # estão no escopo global, isso é o comportamento desejado.
+        if not self.tabela_simbolos.declarar_simbolo(nome_funcao, assinatura_funcao, linha_declaracao, info_adicional):
+            # Se declarar_simbolo retornar False, significa que já existe no escopo atual.
+            # Você pode querer verificar se a redeclaração é compatível.
+            simbolo_existente = self.tabela_simbolos.buscar_simbolo_no_escopo_atual(nome_funcao)
+            if simbolo_existente and simbolo_existente['tipo'] == assinatura_funcao and simbolo_existente['info'].get('natureza') == 'prototipo_funcao':
+                # É uma redeclaração idêntica do mesmo protótipo, pode ser um aviso ou ignorado.
+                print(f"AVISO (Linha {linha_declaracao}): Protótipo da função '{nome_funcao}' redeclarado identicamente.")
+            else:
+                self._adicionar_erro(f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.", linha_declaracao)
+        else:
+            # Sucesso na declaração do protótipo
+            # self.funcoes_declaradas.add(nome_funcao) # Não é mais necessário se a tabela de símbolos for a fonte da verdade
+            print(f"DEBUG: Protótipo da função '{nome_funcao}' (tipo: {assinatura_funcao}) declarado na linha {linha_declaracao}.")
+
 
     # Visita o protótipo da função principal (main)
     def visitPrototipoPrincipal(self, ctx):
+        tipo_funcao = ctx.tipo().getText()
         self.funcoes_declaradas.add("main")

@@ -1,9 +1,9 @@
 /* exemplo 1
    fatorial versão recursiva */
-int fact(int);
+int fact(int,int);
 void main(void);
 
-int fact(int k) {
+int fact(int k,int i) {
     if (k <= 1) {
         return 1;
     } else {

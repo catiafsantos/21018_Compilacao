@@ -2,6 +2,8 @@ import unittest
 from antlr4 import *
 from io import StringIO
 
+from TabelaSimbolos import TabelaDeSimbolos
+
 # Certifique-se que os imports funcionam a partir da localização do seu teste
 # Pode precisar de ajustar o sys.path se estiver numa estrutura de pastas diferente
 try:
@@ -34,7 +36,10 @@ class TestVisitorSemantico(unittest.TestCase):
             # Ou pode levantar uma exceção diferente
             return SyntaxError("Erro sintático detectado no código de teste.")
 
-        visitor = VisitorSemantico()
+        # 1. Criação da Tabela de Símbolos
+        tabela_de_simbolos_principal = TabelaDeSimbolos()
+
+        visitor = VisitorSemantico(tabela_de_simbolos_principal)
         try:
             visitor.erros(tree)
             return True # Passou sem erros semânticos

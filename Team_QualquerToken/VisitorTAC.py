@@ -1,11 +1,17 @@
 from MOCVisitor import MOCVisitor
+from TabelaSimbolos import TabelaDeSimbolos
+
 
 # Classe que herda do MOCVisitor gerado pelo ANTLR e é responsável por gerar código intermédio (TAC)
 class VisitorTAC(MOCVisitor):
-    def __init__(self):
+    def __init__(self, tabela_simbolos: TabelaDeSimbolos):
+
         # inicializa tabela_simbolos, erros, etc.
-        super().__init__()        
-           
+        super().__init__()
+
+        # Tabela de simbolos
+        self.tabela_simbolos = tabela_simbolos
+
         # Lista onde se armazenam os quadruplos (código de três endereços) gerados
         self.tac_quadruplos = []
 
