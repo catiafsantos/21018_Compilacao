@@ -57,29 +57,50 @@ class VisitorSemantico(MOCVisitor):
         if hasattr(ctx, 'VOID') and ctx.VOID(): return "void"
         return ctx.getText() # Fallback
 
+    def visitTipoRetorno(self, ctx) -> str:
+        """Visita o nó do tipo de retorno de uma função."""
+        if not ctx: return "tipo_retorno_desconhecido"
+        if hasattr(ctx, 'tipo') and ctx.tipo():
+            return self.visit(ctx.tipo())
+        elif hasattr(ctx, 'VOID') and ctx.VOID():
+            return "void"
+        return "tipo_retorno_desconhecido_na_regra"
+
     def visitParametro(self, ctx):
         nome_parametro = ctx.IDENTIFICADOR().getText()
         tipo_parametro = ctx.tipo().getText()
         linha_declaracao = ctx.IDENTIFICADOR().getSymbol().line
 
-    def visitParametros(self, ctx) -> list[tuple[str, str]]:  # Retorna lista de tuplos (nome_param, tipo_param)
+    def visitParametros(self, ctx) -> list[dict]:
         """
         Visita os parâmetros de uma função/protótipo.
-        Retorna uma lista de tuplos (nome_parametro, tipo_parametro).
+        Retorna uma lista de dicionários, cada um contendo 'nome' e 'tipo' do parâmetro.
         Adapte conforme a sua gramática para parâmetros.
         """
         parametros_info = []
         if ctx and hasattr(ctx, 'parametro') and ctx.parametro():
-            for p_ctx in ctx.parametro():
-                nome_param = "nome_param_desconhecido"
+            for p_idx, p_ctx in enumerate(ctx.parametro()):  # Adicionado p_idx para rastrear o índice se necessário
+                nome_param = f"param_{p_idx}"  # Nome padrão se não houver identificador
                 tipo_param = "tipo_param_desconhecido"
+                linha_param = p_ctx.start.line  # Linha do início da declaração do parâmetro
+                coluna_param = p_ctx.start.column
+
                 if hasattr(p_ctx, 'IDENTIFICADOR') and p_ctx.IDENTIFICADOR():
                     nome_param = p_ctx.IDENTIFICADOR().getText()
+                    linha_param = p_ctx.IDENTIFICADOR().getSymbol().line
+                    coluna_param = p_ctx.IDENTIFICADOR().getSymbol().column
 
                 if hasattr(p_ctx, 'tipo') and p_ctx.tipo():
                     tipo_param = self.visit(p_ctx.tipo())
-                parametros_info.append({'nome': nome_param, 'tipo': tipo_param})
+
+                parametros_info.append({
+                    'nome': nome_param,
+                    'tipo': tipo_param,
+                    'linha': linha_param,  # Guardar a linha para mensagens de erro
+                    'coluna': coluna_param  # Guardar a coluna
+                })
         return parametros_info
+
 
     # Visita uma função comum (não principal)
     def visitFuncao(self, ctx):
@@ -152,12 +173,27 @@ class VisitorSemantico(MOCVisitor):
 
         # Entrar no contexto da função e declarar parâmetros
         self.tabela_simbolos.entrar_contexto()
+
+        # Declarar cada parâmetro na tabela de símbolos dentro do novo escopo da função
+        nomes_parametros_neste_escopo = set() # Para verificar parâmetros duplicados dentro da mesma função
         for p_info in parametros_definicao_info:
-            linha_param = linha_declaracao # Aproximação, idealmente viria do token do parâmetro
-            # É preciso obter a linha do IDENTIFICADOR do parâmetro se a gramática o permitir
-            # if p_ctx.IDENTIFICADOR(): linha_param = p_ctx.IDENTIFICADOR().getSymbol().line
-            if not self.tabela_simbolos.declarar_simbolo(p_info['nome'], p_info['tipo'], linha_param, {'natureza': 'parametro'}):
-                self.lista_erros.append(f"Parâmetro '{p_info['nome']}' redeclarado na função '{nome_funcao}'.")
+            nome_param = p_info['nome']
+            tipo_param = p_info['tipo']
+            linha_param = p_info['linha'] # Usar a linha do parâmetro obtida em visitParametros
+
+            if nome_param in nomes_parametros_neste_escopo:
+                self._adicionar_erro(f"Parâmetro '{nome_param}' redeclarado na lista de parâmetros da função '{nome_funcao}'.", linha_param)
+                continue # Não tenta declarar um parâmetro duplicado
+
+            info_param = {'natureza': 'parametro'}
+            if not self.tabela_simbolos.declarar_simbolo(nome_param, tipo_param, linha_param, info_param):
+                # Este erro é mais para o caso de o nome do parâmetro colidir com algo
+                # que não deveria estar no escopo da função ainda (improvável se o escopo é novo).
+                # A verificação de duplicados acima é mais específica para parâmetros.
+                self._adicionar_erro(f"Erro ao declarar o parâmetro '{nome_param}' na função '{nome_funcao}'. Pode já existir.", linha_param)
+            else:
+                nomes_parametros_neste_escopo.add(nome_param)
+                print(f"DEBUG: Parâmetro '{nome_param}' (tipo: {tipo_param}) declarado para a função '{nome_funcao}'.")
 
         # Isto deve estar mal... se o nome das var for igual a uma ja definida estará a dar erro e nao é
         if ctx.parametros():
@@ -177,6 +213,7 @@ class VisitorSemantico(MOCVisitor):
     # Visita um bloco de código entre chavetas
     def visitBloco(self, ctx, novo_contexto=True):
        if novo_contexto:
+           self.tabela_simbolos.entrar_contexto()
            self.contexto.append(set())  # Novo contexto local (ex: dentro de if/while)
 
        if ctx.instrucoes():
@@ -184,6 +221,9 @@ class VisitorSemantico(MOCVisitor):
 
        if novo_contexto:
            self.contexto.pop()  # Fim do contexto local
+           self.tabela_simbolos.sair_contexto()
+
+
 
     # Visita todas as instruções dentro de um bloco
     def visitInstrucoes(self, ctx):
@@ -238,6 +278,48 @@ class VisitorSemantico(MOCVisitor):
             else:
                 self.contexto[-1].add(nome)
             self.visit(var)  # Visita a possível inicialização
+
+    def visitDeclaracao_aqui(self, ctx):
+        """
+        Visita uma declaração de variável (ex: int x, y[10];).
+        As variáveis são adicionadas ao escopo ATUAL na tabela de símbolos.
+        Este escopo pode ser o global, o de uma função, ou de um bloco aninhado
+        (if, while, for, etc.), dependendo de onde a declaração ocorre.
+        O método visitBloco (ou visitFuncao) é responsável por criar o escopo apropriado
+        antes que este método seja chamado para declarações dentro desses blocos/funções.
+        """
+        tipo_base_variavel = self.visit(ctx.tipo())
+
+        for var_ctx in ctx.listaVariaveis().variavel():  # Supondo que sua gramática tem listaVariaveis().variavel()
+            nome_var = var_ctx.IDENTIFICADOR().getText()
+            linha_var = var_ctx.IDENTIFICADOR().getSymbol().line
+            tipo_final_var = tipo_base_variavel
+            info_adicional = {'natureza': 'variavel'}
+
+            # Verifica se é uma declaração de vetor
+            # Adapte esta lógica conforme a sua gramática para declaração de vetores
+            if hasattr(var_ctx, 'ABRECOLCH') and var_ctx.ABRECOLCH():
+                info_adicional['eh_vetor'] = True
+                tipo_final_var = f"vetor_de_{tipo_base_variavel}"  # Ou uma representação mais estruturada
+                if hasattr(var_ctx, 'expressao') and var_ctx.expressao():  # Tamanho do vetor
+                    # Poderia visitar a expressão do tamanho para análise adicional
+                    # self.visit(var_ctx.expressao())
+                    info_adicional['tamanho_expr'] = var_ctx.expressao().getText()
+                else:
+                    info_adicional['tamanho_indefinido'] = True
+
+            print(
+                f"DEBUG: Tentando declarar variável '{nome_var}' (tipo: {tipo_final_var}) na linha {linha_var} no escopo atual.")
+            if not self.tabela_simbolos.declarar_simbolo(nome_var, tipo_final_var, linha_var, info_adicional):
+                self._adicionar_erro(f"Variável '{nome_var}' já foi declarada neste escopo.", linha_var)
+
+            # Visita a possível inicialização da variável
+            # Adapte conforme a sua gramática para inicialização na declaração
+            if hasattr(var_ctx, 'IGUAL') and var_ctx.IGUAL():
+                if hasattr(var_ctx, 'expressao_inicializacao') and var_ctx.expressao_inicializacao():
+                    self.visit(var_ctx.expressao_inicializacao())
+                elif hasattr(var_ctx, 'blocoArray') and var_ctx.blocoArray():
+                    self.visit(var_ctx.blocoArray())
 
     # Visita uma Variável dentro de uma declaração (com ou sem inicialização)
     def visitVariavel(self, ctx):
