@@ -9,8 +9,8 @@ class VisitorSemantico(MOCVisitor):
         self.lista_erros = []               # Lista de mensagens de erro semântico
         self.funcoes_declaradas = set()  # Guarda os nomes de funções declaradas (prototipos + definidas)
         self.variaveis_com_erro = set()  # # Guarda os nomes de funções declaradas (prototipos + definidas)
-
         self.tabela_simbolos = tabela_simbolos # Tabela de simbolos
+        self.funcao_atual_info = None  # Para rastrear informações da função atual (ex: tipo de retorno)
 
     def erros(self, arvore):
         self.visit(arvore)
@@ -46,10 +46,120 @@ class VisitorSemantico(MOCVisitor):
 
         self.contexto.pop()  # Sai do contexto após a função terminar
 
+    def visitTipo(self, ctx) -> str:
+        """
+        Visita um nó de tipo e retorna sua representação em string.
+        """
+        if not ctx: return "tipo_desconhecido" # Caso o contexto do tipo seja nulo
+        if hasattr(ctx, 'INT') and ctx.INT(): return "int"
+        if hasattr(ctx, 'DOUBLE') and ctx.FLOAT(): return "double"
+        if hasattr(ctx, 'STRING') and ctx.STRING(): return "string"
+        if hasattr(ctx, 'VOID') and ctx.VOID(): return "void"
+        return ctx.getText() # Fallback
+
+    def visitParametro(self, ctx):
+        nome_parametro = ctx.IDENTIFICADOR().getText()
+        tipo_parametro = ctx.tipo().getText()
+        linha_declaracao = ctx.IDENTIFICADOR().getSymbol().line
+
+    def visitParametros(self, ctx) -> list[tuple[str, str]]:  # Retorna lista de tuplos (nome_param, tipo_param)
+        """
+        Visita os parâmetros de uma função/protótipo.
+        Retorna uma lista de tuplos (nome_parametro, tipo_parametro).
+        Adapte conforme a sua gramática para parâmetros.
+        """
+        parametros_info = []
+        if ctx and hasattr(ctx, 'parametro') and ctx.parametro():
+            for p_ctx in ctx.parametro():
+                nome_param = "nome_param_desconhecido"
+                tipo_param = "tipo_param_desconhecido"
+                if hasattr(p_ctx, 'IDENTIFICADOR') and p_ctx.IDENTIFICADOR():
+                    nome_param = p_ctx.IDENTIFICADOR().getText()
+
+                if hasattr(p_ctx, 'tipo') and p_ctx.tipo():
+                    tipo_param = self.visit(p_ctx.tipo())
+                parametros_info.append({'nome': nome_param, 'tipo': tipo_param})
+        return parametros_info
+
     # Visita uma função comum (não principal)
     def visitFuncao(self, ctx):
         self.contexto.append(set())  # Cria um novo contexto para corpo + parâmetros
 
+        nome_funcao = ctx.IDENTIFICADOR().getText()
+        tipo_funcao = ctx.tipo().getText()
+        linha_declaracao = ctx.IDENTIFICADOR().getSymbol().line
+        tipo_retorno_definicao = "void"  # Valor padrão se não especificado ou não encontrado
+        if hasattr(ctx, 'tipo') and ctx.tipo():  # Verifica se o nó 'tipo' existe no contexto do protótipo
+            tipo_retorno_definicao = ctx.tipo().getText()  # self.visit(ctx.tipo())
+
+        # Obtém os tipos dos parâmetros
+        parametros_definicao_info = []
+        tipos_parametros=''
+        if hasattr(ctx, 'parametros') and ctx.parametros():  # Verifica se o nó 'parametros' existe
+            tipos_parametros = ctx.parametros().getText()  # self.visitParametros(ctx.parametros())
+            parametros_definicao_info = self.visitParametros(ctx.parametros())
+
+        tipos_parametros_definicao_str = [p_info['tipo'] for p_info in parametros_definicao_info]
+        assinatura_definida = f"funcao({','.join(tipos_parametros_definicao_str)})->{tipo_retorno_definicao}"
+
+        self.funcao_atual_info = {
+            'nome': nome_funcao,
+            'tipo_retorno_esperado': tipo_retorno_definicao
+        }
+
+        simbolo_existente = self.tabela_simbolos.buscar_simbolo_no_contexto_atual(nome_funcao)
+
+        if simbolo_existente:
+            if simbolo_existente['info'].get('natureza') == 'prototipo_funcao':
+                if simbolo_existente['tipo'] == assinatura_definida:
+                    # Protótipo corresponde à definição, atualizar para 'funcao_definida'
+                    simbolo_existente['info']['natureza'] = 'funcao_definida'
+                    simbolo_existente['info'][
+                        'parametros'] = parametros_definicao_info  # Atualiza com nomes dos params da definição
+                    simbolo_existente['linha_declaracao'] = linha_declaracao  # Atualiza para linha da definição
+                    print(f"DEBUG: Definição da função '{nome_funcao}' corresponde ao protótipo. Símbolo atualizado.")
+                else:
+                    self.lista_erros.append(
+                        f"Definição da função '{nome_funcao}' (assinatura: {assinatura_definida}) não corresponde ao protótipo declarado (assinatura: {simbolo_existente['tipo']}).")
+                    # Não prosseguir com a análise do corpo se a assinatura for incompatível com protótipo crítico
+                    self.funcao_atual_info = None
+                    return
+            elif simbolo_existente['info'].get('natureza') == 'funcao_definida':
+                self.lista_erros.append(f"Redefinição da função '{nome_funcao}'.")
+                self.funcao_atual_info = None
+                return  # Não analisar corpo de função redefinida
+            else:
+                self.lista_erros.append(
+                    f"Identificador '{nome_funcao}' já declarado como outra coisa (não protótipo/função).")
+                self.funcao_atual_info = None
+                return
+        else:
+            # Nenhuma declaração anterior (nem protótipo), declara como nova função definida
+
+            # ERRO - ISTO NAO ACONTECE NA NOSSA LINGUAGEM
+            info_adicional = {
+                'natureza': 'funcao_definida',
+                'tipo_retorno': tipo_retorno_definicao,
+                'parametros': parametros_definicao_info
+            }
+            if not self.tabela_simbolos.declarar_simbolo(nome_funcao, assinatura_definida, linha_declaracao,
+                                                         info_adicional):
+                # Esta situação não deveria ocorrer se buscar_simbolo_no_contexto_atual retornou None
+                self.lista_erros.append(f"Erro inesperado ao declarar a nova função '{nome_funcao}'.")
+                self.funcao_atual_info = None
+                return
+            print(f"DEBUG: Função '{nome_funcao}' definida sem protótipo prévio (assinatura: {assinatura_definida}).")
+
+        # Entrar no contexto da função e declarar parâmetros
+        self.tabela_simbolos.entrar_contexto()
+        for p_info in parametros_definicao_info:
+            linha_param = linha_declaracao # Aproximação, idealmente viria do token do parâmetro
+            # É preciso obter a linha do IDENTIFICADOR do parâmetro se a gramática o permitir
+            # if p_ctx.IDENTIFICADOR(): linha_param = p_ctx.IDENTIFICADOR().getSymbol().line
+            if not self.tabela_simbolos.declarar_simbolo(p_info['nome'], p_info['tipo'], linha_param, {'natureza': 'parametro'}):
+                self.lista_erros.append(f"Parâmetro '{p_info['nome']}' redeclarado na função '{nome_funcao}'.")
+
+        # Isto deve estar mal... se o nome das var for igual a uma ja definida estará a dar erro e nao é
         if ctx.parametros():
             for p in ctx.parametros().parametro():
                 if p.IDENTIFICADOR():
@@ -61,6 +171,8 @@ class VisitorSemantico(MOCVisitor):
         self.visitBloco(ctx.bloco(), novo_contexto=False)  # NÃO cria novo contexto aqui
 
         self.contexto.pop()
+        self.tabela_simbolos.sair_contexto()
+        self.funcao_atual_info = None # Limpar info da função atual
 
     # Visita um bloco de código entre chavetas
     def visitBloco(self, ctx, novo_contexto=True):
@@ -265,12 +377,12 @@ class VisitorSemantico(MOCVisitor):
         if not self.tabela_simbolos.declarar_simbolo(nome_funcao, assinatura_funcao, linha_declaracao, info_adicional):
             # Se declarar_simbolo retornar False, significa que já existe no escopo atual.
             # Você pode querer verificar se a redeclaração é compatível.
-            simbolo_existente = self.tabela_simbolos.buscar_simbolo_no_escopo_atual(nome_funcao)
+            simbolo_existente = self.tabela_simbolos.buscar_simbolo_no_contexto_atual(nome_funcao)
             if simbolo_existente and simbolo_existente['tipo'] == assinatura_funcao and simbolo_existente['info'].get('natureza') == 'prototipo_funcao':
                 # É uma redeclaração idêntica do mesmo protótipo, pode ser um aviso ou ignorado.
                 print(f"AVISO (Linha {linha_declaracao}): Protótipo da função '{nome_funcao}' redeclarado identicamente.")
             else:
-                self._adicionar_erro(f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.", linha_declaracao)
+                self.lista_erros.append(f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.")
         else:
             # Sucesso na declaração do protótipo
             # self.funcoes_declaradas.add(nome_funcao) # Não é mais necessário se a tabela de símbolos for a fonte da verdade
@@ -319,9 +431,8 @@ class VisitorSemantico(MOCVisitor):
                 print(
                     f"AVISO (Linha {linha_declaracao}): Protótipo da função '{nome_funcao}' redeclarado identicamente.")
             else:
-                self._adicionar_erro(
-                    f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.",
-                    linha_declaracao)
+                self.lista_erros.append(
+                    f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.")
         else:
             # Sucesso na declaração do protótipo
             # self.funcoes_declaradas.add(nome_funcao) # Não é mais necessário se a tabela de símbolos for a fonte da verdade
