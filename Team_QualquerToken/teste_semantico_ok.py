@@ -1,3 +1,9 @@
+"""
+
+    AQUI VAMOS COLOCAR OS TESTES QUE ESTÃO OK .... ASSIM MANTEMOS NO teste_semantico.py só os que falham
+
+
+    """
 import unittest
 from antlr4 import *
 from io import StringIO
@@ -10,11 +16,10 @@ try:
     from VisitorSemantico import VisitorSemantico # Importa a classe a ser testada
 except ImportError:
     print("Erro: Certifique-se que MOCLexer, MOCParser e VisitorSemantico estão acessíveis.")
-    # Pode adicionar lógica para ajustar sys.path aqui se necessário
     import sys
-    # Exemplo: sys.path.append('../src') # Ajuste o caminho
+    # Exemplo: sys.path.append('../src') # Ajustar o caminho
 
-# Classe de Testes
+# Classe de Testes -
 class TestVisitorSemantico(unittest.TestCase):
 
     def _parse_e_visita(self, codigo_moc):
@@ -164,26 +169,6 @@ class TestVisitorSemantico(unittest.TestCase):
          self.assertIn("Função 'funcaoInexistente' chamada mas não foi declarada.", str(resultado)) # Mensagem genérica atual
          self.assertIn("'funcaoInexistente'", str(resultado))
 
-    def test_erro_vetor_nao_declarado_acesso(self):
-        codigo = """
-        void main(void);
-        void main(void) {
-            int i;
-            i = meuVetor[0]; // Erro: meuVetor não declarado
-        }
-        """
-        resultado = self._parse_e_visita(codigo)
-        self.assertIsInstance(resultado, Exception)
-        self.assertIn("Variável 'meuVetor' usada antes de ser declarada", str(resultado))
-        #self.assertIn("vetor 'meuVetor' usado antes de ser declarado", str(resultado))
-
-
-    # Adicione mais testes para outros cenários:
-    # - Acesso a Variável fora do escopo
-    # - Erros em loops for/while
-    # - Erros em if/else
-    # - (Futuro) Erros de tipo
-    # - (Futuro) Erros de assinatura de função
 
 # Para executar os testes a partir da linha de comando:
 # python -m unittest test_semantico.py
