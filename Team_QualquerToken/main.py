@@ -94,5 +94,7 @@ def main():
     for linha in tac_otimizado_txt:
         print(linha)
 
+    print(tabela_de_simbolos_principal)
+
 if __name__ == '__main__':
     main()

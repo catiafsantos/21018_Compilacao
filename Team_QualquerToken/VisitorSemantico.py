@@ -279,5 +279,52 @@ class VisitorSemantico(MOCVisitor):
 
     # Visita o protótipo da função principal (main)
     def visitPrototipoPrincipal(self, ctx):
+
+        nome_funcao = ctx.MAIN().getText()
         tipo_funcao = ctx.tipo().getText()
+        linha_declaracao = ctx.MAIN().getSymbol().line
         self.funcoes_declaradas.add("main")
+
+        # Obtém o tipo de retorno usando o método visitTipo para consistência
+        # Assumindo que ctx.tipo() retorna o contexto do nó do tipo de retorno
+        tipo_retorno_str = "void"  # Valor padrão se não especificado ou não encontrado
+        if hasattr(ctx, 'tipo') and ctx.tipo():  # Verifica se o nó 'tipo' existe no contexto do protótipo
+            tipo_retorno_str = ctx.tipo().getText()  # self.visit(ctx.tipo())
+        # Obtém os tipos dos parâmetros
+        tipos_parametros = []
+        if hasattr(ctx, 'parametros') and ctx.parametros():  # Verifica se o nó 'parametros' existe
+            tipos_parametros = ctx.parametros().getText()  # self.visitParametros(ctx.parametros())
+
+        # Constrói uma representação da assinatura/tipo da função
+        # Exemplo: "funcao(inteiro,string)->flutuante"
+        assinatura_funcao = f"funcao({tipos_parametros})->{tipo_retorno_str}"
+
+        # Informações adicionais para armazenar na tabela de símbolos
+        info_adicional = {
+            'natureza': 'prototipo_funcao',
+            'tipo_retorno': tipo_retorno_str,
+            'tipos_parametros': tipos_parametros  # Lista dos tipos dos parâmetros
+        }
+        # Tenta declarar o protótipo da função na tabela de símbolos
+        # O método declarar_simbolo da TabelaDeSimbolos (do artefato) já verifica
+        # se o símbolo existe no escopo atual. Para protótipos, que geralmente
+        # estão no escopo global, isso é o comportamento desejado.
+        if not self.tabela_simbolos.declarar_simbolo(nome_funcao, assinatura_funcao, linha_declaracao, info_adicional):
+            # Se declarar_simbolo retornar False, significa que já existe no escopo atual.
+            # Você pode querer verificar se a redeclaração é compatível.
+            simbolo_existente = self.tabela_simbolos.buscar_simbolo_no_escopo_atual(nome_funcao)
+            if simbolo_existente and simbolo_existente['tipo'] == assinatura_funcao and simbolo_existente['info'].get(
+                    'natureza') == 'prototipo_funcao':
+                # É uma redeclaração idêntica do mesmo protótipo, pode ser um aviso ou ignorado.
+                print(
+                    f"AVISO (Linha {linha_declaracao}): Protótipo da função '{nome_funcao}' redeclarado identicamente.")
+            else:
+                self._adicionar_erro(
+                    f"Redeclaração incompatível ou conflito de nome para o protótipo da função '{nome_funcao}'.",
+                    linha_declaracao)
+        else:
+            # Sucesso na declaração do protótipo
+            # self.funcoes_declaradas.add(nome_funcao) # Não é mais necessário se a tabela de símbolos for a fonte da verdade
+            print(
+                f"DEBUG: Protótipo da função '{nome_funcao}' (tipo: {assinatura_funcao}) declarado na linha {linha_declaracao}.")
+

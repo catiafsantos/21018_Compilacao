@@ -8,7 +8,7 @@ class TabelaDeSimbolos:
 
     def __str__(self):
         """Retorna uma representação em string da tabela de símbolos (para debugging)."""
-        representation = "--- Tabela de Símbolos (Pilha de Escopos) ---\n"
+        representation = "--- Tabela de Símbolos (Pilha de Contexto) ---\n"
         for i, contexto in enumerate(reversed(self.contextos)): # Imprime do mais interno para o mais externo
             nivel_real = len(self.contextos) - i
             representation += f"  Nível {nivel_real} (Índice {len(self.contextos) - 1 - i}):\n"
