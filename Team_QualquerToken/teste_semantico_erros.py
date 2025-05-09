@@ -106,20 +106,6 @@ class TestVisitorSemantico(unittest.TestCase):
 
     # --- Testes para Erros Semânticos ---
 
-
-    def test_erro_vetor_nao_declarado_acesso(self):
-        codigo = """
-        void main(void);
-        void main(void) {
-            int i;
-            i = meuVetor[0]; // Erro: meuVetor não declarado
-        }
-        """
-        resultado = self._parse_e_visita(codigo)
-        self.assertIsInstance(resultado, Exception)
-        self.assertIn("Variável 'meuVetor' usada antes de ser declarada", str(resultado))
-        #self.assertIn("vetor 'meuVetor' usado antes de ser declarado", str(resultado))
-
     def test_erro_variavel_nao_declarada_atribuicao(self):
         codigo = """
         void main(void);
@@ -179,6 +165,19 @@ class TestVisitorSemantico(unittest.TestCase):
 
 
 
+    def test_erro_vetor_nao_declarado_acesso(self):
+        codigo = """
+        void main(void);
+        void main(void) {
+            int i;
+            i = meuVetor[0]; // Erro: meuVetor não declarado
+        }
+        """
+        resultado = self._parse_e_visita(codigo)
+        self.assertIsInstance(resultado, Exception)
+        self.assertIn("Variável 'meuVetor' usada antes de ser declarada", str(resultado))
+        #self.assertIn("vetor 'meuVetor' usado antes de ser declarado", str(resultado))
+
 
     def test_acesso_variavel_fora_contexto(self):
         codigo = """
@@ -196,7 +195,7 @@ class TestVisitorSemantico(unittest.TestCase):
         resultado = self._parse_e_visita(codigo)
 
         self.assertIsInstance(resultado, Exception)
-        self.assertIn("Variável 'x' usada antes de ser declarada.", str(resultado))
+        self.assertIn("Variável 'x' usada antes de ser declarada", str(resultado))
 
 
     def test_erro_loop_for_variavel_controle_nao_declarada(self):
@@ -213,11 +212,10 @@ class TestVisitorSemantico(unittest.TestCase):
         resultado = self._parse_e_visita(codigo)
 
         self.assertIsInstance(resultado, Exception)
-        self.assertIn("Variável 'i' usada antes de ser declarada.", str(resultado))
+        self.assertIn("Variável 'i' usada antes de ser declarada", str(resultado))
 
     def test_erro_loop_while_condicao_nao_declarada(self):
         codigo = """
-        void main(void);
         void main(void) {
             int contador;
             contador = 0;
@@ -232,10 +230,14 @@ class TestVisitorSemantico(unittest.TestCase):
         """
         # Nota: Para 'condicao' ser um erro, ela não pode ser declarada em nenhum lugar visível.
         # Se a sua linguagem tiver booleanos implícitos ou algo assim, este teste pode precisar de ajuste.
-        resultado = self._parse_e_visita(codigo)
-        self.assertIsInstance(resultado, Exception)
-        self.assertIn( "Variável 'condicao' usada antes de ser declarada.", str(resultado))
+        resultado_erro = self._parse_e_visita(codigo)
 
+        if isinstance(resultado_erro, str):
+            self.assertIn("Variável 'condicao' não declarada", resultado_erro)
+            # self.assertIn("condição 'while'", resultado_erro)
+        else:
+            self.fail(
+                f"Esperava uma mensagem de erro para variável de condição 'while' não declarada, mas obteve: {resultado_erro}")
 
     def test_erro_if_condicao_nao_declarada(self):
         codigo = """
@@ -248,15 +250,31 @@ class TestVisitorSemantico(unittest.TestCase):
             }
         }
         """
-        resultado = self._parse_e_visita(codigo)
-        self.assertIsInstance(resultado, Exception)
-        self.assertIn( "Variável 'flagAtivada' usada antes de ser declarada.", str(resultado))
+        resultado_erro = self._parse_e_visita(codigo)
 
+        if isinstance(resultado_erro, str):
+            self.assertIn("Variável 'flagAtivada' não declarada", resultado_erro)
+            # self.assertIn("condição 'if'", resultado_erro)
+        else:
+            self.fail(
+                f"Esperava uma mensagem de erro para variável de condição 'if' não declarada, mas obteve: {resultado_erro}")
 
+    def test_erro_vetor_nao_declarado_acesso_revisado(self):
+        codigo = """
+                void main(void);
+                void main(void) {
+                    int x;
+                    x = meuVetor[0]; // Erro: meuVetor não declarado
+                }
+                """
+        resultado_erro = self._parse_e_visita(codigo)
+        if isinstance(resultado_erro, str):
+            self.assertIn("Vetor 'meuVetor' não declarado", resultado_erro)
+        else:
+            self.fail(f"Esperava uma mensagem de erro para vetor não declarado, mas obteve: {resultado_erro}")
 
     def test_codigo_sem_erros_semanticos_esperados(self):
         codigo_correto = """
-        void main(void);
         void main(void) {
             int a;
             int b;
@@ -270,8 +288,14 @@ class TestVisitorSemantico(unittest.TestCase):
         }
         """
         resultado = self._parse_e_visita(codigo_correto)
-        self.assertTrue(resultado, "Esperava um resultado de sucesso (True).")
-
+        # Se _parse_e_visita retorna None ou algo que não seja string em caso de sucesso
+        self.assertNotIsInstance(resultado, str,
+                                 f"Não esperava uma mensagem de erro para código semanticamente correto, mas obteve: {resultado}")
+        # Ou, se ele retorna um valor específico para sucesso (ex: True)
+        # self.assertTrue(resultado, "Esperava um resultado de sucesso (True).")
+        # Ou, se ele retorna None para sucesso
+        self.assertIsNone(resultado,
+                          f"Não esperava uma mensagem de erro para código semanticamente correto, mas obteve: {resultado}")
 
 
 

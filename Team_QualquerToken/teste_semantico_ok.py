@@ -1,9 +1,3 @@
-"""
-
-    AQUI VAMOS COLOCAR OS TESTES QUE ESTÃO OK .... ASSIM MANTEMOS NO teste_semantico.py só os que falham
-
-
-    """
 import unittest
 from antlr4 import *
 from io import StringIO
@@ -16,10 +10,11 @@ try:
     from VisitorSemantico import VisitorSemantico # Importa a classe a ser testada
 except ImportError:
     print("Erro: Certifique-se que MOCLexer, MOCParser e VisitorSemantico estão acessíveis.")
+    # Pode adicionar lógica para ajustar sys.path aqui se necessário
     import sys
-    # Exemplo: sys.path.append('../src') # Ajustar o caminho
+    # Exemplo: sys.path.append('../src') # Ajuste o caminho
 
-# Classe de Testes -
+# Classe de Testes
 class TestVisitorSemantico(unittest.TestCase):
 
     def _parse_e_visita(self, codigo_moc):
@@ -89,7 +84,7 @@ class TestVisitorSemantico(unittest.TestCase):
         resultado = self._parse_e_visita(codigo)
         self.assertTrue(resultado, f"Código válido levantou erro: {resultado}")
 
-    def test_escopo_local_valido(self):
+    def test_contexto_local_valido(self):
         codigo = """
         void main(void);
         void func(void);
@@ -138,12 +133,12 @@ class TestVisitorSemantico(unittest.TestCase):
         self.assertIn("'x'", str(resultado))
 
 
-    def test_erro_declaracao_duplicada_mesmo_escopo(self):
+    def test_erro_declaracao_duplicada_mesmo_contexto(self):
         codigo = """
         void main(void);
         void main(void) {
             int x;
-            double x; // Erro: x já declarada neste escopo
+            double x; // Erro: x já declarada neste contexto
         }
         """
         resultado = self._parse_e_visita(codigo)
@@ -164,10 +159,105 @@ class TestVisitorSemantico(unittest.TestCase):
          }
          """
          resultado = self._parse_e_visita(codigo)
-         # Ajuste a asserção conforme a mensagem de erro que o seu visitor REALMENTE gera
+
          self.assertIsInstance(resultado, Exception)
-         self.assertIn("Função 'funcaoInexistente' chamada mas não foi declarada.", str(resultado)) # Mensagem genérica atual
-         self.assertIn("'funcaoInexistente'", str(resultado))
+         self.assertIn("Função 'funcaoInexistente' chamada mas não foi declarada.", str(resultado))
+
+
+
+
+    def test_acesso_variavel_fora_contexto(self):
+        codigo = """
+        void func1(void);
+        void main(void);
+        void func1(void) {
+            int x;
+            x = 10;
+        }
+        void main(void) {
+            int y;
+            y = x; // Erro: x não está no contexto de main
+        }
+        """
+        resultado = self._parse_e_visita(codigo)
+
+        self.assertIsInstance(resultado, Exception)
+        self.assertIn("Variável 'x' usada antes de ser declarada.", str(resultado))
+
+
+    def test_erro_loop_for_variavel_controle_nao_declarada(self):
+        codigo = """
+        void main(void);
+        void main(void) {
+            int soma;
+            soma = 0;
+            for (i = 0; i < 10; i = i + 1) { // Erro: i não declarado
+                soma = soma + i;
+            }
+        }
+        """
+        resultado = self._parse_e_visita(codigo)
+
+        self.assertIsInstance(resultado, Exception)
+        self.assertIn("Variável 'i' usada antes de ser declarada.", str(resultado))
+
+    def test_erro_loop_while_condicao_nao_declarada(self):
+        codigo = """
+        void main(void);
+        void main(void) {
+            int contador;
+            contador = 0;
+            while (condicao) { // Erro: condicao não declarada
+                contador = contador + 1;
+                if (contador > 5) {
+                    // Supondo que 'parar' é uma função ou variável declarada em outro lugar
+                    // ou que a linguagem permite atribuição booleana direta se 'condicao' fosse declarada
+                }
+            }
+        }
+        """
+        # Nota: Para 'condicao' ser um erro, ela não pode ser declarada em nenhum lugar visível.
+        # Se a sua linguagem tiver booleanos implícitos ou algo assim, este teste pode precisar de ajuste.
+        resultado = self._parse_e_visita(codigo)
+        self.assertIsInstance(resultado, Exception)
+        self.assertIn( "Variável 'condicao' usada antes de ser declarada.", str(resultado))
+
+
+    def test_erro_if_condicao_nao_declarada(self):
+        codigo = """
+        void main(void);
+        void main(void) {
+            int valor;
+            valor = 10;
+            if (flagAtivada) { // Erro: flagAtivada não declarada
+                valor = 20;
+            }
+        }
+        """
+        resultado = self._parse_e_visita(codigo)
+        self.assertIsInstance(resultado, Exception)
+        self.assertIn( "Variável 'flagAtivada' usada antes de ser declarada.", str(resultado))
+
+
+    def test_codigo_sem_erros_semanticos_esperados(self):
+        codigo_correto = """
+        void main(void);
+        void main(void) {
+            int a;
+            int b;
+            int c;
+            a = 10;
+            b = 20;
+            c = a + b;
+            if (c > 10) {
+                b = 0;
+            }
+        }
+        """
+        resultado = self._parse_e_visita(codigo_correto)
+        self.assertTrue(resultado, "Esperava um resultado de sucesso (True).")
+
+
 
 
 # Para executar os testes a partir da linha de comando:
