@@ -3,7 +3,7 @@
 int fact(int,int);
 void main(void);
 
-double fact(int k,int i) {
+int fact(int k,int i) {
     if (k <= 1) {
         return 1;
     } else {
