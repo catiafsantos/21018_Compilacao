@@ -52,7 +52,7 @@ class VisitorSemantico(MOCVisitor):
         """
         if not ctx: return "tipo_desconhecido" # Caso o contexto do tipo seja nulo
         if hasattr(ctx, 'INT') and ctx.INT(): return "int"
-        if hasattr(ctx, 'DOUBLE') and ctx.FLOAT(): return "double"
+        if hasattr(ctx, 'DOUBLE') and ctx.DOUBLE(): return "double"
         if hasattr(ctx, 'STRING') and ctx.STRING(): return "string"
         if hasattr(ctx, 'VOID') and ctx.VOID(): return "void"
         return ctx.getText() # Fallback
@@ -74,7 +74,7 @@ class VisitorSemantico(MOCVisitor):
     def visitParametros(self, ctx) -> list[Variavel]:
         """Retorna uma lista de objetos Variavel representando os parâmetros."""
         parametros = []
-        if ctx and hasattr(ctx, 'parametros') and ctx.parametro():
+        if ctx and hasattr(ctx, 'parametro') and ctx.parametro():
             for i, p_ctx in enumerate(ctx.parametro(), start=1):
                 nome = p_ctx.IDENTIFICADOR().getText() if p_ctx.IDENTIFICADOR() else f"param_{i}"
                 tipo = self.visit(p_ctx.tipo()) if hasattr(p_ctx, 'tipo') and p_ctx.tipo() else "unknown"
@@ -90,6 +90,29 @@ class VisitorSemantico(MOCVisitor):
                         posicao=i
                     )
                 )
+        elif ctx and hasattr(ctx, 'tipo') and ctx.tipo(): #só um parametro
+            tipo = self.visit(ctx.tipo())
+
+            nome = f"param_1" #p_ctx.IDENTIFICADOR().getText() if p_ctx.IDENTIFICADOR() else f"param_1"
+            tipo = self.visit(ctx.tipo()) if hasattr(ctx, 'tipo') and ctx.tipo() else "unknown"
+
+            linha = ctx.start.line  # Fallback padrão
+
+            # Verificação completa em 2 etapas:
+            if (hasattr(ctx, 'IDENTIFICADOR') and ctx.IDENTIFICADOR()):
+                linha = ctx.IDENTIFICADOR().getSymbol().line
+
+            parametros.append(
+                Variavel(
+                    nome=nome,
+                    tipo=tipo,
+                    linha_declaracao=linha,
+                    # Remove natureza daqui e define na classe Variavel
+                    eh_parametro=True,
+                    posicao=1
+                )
+            )
+
         return parametros
 
     # Visita uma função comum (não principal)
@@ -97,6 +120,8 @@ class VisitorSemantico(MOCVisitor):
         # Cria novo contexto léxico (já tratado na tabela de símbolos)
         nome_funcao = ctx.IDENTIFICADOR().getText()
         linha_declaracao = ctx.IDENTIFICADOR().getSymbol().line
+
+        self.funcao_atual_info=nome_funcao # colocar a none no return
 
         # Determina tipo de retorno
         tipo_retorno = "void"
@@ -250,6 +275,34 @@ class VisitorSemantico(MOCVisitor):
         elif ctx.instrucaoEscrita():
             self.visit(ctx.instrucaoEscrita())
 
+    def obter_dimensoes(self, var_ctx):
+        """Extrai as dimensões de um array considerando todas as formas possíveis da gramática"""
+        tamanhos = []
+
+        # Caso 1: Array com tamanho explícito (ex: v[10])
+        if hasattr(var_ctx, 'NUMERO') and var_ctx.NUMERO():
+            try:
+                tamanho = int(var_ctx.NUMERO().getText())
+                if tamanho <= 0:
+                    self.lista_erros.append( "Tamanho de array deve ser positivo")
+                    tamanho = 1  # Valor padrão para continuar análise
+                tamanhos.append(tamanho)
+            except ValueError:
+                self.lista_erros.append( "Tamanho de array inválido")
+                tamanhos.append(1)
+
+        # Caso 2: Array com inicialização (ex: v[] = {1,2,3})
+        elif hasattr(var_ctx, 'blocoArray') and var_ctx.blocoArray():
+            if hasattr(var_ctx.blocoArray(), 'listaValores'):
+                num_elementos = len(var_ctx.blocoArray().listaValores().expressao())
+                tamanhos.append(num_elementos)
+
+        # Caso 3: Array sem tamanho especificado (ex: s[] = reads())
+        elif var_ctx.getChildCount() > 0 and var_ctx.getChild(0).getText() == '[':
+            tamanhos.append(1)  # Tamanho padrão para arrays sem dimensão especificada
+
+        return tamanhos
+
     # Visita uma declaração de variáveis
     def visitDeclaracao(self, ctx):
         tipo_var = ctx.tipo().getText()  # Obtém o tipo da declaração
@@ -263,10 +316,11 @@ class VisitorSemantico(MOCVisitor):
 
             if eh_vetor:
                 # Processa dimensões do vetor
-                for dim in var_ctx.listaDimensoes().expressao():
-                    tamanhos.append(self.avaliar_constante(dim))  # Implemente este método
+                tamanhos = self.obter_dimensoes(var_ctx) if eh_vetor else []
+                #for dim in var_ctx.listaDimensoes().expressao():
+                #    tamanhos.append(self.avaliar_constante(dim))  # Implemente este método
 
-            # Verifica se a variável já foi declarada no escopo atual
+            # Verifica se a variável já foi declarada no contexto atual
             if self.tabela_simbolos.buscar_no_contexto_atual(nome_var):
                 self.lista_erros.append( f"Variável '{nome_var}' já declarada neste contexto")
                 continue

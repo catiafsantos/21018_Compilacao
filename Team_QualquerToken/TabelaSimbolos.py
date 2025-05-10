@@ -10,13 +10,17 @@ class Simbolo:
             tipo: str,
             linha_declaracao: int,
             natureza: str,
+            #localizacao: str,   #nome do local onde surge main, funcao, ciclo, if...
+            #nivel: int,
             **atributos_adicionais
     ):
         self.nome = nome
         self.tipo = tipo
+        #self.localizacao = localizacao
+        #self.nivel = nivel
         self.linha_declaracao = linha_declaracao
         self.natureza = natureza  # 'variavel', 'funcao', 'parametro', 'constante'
-        self.atributos = atributos_adicionais  # Ex.: valor_inicial, escopo, etc.
+        self.atributos = atributos_adicionais  # Ex.: valor_inicial, etc.
 
     def __repr__(self):
         return f"<Simbolo {self.nome} ({self.tipo}) @{self.linha_declaracao}>"
@@ -71,21 +75,37 @@ class TabelaDeSimbolos:
         # O primeiro dicionário é o contexto global.
         #self.pilha_contextos = [{}]
         self.pilha_contextos: List[Dict[str, Union[Simbolo, Funcao, Variavel]]] = [{}]
+        self.historico_contextos = []  # Armazena todos os contextos já processados
 
         print("Tabela de Símbolos inicializada.")
 
     def __str__(self):
-        """Retorna uma representação em string da tabela de símbolos (para debugging)."""
-        representation = "--- Tabela de Símbolos (Pilha de Contexto) ---\n"
-        for i, contexto in enumerate(reversed(self.pilha_contextos)):  # Imprime do mais interno para o mais externo
+        """Retorna uma representação em string da tabela de símbolos incluindo histórico"""
+        representation = "=== Tabela de Símbolos Completa ===\n"
+
+        # 1. Pilha de contextos atuais (como já está)
+        representation += "--- Contextos Ativos (Pilha) ---\n"
+        for i, contexto in enumerate(reversed(self.pilha_contextos)):
             nivel_real = len(self.pilha_contextos) - i
             representation += f"  Nível {nivel_real} (Índice {len(self.pilha_contextos) - 1 - i}):\n"
             if contexto:
-                for nome, info in contexto.items():
-                    representation += f"    '{nome}': {info}\n"
+                for nome, simbolo in contexto.items():
+                    representation += f"    '{nome}': {simbolo}\n"
             else:
                 representation += "    <contexto vazio>\n"
-        representation += "-------------------------------------------\n"
+
+        # 2. Histórico de contextos (se existir)
+        if hasattr(self, 'historico_contextos') and self.historico_contextos:
+            representation += "\n--- Histórico de Contextos (já fechados) ---\n"
+            for i, contexto in enumerate(self.historico_contextos):
+                representation += f"  Contexto Histórico #{i + 1}:\n"
+                if contexto:
+                    for nome, simbolo in contexto.items():
+                        representation += f"    '{nome}': {simbolo}\n"
+                else:
+                    representation += "    <contexto vazio>\n"
+
+        representation += "=================================\n"
         return representation
 
     def entrar_contexto(self):
@@ -97,7 +117,8 @@ class TabelaDeSimbolos:
     def sair_contexto(self):
         """Remove o contexto atual (mais interno) da pilha."""
         if len(self.pilha_contextos) > 1:
-            self.pilha_contextos.pop()
+            contexto_removido = self.pilha_contextos.pop()
+            self.historico_contextos.append(contexto_removido)  # Preserva
             print(f"DEBUG: Saiu do contexto. Nível atual: {len(self.pilha_contextos)}")
         else:
             print("DEBUG: Tentativa de sair do contexto global (ignorado).")
