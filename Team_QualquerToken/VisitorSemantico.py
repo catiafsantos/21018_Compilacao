@@ -33,15 +33,17 @@ class VisitorSemantico(MOCVisitor):
     # Visita a função principal
     def visitFuncaoPrincipal(self, ctx):
         self.contexto.append(set())  # Cria um novo contexto para toda a função principal
+        self.tabela_simbolos.entrar_contexto()
 
         if ctx.parametros():
-            for p in ctx.parametros().parametro():
-                if p.IDENTIFICADOR():
-                    nome = p.IDENTIFICADOR().getText()
-                    if nome in self.contexto[-1]:
-                        self.lista_erros.append(f"[Erro semântico] Parâmetro '{nome}' já foi declarado.")
-                    self.contexto[-1].add(nome)  # Adiciona o parâmetro ao contexto
-
+            parametros = self.visitParametros(ctx.parametros())
+            for param in parametros:
+                if not self.tabela_simbolos.declarar(param):
+                    self.lista_erros.append(
+                        f"[Erro semântico] Parâmetro '{param.nome}' já foi declarado."
+                    )
+                self.contexto[-1].add(param.nome)  # Facultativo, se ainda usares `self.contexto` para lookup
+    
         self.visitBloco(ctx.bloco(), novo_contexto=False)  # NÃO cria novo contexto aqui
 
         self.contexto.pop()  # Sai do contexto após a função terminar
