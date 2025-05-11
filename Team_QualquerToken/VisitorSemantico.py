@@ -43,7 +43,7 @@ class VisitorSemantico(MOCVisitor):
                         f"[Erro semântico] Parâmetro '{param.nome}' já foi declarado."
                     )
                 self.contexto[-1].add(param.nome)  # Facultativo, se ainda usares `self.contexto` para lookup
-    
+
         self.visitBloco(ctx.bloco(), novo_contexto=False)  # NÃO cria novo contexto aqui
 
         self.contexto.pop()  # Sai do contexto após a função terminar
@@ -167,7 +167,7 @@ class VisitorSemantico(MOCVisitor):
                 # Compara tipos de retorno
                 if simbolo_existente.tipo_retorno != tipo_retorno:
                     self.lista_erros.append(
-                                        f"Tipo de retorno incompatível para '{nome_funcao}' (esperado: {simbolo_existente.tipo_retorno}, obtido: {tipo_retorno})")
+                                        f"[Erro semântico] Tipo de retorno incompatível para '{nome_funcao}' (esperado: {simbolo_existente.tipo_retorno}, obtido: {tipo_retorno})")
                     return
                 # Compara APENAS os tipos dos parâmetros (ignorando nomes)
                 tipos_esperados = [p.tipo if isinstance(p, Variavel) else p['tipo'] for p in
@@ -176,7 +176,7 @@ class VisitorSemantico(MOCVisitor):
 
                 if tipos_esperados != tipos_recebidos:
                     self.lista_erros.append(
-                                        f"Parâmetros incompatíveis para '{nome_funcao}'\n"
+                                        f"[Erro semântico] Parâmetros incompatíveis para '{nome_funcao}'\n"
                                         f"Esperado: ({', '.join(tipos_esperados)})\n"
                                         f"Recebido: ({', '.join(tipos_recebidos)})")
                     return
@@ -190,14 +190,14 @@ class VisitorSemantico(MOCVisitor):
             # Caso 2: Redefinição inválida
             else:
                 self.lista_erros.append(
-                    f"Redefinição inválida de '{nome_funcao}' (já declarado como {simbolo_existente.natureza})"
+                    f"[Erro semântico] Redefinição inválida de '{nome_funcao}' (já declarado como {simbolo_existente.natureza})"
                 )
                 return
         else:
             # Declara nova função
             if not self.tabela_simbolos.declarar(nova_funcao):
                 self.lista_erros.append(
-                    f"Erro ao declarar função '{nome_funcao}'"
+                    f"[Erro semântico] Erro ao declarar função '{nome_funcao}'"
                 )
                 return
 
@@ -209,7 +209,7 @@ class VisitorSemantico(MOCVisitor):
 
             if not self.tabela_simbolos.declarar(param):
                 self.lista_erros.append(
-                    f"Parâmetro '{param['nome']}' redeclarado"
+                    f"[Erro semântico] Parâmetro '{param['nome']}' redeclarado"
                 )
 
         # Visita bloco da função
@@ -286,11 +286,11 @@ class VisitorSemantico(MOCVisitor):
             try:
                 tamanho = int(var_ctx.NUMERO().getText())
                 if tamanho <= 0:
-                    self.lista_erros.append( "Tamanho de array deve ser positivo")
+                    self.lista_erros.append( "[Erro semântico] Tamanho de array deve ser positivo")
                     tamanho = 1  # Valor padrão para continuar análise
                 tamanhos.append(tamanho)
             except ValueError:
-                self.lista_erros.append( "Tamanho de array inválido")
+                self.lista_erros.append( "[Erro semântico] Tamanho de array inválido")
                 tamanhos.append(1)
 
         # Caso 2: Array com inicialização (ex: v[] = {1,2,3})
@@ -324,7 +324,7 @@ class VisitorSemantico(MOCVisitor):
 
             # Verifica se a variável já foi declarada no contexto atual
             if self.tabela_simbolos.buscar_no_contexto_atual(nome_var):
-                self.lista_erros.append( f"Variável '{nome_var}' já declarada neste contexto")
+                self.lista_erros.append( f"[Erro semântico] Variável '{nome_var}' já declarada neste contexto")
                 continue
 
             # Cria objeto Variavel
@@ -339,7 +339,7 @@ class VisitorSemantico(MOCVisitor):
 
             # Declara na tabela de símbolos
             if not self.tabela_simbolos.declarar(nova_var):
-                self.lista_erros.append( f"Erro ao declarar variável '{nome_var}'")
+                self.lista_erros.append( f"[Erro semântico] Erro ao declarar variável '{nome_var}'")
                 continue
 
             # Processa inicialização se existir
@@ -351,7 +351,7 @@ class VisitorSemantico(MOCVisitor):
                     tipo_expr = self.obter_tipo_expressao(var_ctx.expressao())
                     if tipo_expr and tipo_expr != tipo_var:
                         self.lista_erros.append(
-                            f"Inicialização com tipo incompatível para '{nome_var}' (esperado: {tipo_var}, obtido: {tipo_expr})"
+                            f"[Erro semântico] Inicialização com tipo incompatível para '{nome_var}' (esperado: {tipo_var}, obtido: {tipo_expr})"
                         )
 
     # Visita uma Variável dentro de uma declaração (com ou sem inicialização)
@@ -378,13 +378,13 @@ class VisitorSemantico(MOCVisitor):
         simbolo = self.tabela_simbolos.buscar(nome_variavel)
 
         if not simbolo:
-            self.lista_erros.append(f"Variável '{nome_variavel}' não declarada")
+            self.lista_erros.append(f"[Erro semântico] Variável '{nome_variavel}' não declarada")
             return
 
         # 2. Verifica se é um vetor (acesso com colchetes)
         if ctx.ABRECOLCH():
             if not isinstance(simbolo, Variavel) or not simbolo.eh_vetor:
-                self.lista_erros.append( f"Índice aplicado a não-vetor '{nome_variavel}'")
+                self.lista_erros.append( f"[Erro semântico] Índice aplicado a não-vetor '{nome_variavel}'")
                 return
 
             # Visita a expressão do índice
@@ -398,7 +398,7 @@ class VisitorSemantico(MOCVisitor):
             tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
             if tipo_expressao and simbolo.tipo != tipo_expressao:
                 self.lista_erros.append(
-                                    f"Atribuição incompatível em '{nome_variavel}' (esperado: {simbolo.tipo}, obtido: {tipo_expressao})")
+                                    f"[Erro semântico] Atribuição incompatível em '{nome_variavel}' (esperado: {simbolo.tipo}, obtido: {tipo_expressao})")
 
     # Visita uma instrução 'while'
     def visitInstrucaoWhile(self, ctx):
@@ -425,7 +425,7 @@ class VisitorSemantico(MOCVisitor):
             self.visit(ctx.expressao())
         elif ctx.WRITEV():
             nome = ctx.IDENTIFICADOR().getText()
-            if not any(nome in contexto for contexto in reversed(self.contexto)):
+            if not self.tabela_simbolos.buscar(nome):
                self.lista_erros.append(f"[Erro semântico] Vetor '{nome}' usado antes de ser declarado.")
 
     # Visita expressões usadas isoladamente ou em atribuições
@@ -450,7 +450,7 @@ class VisitorSemantico(MOCVisitor):
                 simbolo = self.tabela_simbolos.buscar(nome)
 
                 if not simbolo or not isinstance(simbolo, Funcao):
-                    self.lista_erros.append( f"Função '{nome}' não declarada")
+                    self.lista_erros.append( f"[Erro semântico] Função '{nome}' não declarada")
                     return
 
                 # Verifica argumentos se houver
@@ -465,21 +465,22 @@ class VisitorSemantico(MOCVisitor):
                 simbolo = self.tabela_simbolos.buscar(nome)
 
                 if not simbolo or not isinstance(simbolo, Variavel):
-                    self.lista_erros.append( f"Variável '{nome}' não declarada")
+                    self.lista_erros.append( f"[Erro semântico] Variável '{nome}' não declarada")
                     return
 
                 if not simbolo.eh_vetor:
-                    self.lista_erros.append( f"Acesso a índice em não-vetor '{nome}'")
+                    self.lista_erros.append( f"[Erro semântico] Acesso a índice em não-vetor '{nome}'")
                     return
 
                 self.visit(resto.expressao())  # Visita a expressão do índice
                 return
 
-        # Caso simples: referência a variável
+      # Caso simples: referência a variável
         simbolo = self.tabela_simbolos.buscar(nome)
         if not simbolo or not isinstance(simbolo, (Variavel, Funcao)):
-            self.lista_erros.append( f"Identificador '{nome}' não declarado")
-
+            if nome not in self.variaveis_com_erro:
+                self.lista_erros.append(f"[Erro semântico] Identificador '{nome}' não declarado (linha {linha})")
+                self.variaveis_com_erro.add(nome)
 
     def visitChamadaFuncao(self, ctx):
         pass  # Funções built-in como read(), readc(), reads() não precisam de validação aqui
@@ -489,7 +490,7 @@ class VisitorSemantico(MOCVisitor):
 
     def visitAcessoVetor(self, ctx):
         nome = ctx.IDENTIFICADOR().getText()
-        if not any(nome in contexto for contexto in reversed(self.contexto)):
+        if not self.tabela_simbolos.buscar(nome):
            self.lista_erros.append(f"[Erro semântico] Vetor '{nome}' usado antes de ser declarado.")
         self.visit(ctx.expressao())  # Verifica o índice
 
@@ -527,18 +528,18 @@ class VisitorSemantico(MOCVisitor):
                     simbolo_existente.natureza == "prototipo_funcao" and
                     simbolo_existente.tipo == prototipo.tipo):
                 self.lista_erros.append(
-                    f"Protótipo '{nome_funcao}' redeclarado identicamente"
+                    f"[Erro semântico] Protótipo '{nome_funcao}' redeclarado identicamente"
                 )
             # Caso 2: Conflito com declaração existente
             else:
                 self.lista_erros.append(
-                    f"Conflito na declaração de '{nome_funcao}' (já declarado como {simbolo_existente.natureza})"
+                    f"[Erro semântico] Conflito na declaração de '{nome_funcao}' (já declarado como {simbolo_existente.natureza})"
                 )
         else:
             # Declara novo protótipo
             if not self.tabela_simbolos.declarar(prototipo):
                 self.lista_erros.append(
-                    f"Erro inesperado ao declarar protótipo '{nome_funcao}'"
+                    f"[Erro semântico] Erro inesperado ao declarar protótipo '{nome_funcao}'"
                 )
             else:
                 print(f"DEBUG: Função '{nome_funcao}' declarada na linha {linha_declaracao}")
@@ -574,13 +575,13 @@ class VisitorSemantico(MOCVisitor):
         if simbolo_existente:
             # Caso 1: Redefinição da função main
             self.lista_erros.append(
-                f"Redefinição da função principal '{nome_funcao}' (já declarada na linha {simbolo_existente.linha_declaracao})"
+                f"[Erro semântico] Redefinição da função principal '{nome_funcao}' (já declarada na linha {simbolo_existente.linha_declaracao})"
             )
         else:
             # Declara a função main
             if not self.tabela_simbolos.declarar(main_funcao):
                 self.lista_erros.append(
-                    f"Erro inesperado ao declarar função principal '{nome_funcao}'"
+                    f"[Erro semântico] Erro inesperado ao declarar função principal '{nome_funcao}'"
                 )
             else:
                 print(f"DEBUG: Função principal '{nome_funcao}' declarada na linha {linha_declaracao}")
