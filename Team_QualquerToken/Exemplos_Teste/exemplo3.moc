@@ -1,7 +1,7 @@
 /* exemplo 3
 média de uma lista de valores positivos */
 
-double avg(double[]);
+double avg(double[], int);
 void main(void);
 
 double avg(double v[], int size)
