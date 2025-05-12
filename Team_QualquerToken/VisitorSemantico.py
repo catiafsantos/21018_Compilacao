@@ -541,8 +541,8 @@ class VisitorSemantico(MOCVisitor):
                 self.lista_erros.append(
                     f"[Erro semântico] Erro inesperado ao declarar protótipo '{nome_funcao}'"
                 )
-            else:
-                print(f"DEBUG: Função '{nome_funcao}' declarada na linha {linha_declaracao}")
+            #else:
+                #print(f"DEBUG: Função '{nome_funcao}' declarada na linha {linha_declaracao}")
 
     # Visita o protótipo da função principal (main)
     def visitPrototipoPrincipal(self, ctx):
@@ -583,5 +583,5 @@ class VisitorSemantico(MOCVisitor):
                 self.lista_erros.append(
                     f"[Erro semântico] Erro inesperado ao declarar função principal '{nome_funcao}'"
                 )
-            else:
-                print(f"DEBUG: Função principal '{nome_funcao}' declarada na linha {linha_declaracao}")
+            #else:
+                #print(f"DEBUG: Função principal '{nome_funcao}' declarada na linha {linha_declaracao}")
