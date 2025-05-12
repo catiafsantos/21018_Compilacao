@@ -164,9 +164,6 @@ class TestVisitorSemantico(unittest.TestCase):
 
 
     def test_erro_funcao_nao_declarada_chamada(self):
-         # Nota: A implementação atual do VisitorSemantico pode não pegar este erro
-         # especificamente em visitIdComPrefixo se não distinguir bem função de var.
-         # Pode precisar refinar a lógica ou a tabela de símbolos.
          codigo = """
          void main(void);
          void main(void) {
@@ -224,16 +221,10 @@ class TestVisitorSemantico(unittest.TestCase):
             int contador;
             contador = 0;
             while (condicao) { // Erro: condicao não declarada
-                contador = contador + 1;
-                if (contador > 5) {
-                    // Supondo que 'parar' é uma função ou variável declarada em outro lugar
-                    // ou que a linguagem permite atribuição booleana direta se 'condicao' fosse declarada
-                }
+                contador = contador + 1; 
             }
         }
         """
-        # Nota: Para 'condicao' ser um erro, ela não pode ser declarada em nenhum lugar visível.
-        # Se a sua linguagem tiver booleanos implícitos ou algo assim, este teste pode precisar de ajuste.
         resultado = self._parse_e_visita(codigo)
         self.assertIsInstance(resultado, Exception)
         self.assertIn("Erro semântico", str(resultado))
