@@ -1,5 +1,11 @@
 from typing import List, Dict, Optional, Union
 
+DEBUG_MODE = False
+
+def debug_print(*args, **kwargs):
+    """Imprime apenas se DEBUG_MODE for True."""
+    if DEBUG_MODE:
+        print("DEBUG:", *args, **kwargs)
 
 class Simbolo:
     """Classe base para todos os símbolos (variáveis, funções, parâmetros, etc.)."""
@@ -77,7 +83,7 @@ class TabelaDeSimbolos:
         self.pilha_contextos: List[Dict[str, Union[Simbolo, Funcao, Variavel]]] = [{}]
         self.historico_contextos = []  # Armazena todos os contextos já processados
 
-        print("Tabela de Símbolos inicializada.")
+        #print("\nTabela de Símbolos inicializada.")
 
     def __str__(self):
         """Retorna uma representação em string da tabela de símbolos incluindo histórico"""
@@ -115,16 +121,16 @@ class TabelaDeSimbolos:
         """Adiciona um novo contexto (nível) à pilha."""
         #self.pilha_contextos.append({})
         self.pilha_contextos.append({})
-        print(f"DEBUG: Entrou num novo contexto. Nível atual: {len(self.pilha_contextos)}")
+        debug_print(f"Entrou num novo contexto. Nível atual: {len(self.pilha_contextos)}")
 
     def sair_contexto(self):
         """Remove o contexto atual (mais interno) da pilha."""
         if len(self.pilha_contextos) > 1:
             contexto_removido = self.pilha_contextos.pop()
             self.historico_contextos.append(contexto_removido)  # Preserva
-            print(f"DEBUG: Saiu do contexto. Nível atual: {len(self.pilha_contextos)}")
+            debug_print(f"Saiu do contexto. Nível atual: {len(self.pilha_contextos)}")
         else:
-            print("DEBUG: Tentativa de sair do contexto global (ignorado).")
+            debug_print("Tentativa de sair do contexto global (ignorado).")
             raise RuntimeError("Não é possível remover o contexto global.")
 
     def declarar(self, simbolo: Union[Simbolo, Funcao, Variavel]) -> bool:
@@ -158,7 +164,6 @@ class TabelaDeSimbolos:
             print(f"ERRO: Símbolo '{nome}' já declarado no contexto atual (linha {linha}).")
             return False
         contexto_atual[nome] = {'tipo': tipo, 'linha_declaracao': linha, 'info': info_adicional or {}}
-        # print(f"DEBUG: Declarado '{nome}' (tipo: {tipo}, linha: {linha}) no contexto atual.")
         return True
 
     def buscar_simbolo(self, nome: str):
@@ -187,7 +192,7 @@ class TabelaDeSimbolos:
         """
         contexto_atual = self.pilha_contextos[-1]
         if nome in contexto_atual:
-            print(f"DEBUG: Símbolo '{nome}' encontrado no contexto ATUAL (nível {len(self.pilha_contextos)}).")
+            debug_print(f"Símbolo '{nome}' encontrado no contexto ATUAL (nível {len(self.pilha_contextos)}).")
             return contexto_atual[nome]
-        print(f"DEBUG: Símbolo '{nome}' NÃO encontrado no contexto ATUAL (nível {len(self.pilha_contextos)}).")
+        debug_print(f"Símbolo '{nome}' NÃO encontrado no contexto ATUAL (nível {len(self.pilha_contextos)}).")
         return None
