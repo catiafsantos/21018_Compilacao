@@ -1,23 +1,28 @@
 /* exemplo 3
 média de uma lista de valores positivos */
-double avg(double[]);
+
+double avg(double[], int);
 void main(void);
 
-double avg(double v[], int size) {
+double avg(double v[], int size)
+{
     int i;
     double sum = 0;
-    for (i = 0; i < size; i = i + 1) {
+    for (i = 0; i < size; i = i + 1)
+    {
         sum = sum + i;
     }
     return sum / size;
 }
 
-void main(void) {
+void main(void)
+{
     int i, n;
     double v[100];
-    writes("Introduza tamanho do vetor, seguido dos respetivos valores: ");
+    writes("Introduza tamanho do vetor, seguido dos respetivos valores : ");
     n = read();
-    for (i = 0; i < n; i = i + 1) {
+    for (i = 0; i < n; i = i + 1)
+    {
         v[i] = read();
     }
     write(avg(v, n));
