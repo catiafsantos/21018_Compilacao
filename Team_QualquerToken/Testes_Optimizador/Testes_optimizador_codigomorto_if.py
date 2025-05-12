@@ -1,0 +1,122 @@
+import unittest
+from antlr4 import *
+from io import StringIO
+
+from MOCErrorListener import MOCErrorListener
+from OtimizadorTAC import otimizar_completo
+from TabelaSimbolos import TabelaDeSimbolos
+from VisitorSemantico import VisitorSemantico
+
+# Supondo que TabelaDeSimbolos é usada internamente pelo VisitorTAC ou não é necessária aqui
+# from TabelaSimbolos import TabelaDeSimbolos
+
+# Certifique-se que os imports funcionam a partir da localização do seu teste
+# Pode precisar de ajustar o sys.path se estiver numa estrutura de pastas diferente
+try:
+    from MOCLexer import MOCLexer
+    from MOCParser import MOCParser
+    # Importa a classe VisitorTAC a ser testada
+    from VisitorTAC import VisitorTAC, gerar_texto_tac
+    # VisitorSemantico pode ser necessário se o TAC depender de informações coletadas por ele
+    # from VisitorSemantico import VisitorSemantico
+except ImportError as e:
+    print(f"Erro de Importação: {e}")
+    print("Certifique-se que MOCLexer, MOCParser e VisitorTAC estão acessíveis.")
+    # Exemplo:
+    # import sys
+    # sys.path.append('../src') # Ajuste o caminho conforme necessário
+
+# Classe de Testes para o VisitorTAC
+class TestVisitorTAC(unittest.TestCase):
+
+    def _parse_e_gera_tac(self, codigo_moc):
+
+        input_stream = InputStream(codigo_moc)
+
+        lexer = MOCLexer(input_stream)
+        token_stream = CommonTokenStream(lexer)
+
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(MOCErrorListener())
+
+        parser = MOCParser(token_stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(MOCErrorListener())
+
+        try:
+            tree = parser.programa()
+        except Exception as e:
+            print(f"\n[Parsing interrompido]: {e}")
+            return
+
+        print("--- Análise sintática concluída ---")
+
+        if parser.getNumberOfSyntaxErrors() > 0:
+            print("\nErros de sintaxe encontrados. A abortar o processo de geração de código intermédio.")
+            return
+
+        # 1. Criação da Tabela de Símbolos
+        tabela_de_simbolos_principal = TabelaDeSimbolos()
+
+        try:
+            semantico = VisitorSemantico(tabela_de_simbolos_principal)
+            semantico.erros(tree)
+        except Exception as e:
+            print(e)
+            print("\nErros semânticos encontrados. A abortar o processo de geração de código intermédio.")
+            exit(1)
+
+        visitor = VisitorTAC(tabela_de_simbolos_principal)
+        visitor.variaveis_declaradas = set().union(*semantico.contexto) if semantico.contexto else set()
+        try:
+            visitor.visit(tree)
+            tac_original = gerar_texto_tac(visitor.tac_quadruplos)
+            tac_otimizado = otimizar_completo(visitor.tac_quadruplos)
+            tac_otimizado_txt = gerar_texto_tac(tac_otimizado)
+            print("TAC original:\n")
+            for linha in tac_original:
+                print(linha)
+
+            print("\nTAC optimizado:\n")
+            for linha in tac_otimizado_txt:
+                print(linha)
+            print("\n")
+            # print(tabela_de_simbolos_principal)
+            return tac_otimizado_txt
+        except Exception as e:
+            print(f"\nErro durante a geração do TAC: {e}")
+            return
+
+    # --- Testes para Geração de TAC ---
+
+    def test_atribuicao_simples_int(self):
+        """Testa a geração de TAC para uma atribuição inteira simples."""
+        codigo = """
+        /* teste de optimizacao de código morto */
+        void main(void);
+        void main(void) {
+            int x;
+            x = 10;
+            int y=x;  /* isto é código morto */
+            if (x == 10) {
+                writes("10");
+            } else {
+            /* isto é código morto */
+                x = x + 25;
+            }
+        }
+        """
+
+        print(codigo)
+
+        resultado_tac = self._parse_e_gera_tac(codigo)
+
+        print("Erro: L1 nunca é executado deve ser removido")
+
+
+
+
+# Para executar os testes a partir da linha de comando:
+# python -m unittest test_semantico.py
+if __name__ == '__main__':
+    unittest.main()
