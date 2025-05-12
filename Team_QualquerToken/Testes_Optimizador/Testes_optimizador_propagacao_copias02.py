@@ -118,9 +118,7 @@ class TestVisitorTAC(unittest.TestCase):
         print(codigo)
         resultado_tac = self._parse_e_gera_tac(codigo)
         print ("Testa a optimização  propagacao de copias com redefinição")
-        print("Erro!!!: Deveria calcular TAC com constant_folding. t1=15; t2=30; t3=6.0")
-        print("         Ver as conversoes de tipos int->double e double->int")
-        print("         O processo está a ser feito.... pode ser mais ou menos agressivo...")
+        print("Erro!!!: ")
 
 # Para executar os testes a partir da linha de comando:
 # python -m unittest test_semantico.py

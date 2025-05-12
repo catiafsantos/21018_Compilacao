@@ -117,6 +117,7 @@ class TestVisitorTAC(unittest.TestCase):
         resultado_tac = self._parse_e_gera_tac(codigo)
         print ("Testa a  propagacao de copia")
         print("Erro!!!: Deveria ter atribuicao")
+
 # Para executar os testes a partir da linha de comando:
 # python -m unittest test_semantico.py
 if __name__ == '__main__':
