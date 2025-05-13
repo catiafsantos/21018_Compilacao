@@ -1,0 +1,218 @@
+Uma quádrupla será representada como uma lista: [operador, arg1, arg2, resultado].
+Operandos podem ser números (int, float), booleanos (True, False), None, ou strings (para nomes de variáveis/temporários e labels).
+O constant_map armazenará os valores constantes conhecidos para as variáveis.
+Python
+
+def is_literal_constant(operand):
+    """Verifica se um operando é um literal constante (número ou booleano)."""
+    return isinstance(operand, (int, float, bool))
+
+def resolve_operand(operand, constant_map):
+    """
+    Resolve um operando.
+    Retorna (valor_do_operando, é_constante_conhecida).
+    """
+    if is_literal_constant(operand):
+        return operand, True
+    if isinstance(operand, str) and operand in constant_map:
+        return constant_map[operand], True
+    return operand, False # Não é uma constante literal nem uma variável com valor constante conhecido
+
+def evaluate(op, val1, val2=None):
+    """Avalia uma operação com operandos constantes."""
+    if op == "ADD":
+        return val1 + val2
+    elif op == "SUB":
+        return val1 - val2
+    elif op == "MUL":
+        return val1 * val2
+    elif op == "DIV":
+        if val2 == 0:
+            raise ValueError("Divisão por zero durante a dobragem de constantes.")
+        return val1 / val2 # Ou // para divisão inteira, dependendo da semântica
+    elif op == "EQ":
+        return val1 == val2
+    elif op == "NEQ":
+        return val1 != val2
+    elif op == "LT":
+        return val1 < val2
+    elif op == "GT":
+        return val1 > val2
+    elif op == "LE":
+        return val1 <= val2
+    elif op == "GE":
+        return val1 >= val2
+    elif op == "AND_BOOL": # Operador lógico AND
+        return val1 and val2
+    elif op == "OR_BOOL":  # Operador lógico OR
+        return val1 or val2
+    elif op == "NOT_BOOL": # Operador lógico NOT (unário)
+        return not val1
+    # Adicionar mais operadores conforme necessário
+    raise NotImplementedError(f"Operador '{op}' não implementado para avaliação.")
+
+def print_quads(quad_list, title="Quádruplas:"):
+    """Imprime a lista de quádruplas de forma legível."""
+    print(f"\n--- {title} ---")
+    if not quad_list:
+        print(" (Vazio)")
+        return
+    for i, quad in enumerate(quad_list):
+        print(f"{i:2d}: ({quad[0]}, {quad[1]}, {quad[2]}, {quad[3]})")
+    print("--------------------")
+
+def constant_folding(quad_list):
+    """
+    Aplica a dobragem de constantes a uma lista de quádruplas.
+    Modifica a lista de quádruplas no lugar.
+    """
+    constant_map = {} # Mapa de variáveis para seus valores constantes conhecidos
+    changed_in_pass = True
+
+    print_quads(quad_list, "Quádruplas Iniciais")
+
+    iteration_count = 0
+    while changed_in_pass:
+        iteration_count += 1
+        print(f"\n--- Início da Passagem {iteration_count} ---")
+        changed_in_pass = False
+
+        for i, quad in enumerate(list(quad_list)): # Iterar sobre uma cópia para modificação segura
+            op, arg1, arg2, res = quad
+
+            # Resolve os operandos para seus valores, se forem constantes
+            val1, is_const1 = resolve_operand(arg1, constant_map)
+            val2, is_const2 = resolve_operand(arg2, constant_map)
+
+            original_quad_str = f"({op}, {arg1}, {arg2}, {res})" # Para logging
+
+            # 1. Operações Aritméticas e Lógicas Binárias
+            if op in ["ADD", "SUB", "MUL", "DIV", "EQ", "NEQ", "LT", "GT", "LE", "GE", "AND_BOOL", "OR_BOOL"]:
+                if is_const1 and is_const2:
+                    try:
+                        computed_val = evaluate(op, val1, val2)
+                        # Verifica se a quádrupla já reflete esta atribuição
+                        if not (quad_list[i][0] == "ASSIGN" and quad_list[i][1] == computed_val and quad_list[i][3] == res):
+                            print(f"  Passagem {iteration_count}, Quad {i}: Dobrando {original_quad_str} -> ({res} = {computed_val})")
+                            quad_list[i] = ["ASSIGN", computed_val, None, res]
+                            changed_in_pass = True
+                        
+                        # Atualiza o mapa de constantes se o valor mudou ou é novo
+                        if res not in constant_map or constant_map[res] != computed_val:
+                            constant_map[res] = computed_val
+                            changed_in_pass = True # O mapa mudou, pode permitir mais dobragens
+                            print(f"    Mapa atualizado: {res} = {computed_val}")
+                    except ValueError as e:
+                        print(f"  Passagem {iteration_count}, Quad {i}: Erro ao dobrar {original_quad_str}: {e}")
+            
+            # 2. Operações Unárias (ex: NOT_BOOL)
+            elif op == "NOT_BOOL":
+                if is_const1:
+                    computed_val = evaluate(op, val1)
+                    if not (quad_list[i][0] == "ASSIGN" and quad_list[i][1] == computed_val and quad_list[i][3] == res):
+                        print(f"  Passagem {iteration_count}, Quad {i}: Dobrando {original_quad_str} -> ({res} = {computed_val})")
+                        quad_list[i] = ["ASSIGN", computed_val, None, res]
+                        changed_in_pass = True
+                    
+                    if res not in constant_map or constant_map[res] != computed_val:
+                        constant_map[res] = computed_val
+                        changed_in_pass = True
+                        print(f"    Mapa atualizado: {res} = {computed_val}")
+
+            # 3. Operação de Atribuição (ASSIGN)
+            elif op == "ASSIGN":
+                if is_const1: # Atribuindo uma constante
+                    if res not in constant_map or constant_map[res] != val1:
+                        print(f"  Passagem {iteration_count}, Quad {i}: Propagando constante {original_quad_str} -> Mapa: {res} = {val1}")
+                        constant_map[res] = val1
+                        changed_in_pass = True
+                else: # Atribuindo um valor não constante (variável ou expressão não dobrada)
+                    if res in constant_map:
+                        print(f"  Passagem {iteration_count}, Quad {i}: Removendo {res} do mapa de constantes devido a {original_quad_str}")
+                        del constant_map[res]
+                        changed_in_pass = True
+            
+            # 4. Saltos Condicionais (Exemplo: IF_FALSE_GOTO)
+            # Formato: (IF_FALSE_GOTO, cond_var, label_destino, None)
+            elif op == "IF_FALSE_GOTO":
+                if is_const1: # Se a condição é uma constante booleana
+                    label_destino = arg2
+                    if val1 is True: # IF_FALSE_GOTO True, Lbl --> Salto NÃO é tomado, vira NOP
+                        if quad_list[i][0] != "NOP":
+                            print(f"  Passagem {iteration_count}, Quad {i}: Dobrando {original_quad_str} -> NOP (condição é True)")
+                            quad_list[i] = ["NOP", None, None, None]
+                            changed_in_pass = True
+                    else: # val1 is False. IF_FALSE_GOTO False, Lbl --> Salto É tomado, vira GOTO
+                        if not (quad_list[i][0] == "GOTO" and quad_list[i][1] == label_destino):
+                            print(f"  Passagem {iteration_count}, Quad {i}: Dobrando {original_quad_str} -> GOTO {label_destino} (condição é False)")
+                            quad_list[i] = ["GOTO", label_destino, None, None]
+                            changed_in_pass = True
+            # Adicionar aqui outros tipos de saltos como IF_TRUE_GOTO
+            
+        if not changed_in_pass:
+            print(f"--- Fim da Passagem {iteration_count}: Nenhuma alteração. Dobragem de constantes concluída. ---")
+        else:
+             print_quads(quad_list, f"Quádruplas ao Final da Passagem {iteration_count}")
+             print(f"  Mapa de Constantes atual: {constant_map}")
+
+
+    print_quads(quad_list, "Quádruplas Finais Otimizadas")
+    print("\nMapa Final de Constantes Conhecidas:", constant_map)
+    return quad_list
+
+# --- Exemplo de Uso ---
+quads = [
+    ["ASSIGN", 10, None, "a"],          # 0: a = 10
+    ["ASSIGN", 5, None, "b"],           # 1: b = 5
+    ["ADD", "a", "b", "t1"],            # 2: t1 = a + b
+    ["MUL", "t1", 2, "t2"],             # 3: t2 = t1 * 2
+    ["ASSIGN", 30, None, "c"],          # 4: c = 30
+    ["EQ", "t2", "c", "cond1"],         # 5: cond1 = (t2 == c)
+    ["IF_FALSE_GOTO", "cond1", "L1", None], # 6: if_false cond1 goto L1
+    ["ASSIGN", 100, None, "x"],         # 7: x = 100 (bloco if)
+    ["GOTO", "L2", None, None],         # 8: goto L2
+    ["LABEL", "L1", None, None],        # 9: L1:
+    ["ASSIGN", 200, None, "x"],         # 10: x = 200 (bloco else)
+    ["LABEL", "L2", None, None],        # 11: L2:
+    ["GT", "a", 0, "cond2"],            # 12: cond2 = (a > 0)
+    ["NOT_BOOL", "cond2", "cond3"],     # 13: cond3 = not cond2
+    ["ASSIGN", "cond3", None, "final_cond_val"] #14: final_cond_val = cond3
+]
+
+optimized_quads = constant_folding(quads)
+
+print("\n--- Teste Adicional com Divisão por Zero ---")
+quads_div_zero = [
+    ["ASSIGN", 10, None, "num"],
+    ["ASSIGN", 0, None, "den"],
+    ["DIV", "num", "den", "res_div"] # Deverá dar erro na dobragem
+]
+constant_folding(quads_div_zero)
+
+print("\n--- Teste com reatribuição de variável ---")
+quads_reattribution = [
+    ["ASSIGN", 10, None, "v"],      # v = 10
+    ["ADD", "v", 5, "res1"],      # res1 = v + 5 (res1 = 15)
+    ["ASSIGN", "res1", None, "v"],  # v = res1 (v = 15, não mais 10 no mapa)
+    ["ADD", "v", 5, "res2"],      # res2 = v + 5 (res2 = 20)
+    ["ASSIGN", "some_other_var", None, "v"] # v agora é some_other_var, não mais constante
+]
+constant_folding(quads_reattribution)
+Explicação do Código Python:
+
+is_literal_constant(operand): Verifica se um operando já é um valor Python literal (número ou booleano).
+resolve_operand(operand, constant_map): Tenta encontrar o valor constante de um operando. Primeiro verifica se é um literal. Se for uma string (nome de variável), procura no constant_map. Retorna o valor e um booleano indicando se é uma constante conhecida.
+evaluate(op, val1, val2=None): Executa a operação especificada sobre os valores constantes fornecidos. Levanta um ValueError para divisão por zero.
+print_quads(quad_list, title): Função utilitária para imprimir as quádruplas de forma formatada.
+constant_folding(quad_list):
+constant_map: Dicionário para rastrear variáveis que têm valores constantes.
+changed_in_pass: Um booleano que controla o loop principal. O loop continua enquanto otimizações forem feitas numa passagem.
+Loop Principal (while changed_in_pass): Itera sobre as quádruplas repetidamente.
+Para cada quádrupla, tenta resolver seus operandos.
+Operações Aritméticas/Lógicas: Se ambos os operandos (ou um para unários) são constantes, evaluate é chamado. A quádrupla original é então substituída por uma quádrupla ASSIGN com o resultado calculado. O constant_map é atualizado com o resultado.
+Atribuições (ASSIGN): Se o valor sendo atribuído é uma constante conhecida, a variável de destino é adicionada/atualizada no constant_map. Se um valor não constante é atribuído a uma variável que estava no constant_map, ela é removida do mapa.
+Saltos Condicionais (IF_FALSE_GOTO): Se a condição do salto é uma constante booleana conhecida, o salto pode ser transformado:
+Se a condição e o tipo de salto indicam que o salto nunca é tomado, a quádrupla vira NOP (No Operation).
+Se o salto é sempre tomado, a quádrupla vira um GOTO incondicional.
+O processo continua até que uma passagem inteira não modifique nenhuma quádrupla nem o constant_map.
+Este exemplo demonstra os princípios básicos da dobragem de constantes. Um otimizador de compilador real seria mais complexo, lidando com mais tipos de dados, escopos, e interações com outras otimizações.

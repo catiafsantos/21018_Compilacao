@@ -1,0 +1,49 @@
+A forma como os "contextos" são tratados é fundamental para a correção e eficácia de otimizações de compilador como a "dobragem de constantes" (constant folding) e outras relacionadas (propagação de constantes, eliminação de código morto/inatingível, etc.).
+
+Podemos pensar em diferentes tipos de contexto:
+
+Contexto Lexical (Escopo de Variáveis):
+
+O que é: Refere-se a onde uma variável é definida e onde ela é visível/acessível. Uma variável local a uma função não é a mesma que uma variável global com o mesmo nome, ou uma variável com o mesmo nome noutra função.
+Como é tratado:
+O compilador constrói uma tabela de símbolos que rastreia todas as variáveis, as suas declarações, escopos e tipos.
+Na representação Intermediária (como Quádruplas/TAC), os nomes das variáveis são geralmente "únicos" ou qualificados (por exemplo, através de registos simbólicos ou endereços) para distinguir entre variáveis com o mesmo nome em escopos diferentes.
+No nosso exemplo Python, o constant_map usava nomes de strings. Num compilador real, as chaves seriam referências a entradas únicas na tabela de símbolos.
+A dobragem de constantes opera sobre estas variáveis únicas. Se x = 5 numa função, e depois y = x + 2, o compilador sabe que este x específico é 5. Se outra função também tem um x, é um x diferente.
+Reatribuição: Se uma variável v tem um valor constante conhecido (constant_map["v"] = 10) e depois há uma atribuição v = z onde z não é constante, o mapa deve ser atualizado para remover v (como fizemos no exemplo Python). Isto reconhece a mudança de "estado" ou "valor" da variável nesse ponto do programa.
+Contexto de Fluxo de Controlo (Control Flow):
+
+O que é: A ordem em que as instruções são executadas, incluindo saltos, loops e chamadas de função.
+Como é tratado:
+Grafos de Fluxo de Controlo (CFG - Control Flow Graphs): Os compiladores constroem CFGs onde os nós são blocos básicos (sequências de instruções sem saltos para dentro ou para fora, exceto no início e no fim) e as arestas representam possíveis transferências de controlo.
+Dobragem em Saltos Condicionais: Como vimos no exemplo, se a condição de um IF_FALSE_GOTO cond, Label dobra para FALSE, o compilador sabe que o salto para Label será sempre tomado. O IF_FALSE_GOTO pode ser substituído por um GOTO Label. Se dobrar para TRUE, o salto nunca é tomado, e a instrução pode virar um NOP ou ser removida, e o código do Label pode tornar-se inatingível se não houver outros caminhos para ele.
+Alcançabilidade: A análise de fluxo de controlo determina que partes do código são alcançáveis. A dobragem de constantes só é útil para código alcançável. Se um bloco inteiro se torna inatingível devido à dobragem de uma condição, ele pode ser eliminado (Dead Code Elimination).
+Loops: Otimizações como "Loop Invariant Code Motion" dependem de identificar expressões dentro de um loop cujos valores não mudam entre iterações. Se uma dessas expressões dobra para uma constante, é um caso simples.
+Contexto de Fluxo de Dados (Data Flow):
+
+O que é: Como os valores das variáveis são definidos e usados ao longo do programa. Por exemplo, "para esta utilização da variável x, qual foi a última definição de x que a pode alcançar?"
+Como é tratado:
+Análises de Fluxo de Dados: Existem várias análises formais, como "Reaching Definitions", "Live Variables Analysis", e "Available Expressions".
+Propagação de Constantes: Está intimamente ligada à dobragem. Se temos x = 5; y = x;, a propagação de constantes substitui y = x por y = 5. O nosso constant_map e o loop iterativo no algoritmo de dobragem de constantes simulam uma forma de análise de fluxo de dados para propagar os valores constantes.
+Quando uma quádrupla como t1 = a + b é processada, o algoritmo consulta o constant_map para ver se a e b têm valores constantes conhecidos neste ponto do programa. Se sim, t1 pode receber um valor constante. Se a ou b são modificados mais tarde, o constant_map é atualizado, e passagens subsequentes da otimização podem (ou não) conseguir dobrar outras expressões que dependiam dos valores anteriores.
+Contexto Interprocedimental (Entre Funções):
+
+O que é: Como as funções interagem, incluindo passagem de parâmetros e valores de retorno.
+Como é tratado (pode ser mais complexo):
+Análise Intraprocedimental (Dentro de uma função): Os exemplos que demos são maioritariamente intraprocedimentais. O constant_map é geralmente específico para a função que está a ser analisada ou é reiniciado/gerido cuidadosamente entre funções.
+Análise Interprocedimental (Entre funções):
+Inlining: Se uma função pequena é "colada" (inlined) no local da chamada, a dobragem de constantes pode então operar no código combinado, potencialmente aproveitando argumentos constantes passados para a função original.
+Propagação de Constantes Interprocedimental: Se uma função é sempre chamada com um argumento constante específico (ex: desenhar(COR_AZUL)), o compilador pode propagar COR_AZUL para dentro do corpo de desenhar e otimizá-la com esse conhecimento.
+Funções Puras: Funções cujo resultado depende apenas dos seus argumentos de entrada e não têm efeitos colaterais (ex: sqrt(x)) são mais fáceis de otimizar. Se for chamada com argumentos constantes (sqrt(4.0)), a chamada pode ser substituída pelo resultado (2.0).
+Contexto de Tipos:
+
+O que é: O tipo de dados das variáveis e expressões (inteiro, vírgula flutuante, booleano, etc.).
+Como é tratado:
+A operação de dobragem é específica do tipo. 2 + 3 é diferente de 2.0 + 3.0. 5 / 2 pode ser 2 (divisão inteira) ou 2.5 (divisão de vírgula flutuante), dependendo das regras da linguagem e dos tipos dos operandos.
+A tabela de símbolos armazena os tipos das variáveis, e a representação intermediária geralmente também tem informações de tipo ou operadores específicos de tipo.
+Em resumo, o compilador usa uma combinação de tabelas de símbolos, grafos de fluxo de controlo e várias análises de fluxo de dados para entender os diferentes "contextos". O algoritmo de dobragem de constantes, especialmente quando implementado de forma iterativa e em conjunto com a propagação de constantes, utiliza estas informações para:
+
+Saber o valor de uma variável num determinado ponto.
+Entender quando o valor de uma variável muda.
+Determinar como as alterações no fluxo de controlo (devido a constantes dobradas em condições) afetam a alcançabilidade do código.
+Compiladores modernos são muito sofisticados na forma como gerem estes contextos para aplicar otimizações de forma segura e eficaz.
