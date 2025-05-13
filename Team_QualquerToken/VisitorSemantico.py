@@ -142,7 +142,8 @@ class VisitorSemantico(MOCVisitor):
                     nome=param['nome'],
                     tipo=param['tipo'],
                     linha_declaracao=param['linha'],
-                    natureza="parametro"
+                    natureza="parametro",
+                    valor_inicial=0
                 )
             else:  # Se usar a versão com classes
                 var_param = param
@@ -334,7 +335,8 @@ class VisitorSemantico(MOCVisitor):
                 linha_declaracao=linha_var,
                 eh_vetor=eh_vetor,
                 dimensoes=len(tamanhos),
-                tamanhos=tamanhos
+                tamanhos=tamanhos,
+                valor_inicial=0
             )
 
             # Declara na tabela de símbolos
@@ -390,12 +392,19 @@ class VisitorSemantico(MOCVisitor):
             # Visita a expressão do índice
             self.visit(ctx.expressao(1))
 
-        # 3. Visita a expressão do valor atribuído
+        # 3. Visita a expressão do valor atribuído - aqui temos que obter o valor atribuido
         self.visit(ctx.expressao(0))
 
+        valor = ctx.expressao(0).getText()
+        simbolo.valor_inicial = valor
+        #actualizou = self.tabela_simbolos.atualizar_valor_inicial(self,nome_variavel,valor)
+        #if not actualizou:
+        #    self.lista_erros.append(f"[Erro] Erro ao atualizar valor inicial em '{nome_variavel}'")
         # 4. Verificação de tipo (opcional)
         if hasattr(self, 'verificar_tipos'):
             tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
+
+
             if tipo_expressao and simbolo.tipo != tipo_expressao:
                 self.lista_erros.append(
                                     f"[Erro semântico] Atribuição incompatível em '{nome_variavel}' (esperado: {simbolo.tipo}, obtido: {tipo_expressao})")
