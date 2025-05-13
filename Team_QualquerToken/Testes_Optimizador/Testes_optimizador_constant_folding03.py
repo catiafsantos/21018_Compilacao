@@ -101,16 +101,16 @@ class TestVisitorTAC(unittest.TestCase):
 
     # --- Testes para Geração de TAC ---
 
-    def test_constant_folding(self):
-        """Testa a geração de TAC com constant_folding."""
+    def test_operacoes_combinadas_inteiros(self):
         codigo = """
-        /* teste de optimizacao de código morto */
+        /* teste de optimização em operações combinadas */
         void main(void);
         void main(void) {
             int c;
             int a = 5;
             int b = 10;
             c = a + b * 2; 
+            int d = b + 1;
         }
         """
 

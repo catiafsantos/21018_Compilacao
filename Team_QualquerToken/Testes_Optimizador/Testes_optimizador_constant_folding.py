@@ -95,10 +95,12 @@ class TestVisitorTAC(unittest.TestCase):
 
     # --- Testes para Geração de TAC ---
 
-    def test_atribuicao_simples_int(self):
-        """Testa a geração de TAC para uma atribuição inteira simples."""
+    def test_variavel_nao_usadas(self):
         codigo = """
-        /* teste de optimizacao de código morto */
+        /* teste de optimizacao 
+            constant_folding - Substitui expressões com constantes 
+            remove variavel não utilizada
+        */
         void main(void);
         void main(void) {
             int x;

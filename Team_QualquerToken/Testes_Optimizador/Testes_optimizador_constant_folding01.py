@@ -90,9 +90,6 @@ class TestVisitorTAC(unittest.TestCase):
 
 
     def assertTACEqual(self, tac_resultante, tac_esperado, msg=None):
-        """
-        Helper para comparar duas listas de quádruplos TAC.
-        """
         # Converte tudo para lista de listas para comparação mais fácil (opcional)
         tac_resultante_list = [list(q) for q in tac_resultante]
         tac_esperado_list = [list(q) for q in tac_esperado]
@@ -101,10 +98,10 @@ class TestVisitorTAC(unittest.TestCase):
 
     # --- Testes para Geração de TAC ---
 
-    def test_constant_folding(self):
-        """Testa a geração de TAC com constant_folding."""
+    def test_operacoes_combinadas(self):
+        """Testa a optimização em operações combinadas doubles."""
         codigo = """
-        /* teste de optimizacao de código morto */
+        /* teste de optimização em operações combinadas doubles */
         void main(void);
         void main(void) {
             int a, b, c;

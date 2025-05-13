@@ -28,9 +28,15 @@ class Simbolo:
         self.natureza = natureza  # 'variavel', 'funcao', 'parametro', 'constante'
         self.atributos = atributos_adicionais  # Ex.: valor_inicial, etc.
 
-    def __repr__(self):
-        return f"<Simbolo {self.nome} ({self.tipo}) @{self.linha_declaracao}>"
 
+    def __repr__(self):
+         # Adiciona mais detalhes na representação para facilitar o debug
+        attrs_str = ', '.join(f"{k}={v}" for k, v in self.atributos.items() if k not in ['nome', 'tipo', 'linha_declaracao', 'natureza'])
+        return f"<Simbolo {self.nome} (Tipo: {self.tipo}, Natureza: {self.natureza}, Linha: {self.linha_declaracao}{', ' + attrs_str if attrs_str else ''})>"
+
+
+  #  def __repr__(self):
+  #      return f"<Simbolo {self.nome} ({self.tipo}) @{self.linha_declaracao}>"
 
 class Funcao(Simbolo):
     def __init__(self, nome: str, tipo_retorno: str, parametros: list, linha_declaracao: int,
@@ -51,6 +57,20 @@ class Funcao(Simbolo):
     def _gerar_tipo(tipo_retorno: str, parametros: list) -> str:
         tipos_params = [p.tipo if isinstance(p, Variavel) else p['tipo'] for p in parametros]
         return f"funcao({','.join(tipos_params)})->{tipo_retorno}"
+
+    def __repr__(self):
+        params_repr = []
+        for p in self.parametros:
+            if isinstance(p, Variavel):
+                params_repr.append(f"{p.nome}:{p.tipo}")
+            elif isinstance(p, dict):  # Para protótipos
+                params_repr.append(f"{p.get('nome', '?')}:{p.get('tipo', '?')}")
+            else:
+                params_repr.append(str(p))
+
+        return (f"<Funcao {self.nome} (Retorno: {self.tipo_retorno}, "
+                f"Params: [{', '.join(params_repr)}], Linha: {self.linha_declaracao}, "
+                f"Principal: {self.eh_principal}, Prototipo: {self.eh_prototipo})>")
 
 class Variavel(Simbolo):
     def __init__(self, nome: str, tipo: str, linha_declaracao: int,
@@ -74,6 +94,20 @@ class Variavel(Simbolo):
         self.valor_inicial = kwargs.get('valor_inicial')
         self.tamanhos = kwargs.get('tamanhos', [])  # Para vetores multidimensionais
 
+    def __repr__(self):
+        detalhes = [
+            f"Tipo: {self.tipo}",
+            f"Natureza: {self.natureza}",
+            f"Linha: {self.linha_declaracao}"
+        ]
+        if self.eh_parametro:
+            detalhes.append(f"Param: Sim (Pos: {self.posicao})")
+        if self.eh_vetor:
+            detalhes.append(f"Vetor: Sim (Tamanhos: {self.tamanhos}, Dims: {self.dimensoes})")
+        if self.valor_inicial is not None:
+            detalhes.append(f"ValorInicial: {self.valor_inicial}")
+
+        return f"<Variavel {self.nome} ({', '.join(detalhes)})>"
 
 class TabelaDeSimbolos:
     def __init__(self):
@@ -97,8 +131,8 @@ class TabelaDeSimbolos:
             if contexto:
                 for nome, info in contexto.items():
                     representation += f"    '{nome}': {info}\n"
-                for nome, simbolo in contexto.items():
-                    representation += f"    '{nome}': {simbolo}\n"
+                #for nome, simbolo in contexto.items():
+                #    representation += f"    '{nome}': {simbolo}\n"
             else:
                 representation += "    <contexto vazio>\n"
         representation += "-------------------------------------------\n"
@@ -140,6 +174,7 @@ class TabelaDeSimbolos:
             return False
         self.pilha_contextos[-1][simbolo.nome] = simbolo
         return True
+
     def buscar(self, nome: str) -> Optional[Union[Simbolo, Funcao, Variavel]]:
         """Busca um símbolo do escopo atual até o global."""
         for contexto in reversed(self.pilha_contextos):
@@ -196,3 +231,33 @@ class TabelaDeSimbolos:
             return contexto_atual[nome]
         debug_print(f"Símbolo '{nome}' NÃO encontrado no contexto ATUAL (nível {len(self.pilha_contextos)}).")
         return None
+
+    def atualizar_valor_inicial(self, nome_simbolo: str, novo_valor_inicial) -> bool:
+        """
+        Atualiza o valor inicial de um símbolo (Variavel) na tabela.
+        Busca o símbolo em todos os contextos.
+
+        Args:
+            nome_simbolo (str): O nome do símbolo a ser atualizado.
+            novo_valor_inicial: O novo valor inicial a ser atribuído.
+
+        Returns:
+            bool: True se o valor foi atualizado com sucesso, False caso contrário.
+        """
+        simbolo = self.buscar_simbolo_no_contexto_atual(nome_simbolo)
+
+        if simbolo:
+            if isinstance(simbolo, Variavel):
+                valor_antigo = simbolo.valor_inicial
+                simbolo.valor_inicial = novo_valor_inicial
+                # Se o símbolo tem outros atributos que dependem do valor,
+                # pode ser necessário atualizá-los aqui também.
+                # Por exemplo, se o tipo pudesse ser inferido do valor.
+                debug_print(f"Valor inicial de '{nome_simbolo}' atualizado de '{valor_antigo}' para '{novo_valor_inicial}'.")
+                return True
+            else:
+                debug_print(f"ERRO: Símbolo '{nome_simbolo}' encontrado, mas não é uma Variavel (tipo: {type(simbolo).__name__}). Não é possível atualizar valor inicial.")
+                return False
+        else:
+            debug_print(f"ERRO: Símbolo '{nome_simbolo}' não encontrado. Não é possível atualizar valor inicial.")
+            return False

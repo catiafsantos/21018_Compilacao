@@ -97,7 +97,7 @@ class TestVisitorTAC(unittest.TestCase):
         void main(void) {
             int x;
             x = 10;
-            int y=x;  /* isto é código morto */
+            int y=x;  /* isto é variavel nao utilizada */
             if (x == 10) {
                 writes("10");
             } else {
