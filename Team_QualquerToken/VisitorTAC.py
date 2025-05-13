@@ -667,5 +667,4 @@ def gerar_texto_tac(quadruplos):
             linhas.append("halt")
         else:
             linhas.append(f"{r} = {a1} {op} {a2}")
-
     return linhas

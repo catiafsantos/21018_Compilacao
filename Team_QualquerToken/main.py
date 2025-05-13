@@ -1,6 +1,7 @@
 # main.py
 
 import sys
+import copy
 import subprocess
 from antlr4 import *
 from MOCLexer import MOCLexer
@@ -89,7 +90,8 @@ def main():
 
     # --- Otimização ---
     print("\n==== CÓDIGO TAC OTIMIZADO ====")
-    tac_otimizado = otimizar_completo(visitor.tac_quadruplos)
+    # Melhoria para evitar modificar o tac gerado inicialmente
+    tac_otimizado = otimizar_completo(copy.deepcopy(visitor.tac_quadruplos))
     tac_otimizado_txt = gerar_texto_tac(tac_otimizado)
     for linha in tac_otimizado_txt:
         print(linha)
