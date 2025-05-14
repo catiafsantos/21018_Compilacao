@@ -1,7 +1,7 @@
 /* exemplo 2 */
 int fact(int);
 void main(void);
-
+int f=5;
 int fact(int k) {
     int i, n = 1;
     for (i = 2; i <= k; i = i + 1) {
