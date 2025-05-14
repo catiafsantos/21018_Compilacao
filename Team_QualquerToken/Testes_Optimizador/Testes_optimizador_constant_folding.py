@@ -105,12 +105,13 @@ class TestVisitorTAC(unittest.TestCase):
         void main(void) {
             int x[]={1,2,3};
             int y= x[0] + x[1];
+            write(y);
         }
         """
 
         print(codigo)
         resultado_tac = self._parse_e_gera_tac(codigo)
-        print("Excelente tudo removido")
+        print("Ver os arrays")
 
 
 
