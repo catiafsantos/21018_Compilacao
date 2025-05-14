@@ -109,6 +109,10 @@ class TestVisitorTAC(unittest.TestCase):
             c = a + (b * 2.0);
             d = c / 5.0;
             write(d);
+            /* arrays */
+            int e, f= read(), g=2*b, x[]={1,2,3};
+            int y= x[0] + x[1];
+            write(y);
         }
         """
 
