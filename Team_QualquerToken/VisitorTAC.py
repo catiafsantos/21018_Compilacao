@@ -151,7 +151,7 @@ class VisitorTAC(MOCVisitor):
             indice = self.visit(ctx.expressao(0))
 
             # Multiplica o índice por 4 (supondo 4 bytes por elemento) para obter o offset em bytes
-            offset = self.adicionar_quadruplo("*", arg1=indice, arg2="4")
+            offset = self.adicionar_quadruplo("_", arg1=indice, arg2="4")
 
             # Avalia a expressão que será atribuída à posição do vetor
             valor = self.visit(ctx.expressao(1))
@@ -561,7 +561,7 @@ class VisitorTAC(MOCVisitor):
         indice = self.visit(ctx.expressao())
 
         # Calcula o offset: i * 4 (assumindo 4 bytes por elemento)
-        temp_offset = self.adicionar_quadruplo("*", arg1=indice, arg2="4")
+        temp_offset = self.adicionar_quadruplo("_", arg1=indice, arg2="4")
 
         # Lê valor de v[i] usando operador '[]'
         temp_valor = self.adicionar_quadruplo("[]", arg1=nome_vetor, arg2=temp_offset)
@@ -593,11 +593,11 @@ class VisitorTAC(MOCVisitor):
 
                 for i in range(tamanho):
                     valor = valores[i] if i < len(valores) else "0"
-                    offset = self.adicionar_quadruplo("*", arg1=str(i), arg2="4")
+                    offset = self.adicionar_quadruplo("_", arg1=str(i), arg2="4")
                     self.adicionar_quadruplo("[]=", arg1=nome, arg2=offset, res=valor)
             else:  # Sem tamanho explícito
                 for i, valor in enumerate(valores):
-                    offset = self.adicionar_quadruplo("*", arg1=str(i), arg2="4")
+                    offset = self.adicionar_quadruplo("_", arg1=str(i), arg2="4")
                     self.adicionar_quadruplo("[]=", arg1=nome, arg2=offset, res=valor)
 
         # Caso: int s[] = reads();
