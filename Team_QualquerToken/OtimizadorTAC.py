@@ -242,8 +242,11 @@ class OtimizadorTAC:
                             print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {original_quad_str})")
                             del constantes_resolvidas[res]
                             changed_in_pass = True
-                elif op in {"label", "-", "*", "/", "%"}:
+                elif op in {"-", "*", "/", "%"}:
+                    continue
+                elif op in {"label"}:
                     #funcoes ou main
+                    novos_quadruplos.append(q)
                     continue
                 else:
                     print(f" op não tratado: {op}")
