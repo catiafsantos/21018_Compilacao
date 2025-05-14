@@ -102,21 +102,33 @@ class TestVisitorTAC(unittest.TestCase):
     # --- Testes para Geração de TAC ---
 
     def test_constant_folding(self):
-        """Testa a geração de TAC com constant_folding."""
+        """Testa a geração de TAC com codigo inantigivel."""
         codigo = """
-        /* teste de optimizacao de propagacao de copia */
-        void main(void);
-        void main(void) {
-            int a, b, c; 
-            a = 10; 
-            c = b + 10; 
+        /* teste de optimizacao de codigo inantigivel */
+        int obter_valor();
+        int main();
+        int obter_valor() {
+            int valor = 42; 
+            return valor; // O controlo sai da função AQUI.
+
+            // ---- INÍCIO DO CÓDIGO INATINGÍVEL ----
+            
+            valor = valor + 10; // Esta atribuição nunca acontece.
+            write(valor);
+            // ---- FIM DO CÓDIGO INATINGÍVEL ----
+        }
+
+        int main() {
+            int resultado = obter_valor();
+            write(resultado);
+            return 0;
         }
         """
 
         print(codigo)
         resultado_tac = self._parse_e_gera_tac(codigo)
-        print ("Testa a propagacao de copia")
-        print("Erro!!!: Deveria ter atribuicao")
+        print ("Testa a codigo inantigivel")
+        print("AVALIAR")
 
 # Para executar os testes a partir da linha de comando:
 # python -m unittest test_semantico.py

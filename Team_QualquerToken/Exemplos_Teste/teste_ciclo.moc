@@ -1,16 +1,10 @@
-/*eliminar_codigo_inatingivel()          # Remove código após saltos sem label
-
-Os exemplos mais comuns são após return, break, continue, goto (quando não há um label imediatamente a seguir que possa ser alvo de outro goto), ou chamadas a funções que nunca retornam  */
-
-
-EXEMPLO 2
-
-
+int main();
 int main() {
     int soma = 0;
-    for (int i = 0; i < 10; i++) {
+    int i;
+    for (i = 0; i < 10; i+1) {
         if (i == 5) {
-            printf("Encontrado i = 5, a sair do loop...\n");
+            //writes("Encontrado i = 5, a sair do loop...");
             break; // O loop termina AQUI quando i = 5.
 
             // ---- INÍCIO DO CÓDIGO INATINGÍVEL (nesta iteração) ----
@@ -21,12 +15,12 @@ int main() {
             // *Nota*: Compiladores mais inteligentes podem até perceber
             // que nada após o break DENTRO DO MESMO BLOCO DE CONTROLO
             // (o bloco do if) pode ser alcançado nessa condição.
-            printf("Esta linha dentro do if(i==5) após o break é inatingível.\n");
+            write(i);
             // ---- FIM DO CÓDIGO INATINGÍVEL ----
         }
-        soma += i;
-         printf("i = %d, soma parcial = %d\n", i, soma);
+        soma = soma + i;
+        write(soma);
     }
-    printf("Soma final: %d\n", soma); // Soma será 0+1+2+3+4 = 10
+    write(soma); // Soma será 0+1+2+3+4 = 10
     return 0;
 }

@@ -102,14 +102,35 @@ class TestVisitorTAC(unittest.TestCase):
     # --- Testes para Geração de TAC ---
 
     def test_constant_folding(self):
-        """Testa a geração de TAC com constant_folding."""
+        """Testa a geração de TAC com codigo inantigivel."""
         codigo = """
-        /* teste de optimizacao de propagacao de copia */
-        void main(void);
-        void main(void) {
-            int a, b, c; 
-            a = 10; 
-            c = b + 10; 
+        /* teste de optimizacao de odigo inantigivel */
+         
+        int main();    
+        int main() {
+            int soma = 0; 
+            int i;
+            for (i = 0; i < 10; i+1) {
+                if (i == 5) {
+                    //writes("Encontrado i = 5, a sair do loop...");
+                    break; // O loop termina AQUI quando i = 5.
+
+                    // ---- INÍCIO DO CÓDIGO INATINGÍVEL (nesta iteração) ----
+                    // Este código só seria alcançável se o break não existisse
+                    // ou estivesse dentro de outra condição que pudesse ser falsa.
+                    // Como está logo após um break incondicional DENTRO DO if(i==5),
+                    // nunca é executado QUANDO i==5.
+                    // *Nota*: Compiladores mais inteligentes podem até perceber
+                    // que nada após o break DENTRO DO MESMO BLOCO DE CONTROLO
+                    // (o bloco do if) pode ser alcançado nessa condição.
+                    write(i);
+                    // ---- FIM DO CÓDIGO INATINGÍVEL ----
+                }
+                soma = soma + i;
+                write(soma);
+            }
+            write(soma); // Soma será 0+1+2+3+4 = 10
+            return 0;
         }
         """
 
