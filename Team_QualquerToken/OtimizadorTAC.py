@@ -10,11 +10,32 @@ def resolve_operand(operand, constant_map):
     Resolve um operando.
     Retorna (valor_do_operando, é_constante_conhecida).
     """
+    # 1) Se for string que representa número, converte a int/float e diz que é constante
+    if isinstance(operand, str):
+        try:
+            # tenta inteiro primeiro
+            val = int(operand)
+        except ValueError:
+            try:
+                val = float(operand)
+            except ValueError:
+                val = None
+        else:
+            return val, True  # era string numérica, agora int
+
+        if val is not None:
+            return val, True  # era float válido
+
+    # 2) Se for já int/float/bool
     if is_literal_constant(operand):
         return operand, True
+
+    # 3) Se for nome de variável já resolvida
     if isinstance(operand, str) and operand in constant_map:
         return constant_map[operand], True
-    return operand, False # Não é uma constante literal nem uma variável com valor constante conhecid
+
+    return operand, False
+
 
 
 class OtimizadorTAC:
@@ -37,9 +58,11 @@ class OtimizadorTAC:
             for arg in ("arg1", "arg2"):
                 if isinstance(q.get(arg), str):  # Só se for string (nome de variável)
                     usados.add(q[arg])           # Adiciona ao conjunto de variáveis potencialmente relevantes
+        print(f"[DEBUG]  [Morto] Variáveis usadas na primeira fase: {usados}")
 
         # Segundo passo: percorre os quadruplos de trás para a frente (técnica comum para análise de liveness)
         for q in reversed(self.quadruplos):
+            print(f"[DEBUG]  [Morto] Vivas antes de {q}: {vivas}")
             op = q["op"]
             res = q.get("res")    # Resultado do quadruplo (variável que recebe o valor)
             arg1 = q.get("arg1")  # Primeiro argumento (ex: operando esquerdo)
@@ -101,8 +124,6 @@ class OtimizadorTAC:
 
         # Devolve a lista de quadruplos depois da otimização
         return self.quadruplos_otimizados
-
-     # Método propagacao_copias: substitui variáveis copiadas por outras equivalentes quando é seguro fazê-lo
 
     # Método propagacao_copias: substitui variáveis copiadas por outras equivalentes 
     def propagacao_copias(self):
@@ -173,59 +194,41 @@ class OtimizadorTAC:
 
     # Método constant_folding: avalia operações com constantes em tempo de compilação, substituindo-as pelo valor calculado
     def constant_folding(self):
-
+        """
+        Dobra expressões binárias de constantes e propaga atribuições de constantes.
+        """
         novos_quadruplos = []             # Lista final de quadruplos com constantes já resolvidas
-        constantes_resolvidas = {}        # Dicionário que associa variáveis a valores constantes já avaliados
+        constantes_resolvidas = {}        # Mapeia variáveis para os seus valores constantes
+        constantes = {}
+        fez_alteracoes = True
 
-        fez_alteracoes = True  # Identificar se foi efectuada alguma alteração
-        nr_iteracoes = 0
         while fez_alteracoes:
-            nr_iteracoes += 1
             fez_alteracoes = False
-            changed_in_pass = False
+            novos_quadruplos.clear()
 
-            #for q in self.quadruplos:
-            for i, q in enumerate(list(self.quadruplos)):
-                op = q["op"]
+            for q in self.quadruplos:
+                op   = q["op"]
                 arg1 = q.get("arg1")
                 arg2 = q.get("arg2")
-                res = q.get("res")
-                if arg1:
-                    # Resolve os operandos para seus valores, se forem constantes
-                    val1, is_const1 = resolve_operand(arg1, constantes_resolvidas)
-                if arg2:
-                    # Resolve os operandos para seus valores, se forem constantes
-                    val2, is_const2 = resolve_operand(arg2, constantes_resolvidas)
-                original_quad_str = f"({op}, {arg1}, {arg2}, {res})"  # Para logging
-                # ver que op temos
-                # Aplica a operadores binários com dois operandos constantes (ex: 3 + 4)
-                if op in {"+", "-", "*", "/", "%"} and self._is_const(arg1) and self._is_const(arg2):
+                res  = q.get("res")
+
+                # Resolve operandos (literal ou já em constantes)
+                v1, c1 = resolve_operand(arg1, constantes_resolvidas) if arg1 is not None else (None, False)
+                v2, c2 = resolve_operand(arg2, constantes_resolvidas) if arg2 is not None else (None, False)
+
+                # 1) Folding de binários constantes
+                if op in {"+", "-", "*", "/", "%", "==", "!=", "<", "<=", ">", ">="} and c1 and c2:
                     try:
-                        resultado_calc = self._avaliar_constante(op, val1, val2)
-
-                        # Converte os valores para inteiro ou float
-                        val1 = float(arg1) if "." in arg1 else int(arg1)
-                        val2 = float(arg2) if "." in arg2 else int(arg2)
-
-                        fez_alteracoes = True
-                        # Calcula o resultado da operação entre constantes
-                        resultado = self._avaliar_constante(op, val1, val2)
-
-                        # Guarda o resultado como valor constante associado à variável res
+                        resultado = self._avaliar_constante(op, v1, v2)
                         constantes_resolvidas[res] = resultado
-
-                        # Substitui a operação pelo resultado direto: res = valor
-                        novos_quadruplos.append({"op": "=", "arg1": str(resultado), "res": res})
-                        # Debug de constant folding
-                        print(f"[DEBUG]  [Folding] Pass {nr_iteracoes}, Quad {i}: '{arg1} {op} {arg2}' → {resultado} → substituído por {res} = {resultado}")
-                        continue  # Passa ao próximo quadruplo
+                        novos_quadruplos.append({"op":"=", "arg1": resultado, "res": res})
+                        print(f"[DEBUG]  [Folding] {arg1} {op} {arg2} → {resultado}")
+                        fez_alteracoes = True
+                        continue
                     except ZeroDivisionError:
-                        # Debug de constant folding
-                        print(f"[DEBUG]  [Folding] Ignorado por divisão por zero: {original_quad_str}")
-                        pass  # Em caso de divisão por zero, mantém a instrução original
-                    except ValueError as e:
-                        print(f"  Passagem {nr_iteracoes}, Erro ao dobrar {original_quad_str}: {e}")
-
+                        # mantém a instrução original se divisão por zero
+                        pass
+                """"                
                 # Substitui índices de vetor se o índice (arg1) já tiver sido resolvido como constante
                 elif op == "[]=" and arg1 in constantes_resolvidas:
                     idx = constantes_resolvidas[arg1]
@@ -250,17 +253,15 @@ class OtimizadorTAC:
                     continue
                 else:
                     print(f" op não tratado: {op}")
-
-                # Caso não se aplique nenhuma substituição, mantém a instrução original
+                """
+                # Senão mantém o quadruplo original
                 novos_quadruplos.append(q)
 
-            # Atualiza a flag da iteração com base se houve alterações ou não
-            fez_alteracoes = changed_in_pass
+            # Prepara próxima iteração
+            self.quadruplos = novos_quadruplos.copy()
 
-            # Atualiza os quadruplos com os novos, otimizados
-            self.quadruplos = novos_quadruplos
-            novos_quadruplos = []  # Limpa para a próxima iteração
         return self.quadruplos
+
 
     # Método eliminar_subexpressoes_comuns_CSE: evita recalcular expressões já computadas anteriormente com os mesmos operandos
     def eliminar_subexpressoes_comuns_CSE(self):
@@ -359,6 +360,12 @@ class OtimizadorTAC:
         if op == "*": return v1 * v2
         if op == "/": return v1 / v2
         if op == "%": return v1 % v2
+        if op == "==":  return v1 == v2
+        if op == "!=":  return v1 != v2
+        if op == "<":   return v1 < v2
+        if op == "<=":  return v1 <= v2
+        if op == ">":   return v1 > v2
+        if op == ">=":  return v1 >= v2
 
     # Método mover_invariantes: Loop-Invariant Code Motion - move instruções que são invariantes dentro de ciclos para fora do loop
     def mover_invariantes(self):
@@ -457,7 +464,7 @@ def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
 
     print("\n[1] Constant Folding (primeira passagem)")
     otimizador.constant_folding()
-
+    
     print("\n[2] Propagação de Cópias")
     otimizador.propagacao_copias()
 
@@ -470,20 +477,22 @@ def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     print("\n[5] Constant Folding (segunda passagem)")
     otimizador.constant_folding()
 
-    print("\n[6] Eliminação de Código Inatingível")
+    print("\n[6] Propagação de Cópias(segunda passagem)")
+    otimizador.propagacao_copias()
+
+    print("\n[7] Eliminação de Código Inatingível")
     otimizador.eliminar_codigo_inatingivel()
 
-    print("\n[7] Eliminação de Código Morto (com iterações)")
+    print("\n[8] Eliminação de Código Morto (com iterações)")
     # Fase 2 — aplicar eliminação de código morto até estabilizar (ponto fixo)
     prev = None
     atual = otimizador.eliminar_codigo_morto()
     iteracao = 1
     while prev != atual:
-        print(f"[7.{iteracao}] - Iteração de código morto")
+        print(f"[8.{iteracao}] - Iteração de código morto")
         prev = atual
         atual = otimizador.eliminar_codigo_morto()
         iteracao += 1
 
     print("\n=== Fim das Otimizações ===")
-
     return atual
