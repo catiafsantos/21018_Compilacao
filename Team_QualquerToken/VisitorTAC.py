@@ -653,6 +653,10 @@ def gerar_texto_tac(quadruplos):
             linhas.append(f"writec {a1}")
         elif op == "writev":
             linhas.append(f"writev {a1}")
+        elif op == "readc":
+            linhas.append(f"readc {a1}")
+        elif op == "reads":
+            linhas.append(f"reads {a1}")
         elif op == "=":
             linhas.append(f"{r} = {a1}")
         elif op in {"(int)", "(double)"}:
