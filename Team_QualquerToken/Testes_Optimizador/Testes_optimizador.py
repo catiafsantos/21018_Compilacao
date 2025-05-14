@@ -106,6 +106,7 @@ class TestVisitorTAC(unittest.TestCase):
         codigo = """
         /* teste de optimizacao de código morto */
         void main(void);
+        int f=1;
         void main(void) {
             int c=reads();
             int v[]={97,99};
