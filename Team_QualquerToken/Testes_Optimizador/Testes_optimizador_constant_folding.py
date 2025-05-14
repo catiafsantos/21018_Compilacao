@@ -103,8 +103,8 @@ class TestVisitorTAC(unittest.TestCase):
         */
         void main(void);
         void main(void) {
-            int x;
-            x = 10;
+            int x[]={1,2,3];
+            int y= x[0] + x[1];
         }
         """
 
