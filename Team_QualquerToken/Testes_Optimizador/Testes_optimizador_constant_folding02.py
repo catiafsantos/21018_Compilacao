@@ -113,6 +113,7 @@ class TestVisitorTAC(unittest.TestCase):
             c = a + b;
             d = 3 * b;
             e = c - d;
+            write(e);
         }
         """
 

@@ -107,8 +107,8 @@ class TestVisitorTAC(unittest.TestCase):
         /* teste de optimizacao de código morto */
         void main(void);
         void main(void) {
-            int x;
-            x = 10;
+            int x[]={55};
+            write(x[0]);
         }
         """
 
