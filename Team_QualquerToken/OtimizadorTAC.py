@@ -228,23 +228,42 @@ class OtimizadorTAC:
                     except ZeroDivisionError:
                         # mantém a instrução original se divisão por zero
                         pass
-                """"                
+
                 # Substitui índices de vetor se o índice (arg1) já tiver sido resolvido como constante
-                elif op == "[]=" and arg1 in constantes_resolvidas:
-                    idx = constantes_resolvidas[arg1]
-                    novos_quadruplos.append({"op": "[]=", "arg1": str(idx), "arg2": arg2, "res": res})
+                elif op == "[]=" and arg2 in constantes_resolvidas:
+                    idx = constantes_resolvidas[arg2]
+                    if c2:
+                        aux = str(arg1) + "[" + str(arg2) + "]"
+                        if aux not in constantes_resolvidas:
+                            constantes_resolvidas[aux] = res
+                            novos_quadruplos.append({"op": "[]=", "arg1": arg1, "arg2": str(idx), "res": res})
+
                     continue
                 elif op == "=":
-                    if is_const1:  # Atribuindo uma constante
-                        if res not in constantes_resolvidas or constantes_resolvidas[res] != val1:
-                            print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {val1} (de {arg1})")
-                            constantes_resolvidas[res] = val1
+                    if c1:  # Atribuindo uma constante
+                        if res not in constantes_resolvidas or constantes_resolvidas[res] != v1:
+                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
+                            constantes_resolvidas[res] = v1
                             changed_in_pass = True
                     else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
                         if res in constantes_resolvidas:
-                            print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {original_quad_str})")
+                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
                             del constantes_resolvidas[res]
                             changed_in_pass = True
+                elif op == "_": # Indice de array
+                    novos_quadruplos.append(q)
+                    continue
+                    if c1:  # Atribuindo uma constante
+                        if res not in constantes_resolvidas or constantes_resolvidas[res] != str(v1) + "_" + str(v2):
+                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
+                            constantes_resolvidas[res] = str(v1) + "_" + str(v2)
+                            changed_in_pass = True
+                    else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
+                        if res in constantes_resolvidas:
+                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
+                            del constantes_resolvidas[res]
+                            changed_in_pass = True
+
                 elif op in {"-", "*", "/", "%"}:
                     continue
                 elif op in {"label"}:
@@ -253,7 +272,7 @@ class OtimizadorTAC:
                     continue
                 else:
                     print(f" op não tratado: {op}")
-                """
+
                 # Senão mantém o quadruplo original
                 novos_quadruplos.append(q)
 
