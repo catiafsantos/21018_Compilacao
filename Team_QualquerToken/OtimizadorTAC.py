@@ -1,6 +1,8 @@
 import copy
+from collections import defaultdict
+from typing import List, Tuple, Dict, Set, Optional
 
-DEBUG_MODE_OTIMIZADOR_TAC = True
+DEBUG_MODE_OTIMIZADOR_TAC = False
 
 def debug_print(*args, **kwargs):
     """Imprime apenas se DEBUG_MODE for True."""
@@ -44,6 +46,26 @@ def resolve_operand(operand, constant_map):
     return operand, False
 
 
+class BlocoBasico:
+    """Representa um bloco básico no Grafo de Fluxo de Controlo."""
+    def __init__(self, id_bloco: int, inicio_idx: int):
+        self.id_bloco: int = id_bloco
+        self.inicio_idx: int = inicio_idx # Índice da primeira quádrupla no TAC original
+        self.fim_idx: int = -1          # Índice da última quádrupla no TAC original
+        self.quadruplas: TAC = []
+        self.sucessores: List[int] = [] # Lista de IDs de blocos sucessores
+        self.predecessores: List[int] = [] # Lista de IDs de blocos predecessores (preenchimento opcional)
+
+    def __repr__(self):
+        return (f"Bloco(id={self.id_bloco}, "
+                f"quads=[{self.inicio_idx}-{self.fim_idx}], "
+                f"sucessores={self.sucessores})")
+
+# Define o tipo para uma quádrupla
+Quadrupla = Tuple[str, Optional[str], Optional[str], Optional[str]]
+# Define o tipo para uma lista de quádruplas (TAC)
+TAC = List[Quadrupla]
+
 
 class OtimizadorTAC:
     def __init__(self, tac_quadruplos, variaveis_utilizador=None):
@@ -52,6 +74,11 @@ class OtimizadorTAC:
 
         # Conjunto de variáveis que devem ser preservadas mesmo que pareçam não ser usadas (ex: outputs do utilizador)
         self.variaveis_utilizador = variaveis_utilizador or set()
+        # O estado dos blocos pode ser armazenado na instância se for útil para múltiplas otimizações
+        self.blocos: List[BlocoBasico] = []
+        self.mapa_labels_para_id_bloco: Dict[str, int] = {}
+        self.mapa_idx_lider_para_id_bloco: Dict[int, int] = {}
+
 
     # Método eliminar_codigo_morto: remove instruções cujo resultado não tem impacto no restante do programa
     def eliminar_codigo_morto(self):
@@ -228,7 +255,7 @@ class OtimizadorTAC:
                     try:
                         resultado = self._avaliar_constante(op, v1, v2)
                         constantes_resolvidas[res] = resultado
-                        novos_quadruplos.append({"op":"=", "arg1": resultado, "res": res})
+                        novos_quadruplos.append({"op":"=", "arg1": resultado, "res": res, "arg2": None})
                         debug_print(f"[DEBUG]  [Folding] {arg1} {op} {arg2} → {resultado}")
                         fez_alteracoes = True
                         continue
@@ -277,7 +304,7 @@ class OtimizadorTAC:
                     novos_quadruplos.append(q)
                     continue
                 else:
-                    print(f" op não tratado: {op}")
+                    debug_print(f" op não tratado: {op}")
 
                 # Senão mantém o quadruplo original
                 novos_quadruplos.append(q)
@@ -368,7 +395,7 @@ class OtimizadorTAC:
 
         self.quadruplos = novos_quadruplos
         return self.quadruplos
-    
+
     # Método auxiliar _is_const: verifica se o argumento representa uma constante numérica (int ou float)
     def _is_const(self, val):
         if not isinstance(val, str): return False
@@ -481,6 +508,239 @@ class OtimizadorTAC:
         # Devolver a nova lista de quadruplos com as invariantes movidas
         return self.quadruplos
 
+    def identificar_lideres(self) -> Set[int]:
+        """
+        Identifica os líderes no Código de Três Endereços (self.quadruplos).
+        Um líder é a primeira instrução de um bloco básico.
+        """
+        lideres: Set[int] = set()
+        if not self.quadruplos:
+            return lideres
+
+        lideres.add(0)  # Regra 1
+
+        # Limpa e preenche o mapa de labels para uso interno e em construir_cfg
+        self.mapa_labels_para_id_bloco.clear()  # Garante que está limpo se chamado múltiplas vezes
+        temp_mapa_labels_idx: Dict[str, int] = {}  # Mapa temporário de nome de label para índice da quádrupla
+        for i, quad in enumerate(self.quadruplos):
+            if quad['op'] == "label" and quad['res'] is not None:
+                temp_mapa_labels_idx[quad['res']] = i
+
+        for i, quad in enumerate(self.quadruplos):
+
+            # Regra 2: Alvo de um salto é um líder
+            if quad['op'] in ("goto", "ifFalse"):
+                if quad['res'] is not None and quad['res'] in temp_mapa_labels_idx:
+                    lideres.add(temp_mapa_labels_idx[quad['res']])
+
+            # Regra 3: Instrução após um salto ou return é um líder
+            if quad['op'] in ("goto", "ifFalse", "return"):
+                if i + 1 < len(self.quadruplos):
+                    lideres.add(i + 1)
+        return lideres
+
+    def construir_blocos_basicos(self, lideres: Set[int]) -> List[BlocoBasico]:
+        """
+        Constrói os blocos básicos a partir do TAC (self.quadruplos) e dos líderes identificados.
+        Armazena os blocos em self.blocos.
+        """
+        if not self.quadruplos:
+            self.blocos = []
+            return self.blocos
+
+        self.blocos.clear()  # Limpa blocos anteriores
+        self.mapa_idx_lider_para_id_bloco.clear()  # Limpa mapa de índices de líderes
+
+        lideres_ordenados = sorted(list(lideres))
+
+        id_bloco_atual = 0
+        for i, inicio_lider_idx in enumerate(lideres_ordenados):
+            bloco = BlocoBasico(id_bloco_atual, inicio_lider_idx)
+
+            fim_bloco_idx: int
+            if i + 1 < len(lideres_ordenados):
+                fim_bloco_idx = lideres_ordenados[i + 1] - 1
+            else:
+                fim_bloco_idx = len(self.quadruplos) - 1
+
+            bloco.fim_idx = fim_bloco_idx
+            bloco.quadruplas = self.quadruplos[inicio_lider_idx: fim_bloco_idx + 1]
+
+            self.blocos.append(bloco)
+            self.mapa_idx_lider_para_id_bloco[bloco.inicio_idx] = bloco.id_bloco  # Preenche o mapa
+            id_bloco_atual += 1
+
+        return self.blocos
+
+    def construir_cfg(self):
+        """
+        Constrói o Grafo de Fluxo de Controlo (CFG) adicionando arestas (sucessores)
+        entre os blocos básicos armazenados em self.blocos.
+        Preenche self.mapa_labels_para_id_bloco.
+        """
+        if not self.blocos:
+            return
+
+        # Preenche/atualiza mapa_labels_para_id_bloco com base nos blocos atuais
+        self.mapa_labels_para_id_bloco.clear()
+        for bloco in self.blocos:
+            if bloco.quadruplas and bloco.quadruplas[0]['op'] == "label" and bloco.quadruplas[0]['res'] is not None:
+                self.mapa_labels_para_id_bloco[bloco.quadruplas[0]['res']] = bloco.id_bloco
+
+        for i, bloco_atual in enumerate(self.blocos):
+            bloco_atual.sucessores.clear()  # Limpa sucessores antigos antes de recalcular
+            if not bloco_atual.quadruplas:
+                continue
+
+            ultima_quad_bloco = bloco_atual.quadruplas[-1]
+            op = ultima_quad_bloco['op']
+            resultado_salto = ultima_quad_bloco['res']
+            arg1= ultima_quad_bloco['arg1']
+            arg2 = ultima_quad_bloco['arg2']
+            if op == "goto":
+                if resultado_salto is not None and resultado_salto in self.mapa_labels_para_id_bloco:
+                    id_bloco_alvo = self.mapa_labels_para_id_bloco[resultado_salto]
+                    if id_bloco_alvo not in bloco_atual.sucessores:
+                        bloco_atual.sucessores.append(id_bloco_alvo)
+            elif op == "ifFalse": # Se testa false e temos valor true nao faz a label destino
+                if resultado_salto is not None and resultado_salto in self.mapa_labels_para_id_bloco:
+                    if arg1 != True:
+                        id_bloco_alvo_salto = self.mapa_labels_para_id_bloco[resultado_salto]
+                        if id_bloco_alvo_salto not in bloco_atual.sucessores:
+                            bloco_atual.sucessores.append(id_bloco_alvo_salto)
+                if arg1 == True:
+                    proximo_idx_instrucao = bloco_atual.fim_idx + 1
+                    if proximo_idx_instrucao < len(self.quadruplos):
+                        if proximo_idx_instrucao in self.mapa_idx_lider_para_id_bloco:
+                            id_bloco_alvo_fallthrough = self.mapa_idx_lider_para_id_bloco[proximo_idx_instrucao]
+                            if id_bloco_alvo_fallthrough not in bloco_atual.sucessores:
+                                bloco_atual.sucessores.append(id_bloco_alvo_fallthrough)
+            elif op == "ifTrue":
+                if resultado_salto is not None and resultado_salto in self.mapa_labels_para_id_bloco:
+                    if arg1 != False:
+                        id_bloco_alvo_salto = self.mapa_labels_para_id_bloco[resultado_salto]
+                        if id_bloco_alvo_salto not in bloco_atual.sucessores:
+                            bloco_atual.sucessores.append(id_bloco_alvo_salto)
+                if arg1 == False:
+                    proximo_idx_instrucao = bloco_atual.fim_idx + 1
+                    if proximo_idx_instrucao < len(self.quadruplos):
+                        if proximo_idx_instrucao in self.mapa_idx_lider_para_id_bloco:
+                            id_bloco_alvo_fallthrough = self.mapa_idx_lider_para_id_bloco[proximo_idx_instrucao]
+                            if id_bloco_alvo_fallthrough not in bloco_atual.sucessores:
+                                bloco_atual.sucessores.append(id_bloco_alvo_fallthrough)
+            elif op != "return":
+                proximo_idx_instrucao = bloco_atual.fim_idx + 1
+                if proximo_idx_instrucao < len(self.quadruplos):
+                    if proximo_idx_instrucao in self.mapa_idx_lider_para_id_bloco:
+                        id_bloco_alvo_sequencial = self.mapa_idx_lider_para_id_bloco[proximo_idx_instrucao]
+                        if id_bloco_alvo_sequencial not in bloco_atual.sucessores:
+                            bloco_atual.sucessores.append(id_bloco_alvo_sequencial)
+
+    def encontrar_blocos_alcancaveis(self, id_bloco_entrada: int = 0) -> Set[int]:
+        """
+        Executa uma análise de alcançabilidade (BFS) no CFG (usando self.blocos).
+        Assume que o CFG já foi construído.
+        """
+        blocos_alcancaveis: Set[int] = set()
+        if not self.blocos:
+            debug_print("Aviso: Lista de blocos vazia em encontrar_blocos_alcancaveis.")
+            return blocos_alcancaveis
+
+        fila: List[int] = []
+
+        bloco_de_partida = next((b for b in self.blocos if b.id_bloco == id_bloco_entrada), None)
+
+        if bloco_de_partida:
+            blocos_alcancaveis.add(bloco_de_partida.id_bloco)
+            fila.append(bloco_de_partida.id_bloco)
+        else:
+            debug_print(
+                f"Aviso: Bloco de entrada com ID {id_bloco_entrada} não encontrado. Nenhum código será considerado alcançável.")
+            return blocos_alcancaveis
+
+        while fila:
+            id_bloco_atual = fila.pop(0)
+            bloco_atual_obj = next((b for b in self.blocos if b.id_bloco == id_bloco_atual), None)
+
+            if bloco_atual_obj is None:
+                debug_print(f"Aviso Crítico: Bloco com ID {id_bloco_atual} na fila mas não encontrado.")
+                continue
+
+            for id_sucessor in bloco_atual_obj.sucessores:
+                sucessor_obj = next((b for b in self.blocos if b.id_bloco == id_sucessor), None)
+                if sucessor_obj is None:
+                    debug_print(f"Aviso: Sucessor com ID {id_sucessor} do bloco {id_bloco_atual} não é um bloco válido.")
+                    continue
+
+                if id_sucessor not in blocos_alcancaveis:
+                    blocos_alcancaveis.add(id_sucessor)
+                    fila.append(id_sucessor)
+        return blocos_alcancaveis
+
+    def remover_codigo_inatingivel_metodo(self) -> TAC:
+        """
+        Função principal como método para remover código inatingível.
+        """
+        if not self.quadruplos:
+            return []
+
+        debug_print("--- TAC Original (dentro do método) ---")
+        for i, q in enumerate(self.quadruplos): debug_print(f"{i:2d}: {q}")
+
+        lideres = self.identificar_lideres()
+        debug_print("\n--- Líderes Identificados (índices) (dentro do método) ---")
+        debug_print(sorted(list(lideres)))
+
+        self.construir_blocos_basicos(lideres)  # Atualiza self.blocos
+        debug_print("\n--- Blocos Básicos Construídos (dentro do método) ---")
+        for b in self.blocos: debug_print(b)
+
+        self.construir_cfg()  # Atualiza sucessores em self.blocos e self.mapa_labels_para_id_bloco
+        debug_print("\n--- CFG Construído (Sucessores por Bloco) (dentro do método) ---")
+        for b in self.blocos: debug_print(
+            f"Bloco {b.id_bloco} (quads {b.inicio_idx}-{b.fim_idx}) -> Sucessores: {b.sucessores}")
+
+        ids_blocos_alcancaveis = self.encontrar_blocos_alcancaveis(0)
+        debug_print("\n--- IDs de Blocos Alcançáveis (dentro do método) ---")
+        debug_print(sorted(list(ids_blocos_alcancaveis)))
+
+        tac_otimizado: TAC = []
+        labels_alcancaveis_nos_blocos_otimizados: Set[str] = set()
+
+        # Coleta labels que PERTENCEM a blocos alcançáveis
+        for bloco in self.blocos:
+            if bloco.id_bloco in ids_blocos_alcancaveis:
+                if bloco.quadruplas and bloco.quadruplas[0]['op'] == "label":
+                    label_name = bloco.quadruplas[0]['res']
+                    if label_name:
+                        labels_alcancaveis_nos_blocos_otimizados.add(label_name)
+
+        debug_print("\n--- Labels que pertencem a blocos alcançáveis ---")
+        debug_print(labels_alcancaveis_nos_blocos_otimizados)
+
+        for bloco in sorted(self.blocos, key=lambda b: b.inicio_idx):
+            if bloco.id_bloco in ids_blocos_alcancaveis:
+                for quad in bloco.quadruplas:
+                    op, arg1, arg2, res = quad['op'], quad['arg1'], quad['arg2'], quad['res']
+
+                    # Verificação adicional para saltos: o label de destino deve ser de um bloco alcançável
+                    if op in ("goto", "ifFalse", "ifTrue"):
+                        if res is not None and res not in labels_alcancaveis_nos_blocos_otimizados:
+                            debug_print(
+                                f"Aviso: Salto em {quad} para label '{res}' que NÃO pertence a um bloco alcançável. A instrução será mantida, mas pode indicar um problema ou uma otimização perdida.")
+                        else:
+                            tac_otimizado.append(quad)
+                    else:
+                        tac_otimizado.append(quad)
+
+        self.quadruplos = tac_otimizado
+        debug_print("\n--- TAC Otimizado (Código Inatingível Removido) (dentro do método) ---")
+        for i, q in enumerate(self.quadruplos): debug_print(f"{i:2d}: {q}")
+
+        return self.quadruplos
+
+
+
 # Função de conveniência otimizar_completo: aplica todas as otimizações ao código TAC fornecido
 def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     otimizador = OtimizadorTAC(tac_quadruplos, variaveis_utilizador)
@@ -506,7 +766,8 @@ def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     otimizador.propagacao_copias()
 
     print("\n[7] Eliminação de Código Inatingível")
-    otimizador.eliminar_codigo_inatingivel()
+   #otimizador.eliminar_codigo_inatingivel()
+    otimizador.remover_codigo_inatingivel_metodo()
 
     print("\n[8] Eliminação de Código Morto (com iterações)")
     # Fase 2 — aplicar eliminação de código morto até estabilizar (ponto fixo)
