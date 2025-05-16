@@ -100,7 +100,7 @@ class TestVisitorTAC(unittest.TestCase):
         self.assertListEqual(tac_resultante_list, tac_esperado_list, msg)
 
     # --- Testes para Geração de TAC ---
-
+     
     def test_atribuicao_simples_int(self):
         """Testa a geração de TAC para uma atribuição inteira simples."""
         codigo = """
