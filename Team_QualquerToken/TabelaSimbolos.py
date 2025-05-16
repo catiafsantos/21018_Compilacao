@@ -1,10 +1,10 @@
 from typing import List, Dict, Optional, Union
 
-DEBUG_MODE = False
+DEBUG_MODE_TABELA_SIMBOLOS = True
 
 def debug_print(*args, **kwargs):
     """Imprime apenas se DEBUG_MODE for True."""
-    if DEBUG_MODE:
+    if DEBUG_MODE_TABELA_SIMBOLOS:
         print("DEBUG:", *args, **kwargs)
 
 class Simbolo:
