@@ -250,22 +250,21 @@ class OtimizadorTAC:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
                             del constantes_resolvidas[res]
                             changed_in_pass = True
-                elif op == "_": # Indice de array
-                    novos_quadruplos.append(q)
-                    continue
-                    if c1:  # Atribuindo uma constante
-                        if res not in constantes_resolvidas or constantes_resolvidas[res] != str(v1) + "_" + str(v2):
-                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
-                            constantes_resolvidas[res] = str(v1) + "_" + str(v2)
-                            changed_in_pass = True
-                    else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
-                        if res in constantes_resolvidas:
-                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
-                            del constantes_resolvidas[res]
-                            changed_in_pass = True
-
-                elif op in {"-", "*", "/", "%"}:
-                    continue
+#                elif op == "_": # Indice de array
+#                    novos_quadruplos.append(q)
+#                    continue
+#                    if c1:  # Atribuindo uma constante
+#                        if res not in constantes_resolvidas or constantes_resolvidas[res] != str(v1) + "*" + str(v2):
+#                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
+#                            constantes_resolvidas[res] = str(v1) + "*" + str(v2)
+#                            changed_in_pass = True
+#                    else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
+#                        if res in constantes_resolvidas:
+#                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
+#                            del constantes_resolvidas[res]
+#                            changed_in_pass = True
+#                elif op in {"-", "*", "/", "%"}:
+#                    continue
                 elif op in {"label"}:
                     #funcoes ou main
                     novos_quadruplos.append(q)
