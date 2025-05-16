@@ -111,7 +111,7 @@ class TestVisitorTAC(unittest.TestCase):
 
         resultado_tac = self._parse_e_gera_tac(codigo)
 
-        print("Erro: L1 nunca é executado deve ser removido")
+        print("Erro: L2 nunca é executado deve ser removido")
 
 
 
