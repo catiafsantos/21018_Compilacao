@@ -1,5 +1,12 @@
 import copy
 
+DEBUG_MODE_OTIMIZADOR_TAC = True
+
+def debug_print(*args, **kwargs):
+    """Imprime apenas se DEBUG_MODE for True."""
+    if DEBUG_MODE_OTIMIZADOR_TAC:
+        print("DEBUG:", *args, **kwargs)
+
 # Classe OtimizadorTAC: responsável por aplicar otimizações ao código intermédio em formato de quadruplos (TAC)
 def is_literal_constant(operand):
     """Verifica se um operando é um literal constante (número ou booleano)."""
@@ -58,11 +65,11 @@ class OtimizadorTAC:
             for arg in ("arg1", "arg2"):
                 if isinstance(q.get(arg), str):  # Só se for string (nome de variável)
                     usados.add(q[arg])           # Adiciona ao conjunto de variáveis potencialmente relevantes
-        print(f"[DEBUG]  [Morto] Variáveis usadas na primeira fase: {usados}")
+        debug_print(f"[DEBUG]  [Morto] Variáveis usadas na primeira fase: {usados}")
 
         # Segundo passo: percorre os quadruplos de trás para a frente (técnica comum para análise de liveness)
         for q in reversed(self.quadruplos):
-            print(f"[DEBUG]  [Morto] Vivas antes de {q}: {vivas}")
+            debug_print(f"[DEBUG]  [Morto] Vivas antes de {q}: {vivas}")
             op = q["op"]
             res = q.get("res")    # Resultado do quadruplo (variável que recebe o valor)
             arg1 = q.get("arg1")  # Primeiro argumento (ex: operando esquerdo)
@@ -117,7 +124,7 @@ class OtimizadorTAC:
 
         # DEBUG: imprime o que foi removido
         for q in eliminadas:
-            print(f"[DEBUG]  [Morto] Eliminado: {q}")
+            debug_print(f"[DEBUG]  [Morto] Eliminado: {q}")
 
         # Por ter sido percorrido de trás para a frente, é necessário inverter a lista final para restaurar a ordem original
         self.quadruplos_otimizados = list(reversed(otimizados))
@@ -155,10 +162,10 @@ class OtimizadorTAC:
             # Substitui os argumentos se forem variáveis com cópia conhecida (já propagada)
             if isinstance(arg1, str) and arg1 in substituicoes:
                 # Debug de propragação de cópias
-                print(f"[DEBUG]  [Substituição] {arg1} → {substituicoes[arg1]} na operação {q}")
+                debug_print(f"[DEBUG]  [Substituição] {arg1} → {substituicoes[arg1]} na operação {q}")
                 q["arg1"] = substituicoes[arg1]
             if isinstance(arg2, str) and arg2 in substituicoes:
-                print(f"[DEBUG]  [Substituição] {arg2} → {substituicoes[arg2]} na operação {q}")
+                debug_print(f"[DEBUG]  [Substituição] {arg2} → {substituicoes[arg2]} na operação {q}")
                 q["arg2"] = substituicoes[arg2]    
 
             # Propagação direta de cópia: se for uma atribuição simples (res = arg1)
@@ -170,19 +177,19 @@ class OtimizadorTAC:
                     # Adiciona a substituição: res ≡ arg1 (usa-se o valor original de arg1)
                     substituicoes[res] = substituicoes.get(arg1, arg1)
                     # Debug de propragação de cópias
-                    print(f"[DEBUG]  [Cópia] {res} ← {arg1}")
+                    debug_print(f"[DEBUG]  [Cópia] {res} ← {arg1}")
 
                 else:
                     # Se não for seguro, remove substituição existente para evitar erro
                     if res in substituicoes:
                         # Debug de propragação de cópias
-                        print(f"[DEBUG]  Substituição de {res} invalidada por operação {op}")
+                        debug_print(f"[DEBUG]  Substituição de {res} invalidada por operação {op}")
                         del substituicoes[res]
             else:
                 # Qualquer operação que escreva em `res` invalida substituições anteriores
                 if res and res in substituicoes:
                     # Debug de propragação de cópias
-                    print(f"[DEBUG]  Substituição de {res} invalidada por operação '{op}'")
+                    debug_print(f"[DEBUG]  Substituição de {res} invalidada por operação '{op}'")
                     del substituicoes[res]
 
             # Adiciona a instrução (eventualmente com substituições aplicadas)
@@ -222,7 +229,7 @@ class OtimizadorTAC:
                         resultado = self._avaliar_constante(op, v1, v2)
                         constantes_resolvidas[res] = resultado
                         novos_quadruplos.append({"op":"=", "arg1": resultado, "res": res})
-                        print(f"[DEBUG]  [Folding] {arg1} {op} {arg2} → {resultado}")
+                        debug_print(f"[DEBUG]  [Folding] {arg1} {op} {arg2} → {resultado}")
                         fez_alteracoes = True
                         continue
                     except ZeroDivisionError:
@@ -316,13 +323,13 @@ class OtimizadorTAC:
                 if expr_com_versao in expressoes_vistas:
                     res_antigo = expressoes_vistas[expr_com_versao]
                     # Debug de eliminação de subexpressões comuns
-                    print(f"[DEBUG]  [CSE] Subexpressão {expr} já vista → substitui por {res_antigo}")
+                    debug_print(f"[DEBUG]  [CSE] Subexpressão {expr} já vista → substitui por {res_antigo}")
                     resultado.append({"op": "=", "arg1": res_antigo, "res": res})
                 else:
                     # Caso contrário, regista esta nova expressão como já vista
                     expressoes_vistas[expr_com_versao] = res
                     # Debug de eliminação de subexpressões comuns
-                    print(f"[DEBUG]  [CSE] Nova subexpressão {expr} registada → {res}")
+                    debug_print(f"[DEBUG]  [CSE] Nova subexpressão {expr} registada → {res}")
                     resultado.append(q)
             else:
                 # Se não for uma operação elegível, mantém a instrução como está
@@ -357,7 +364,7 @@ class OtimizadorTAC:
 
         # DEBUG: Mostrar o que foi eliminado
         for q in eliminadas:
-            print(f"[DEBUG]  [Inatingível] Eliminada: {q}")
+            debug_print(f"[DEBUG]  [Inatingível] Eliminada: {q}")
 
         self.quadruplos = novos_quadruplos
         return self.quadruplos
@@ -451,7 +458,7 @@ class OtimizadorTAC:
                 if all(a not in defs for a in args):
                     invariantes.append((start, j, instr))
                     # Debug de loop invariant code motion
-                    print(f"[DEBUG]  [Invariante] '{instr}' movida para fora do loop iniciado em label {self.quadruplos[start]['res']}")
+                    debug_print(f"[DEBUG]  [Invariante] '{instr}' movida para fora do loop iniciado em label {self.quadruplos[start]['res']}")
 
         # 5) Remover instruções invariantes do corpo do loop (de trás para a frente)
         for _, j, instr in sorted(invariantes, key=lambda x: x[1], reverse=True):
