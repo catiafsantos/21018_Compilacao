@@ -104,14 +104,12 @@ class TestVisitorTAC(unittest.TestCase):
     def test_atribuicao_simples_int(self):
         """Testa a geração de TAC para uma atribuição inteira simples."""
         codigo = """
-        /* teste de optimizacao de código morto */
+        
         void main(void);
-        void main(void) {            
-            int v[]={97, 65};
-            write(v[0]);  //97
-            /*writec(v[0]); // a
-            writev(v);  // {97,99}
-            writes(v);  // ac    */     
+      
+        void main(void) {    
+            double x=5;
+            int a = 2.5;
         }
         """
 
