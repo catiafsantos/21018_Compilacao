@@ -394,20 +394,16 @@ class VisitorSemantico(MOCVisitor):
 
         # 3. Visita a expressão do valor atribuído - aqui temos que obter o valor atribuido
         self.visit(ctx.expressao(0))
-
         valor = ctx.expressao(0).getText()
         simbolo.valor_inicial = valor
-        #actualizou = self.tabela_simbolos.atualizar_valor_inicial(self,nome_variavel,valor)
-        #if not actualizou:
-        #    self.lista_erros.append(f"[Erro] Erro ao atualizar valor inicial em '{nome_variavel}'")
-        # 4. Verificação de tipo (opcional)
-        if hasattr(self, 'verificar_tipos'):
-            tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
 
-
-            if tipo_expressao and simbolo.tipo != tipo_expressao:
-                self.lista_erros.append(
-                                    f"[Erro semântico] Atribuição incompatível em '{nome_variavel}' (esperado: {simbolo.tipo}, obtido: {tipo_expressao})")
+         # 4. Verificação de tipo entre variável e expressão atribuída
+        tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
+        if tipo_expressao and tipo_expressao != simbolo.tipo:
+            self.lista_erros.append(
+                f"[Erro semântico] Atribuição de tipo incompatível em '{nome_variavel}' "
+                f"(esperado: {simbolo.tipo}, obtido: {tipo_expressao})"
+            )
 
     # Visita uma instrução 'while'
     def visitInstrucaoWhile(self, ctx):
@@ -550,8 +546,6 @@ class VisitorSemantico(MOCVisitor):
                 self.lista_erros.append(
                     f"[Erro semântico] Erro inesperado ao declarar protótipo '{nome_funcao}'"
                 )
-            #else:
-                #print(f"DEBUG: Função '{nome_funcao}' declarada na linha {linha_declaracao}")
 
     # Visita o protótipo da função principal (main)
     def visitPrototipoPrincipal(self, ctx):
@@ -592,5 +586,28 @@ class VisitorSemantico(MOCVisitor):
                 self.lista_erros.append(
                     f"[Erro semântico] Erro inesperado ao declarar função principal '{nome_funcao}'"
                 )
-            #else:
-                #print(f"DEBUG: Função principal '{nome_funcao}' declarada na linha {linha_declaracao}")
+
+    def obter_tipo_expressao(self, ctx):
+        texto = ctx.getText()  # Obtém o texto completo da expressão (ex: "2.5", "a")
+
+        # 1. Verificação de literais numéricos
+        try:
+            if "." in texto:
+                float(texto)  # Tenta converter para float
+                return "double"
+            else:
+                int(texto)  # Tenta converter para inteiro
+                return "int"
+        except ValueError:
+            pass  # Não é um literal numérico — pode ser uma variável ou expressão complexa
+
+        # 2. Verificação de variáveis (identificadores)
+        if hasattr(ctx, 'IDENTIFICADOR') and ctx.IDENTIFICADOR():
+            nome = ctx.IDENTIFICADOR().getText()
+            simbolo = self.tabela_simbolos.buscar(nome)
+
+            if simbolo and hasattr(simbolo, 'tipo'):
+                return simbolo.tipo
+
+        # 3. Se não for possível determinar, assume tipo desconhecido
+        return None
