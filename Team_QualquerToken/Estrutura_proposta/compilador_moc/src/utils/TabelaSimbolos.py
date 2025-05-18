@@ -22,8 +22,6 @@ class Simbolo:
     ):
         self.nome = nome
         self.tipo = tipo
-        #self.localizacao = localizacao
-        #self.nivel = nivel
         self.linha_declaracao = linha_declaracao
         self.natureza = natureza  # 'variavel', 'funcao', 'parametro', 'constante'
         self.atributos = atributos_adicionais  # Ex.: valor_inicial, etc.
@@ -33,10 +31,6 @@ class Simbolo:
          # Adiciona mais detalhes na representação para facilitar o debug
         attrs_str = ', '.join(f"{k}={v}" for k, v in self.atributos.items() if k not in ['nome', 'tipo', 'linha_declaracao', 'natureza'])
         return f"<Simbolo {self.nome} (Tipo: {self.tipo}, Natureza: {self.natureza}, Linha: {self.linha_declaracao}{', ' + attrs_str if attrs_str else ''})>"
-
-
-  #  def __repr__(self):
-  #      return f"<Simbolo {self.nome} ({self.tipo}) @{self.linha_declaracao}>"
 
 class Funcao(Simbolo):
     def __init__(self, nome: str, tipo_retorno: str, parametros: list, linha_declaracao: int,
@@ -113,11 +107,8 @@ class TabelaDeSimbolos:
     def __init__(self):
         # Uma lista de dicionários para representar a pilha de contextos.
         # O primeiro dicionário é o contexto global.
-        #self.pilha_contextos = [{}]
         self.pilha_contextos: List[Dict[str, Union[Simbolo, Funcao, Variavel]]] = [{}]
         self.historico_contextos = []  # Armazena todos os contextos já processados
-
-        #print("\nTabela de Símbolos inicializada.")
 
     def __str__(self):
         """Retorna uma representação em string da tabela de símbolos incluindo histórico"""
@@ -131,8 +122,6 @@ class TabelaDeSimbolos:
             if contexto:
                 for nome, info in contexto.items():
                     representation += f"    '{nome}': {info}\n"
-                #for nome, simbolo in contexto.items():
-                #    representation += f"    '{nome}': {simbolo}\n"
             else:
                 representation += "    <contexto vazio>\n"
         representation += "-------------------------------------------\n"
@@ -153,7 +142,6 @@ class TabelaDeSimbolos:
 
     def entrar_contexto(self):
         """Adiciona um novo contexto (nível) à pilha."""
-        #self.pilha_contextos.append({})
         self.pilha_contextos.append({})
         debug_print(f"Entrou num novo contexto. Nível atual: {len(self.pilha_contextos)}")
 
