@@ -2,14 +2,14 @@ import unittest
 from antlr4 import *
 from io import StringIO
 
-from TabelaSimbolos import TabelaDeSimbolos
+from ..src.utils.TabelaSimbolos import TabelaDeSimbolos
 
 # Certifique-se que os imports funcionam a partir da localização do seu teste
 # Pode precisar de ajustar o sys.path se estiver numa estrutura de pastas diferente
 try:
-    from MOCLexer import MOCLexer
-    from MOCParser import MOCParser
-    from VisitorSemantico import VisitorSemantico # Importa a classe a ser testada
+    from ..src.antrl.MOCLexer import MOCLexer
+    from ..src.antrl.MOCParser import MOCParser
+    from ..src.intermediate_code.VisitorSemantico import VisitorSemantico # Importa a classe a ser testada
 except ImportError:
     print("Erro: Certifique-se que MOCLexer, MOCParser e VisitorSemantico estão acessíveis.")
     # Pode adicionar lógica para ajustar sys.path aqui se necessário

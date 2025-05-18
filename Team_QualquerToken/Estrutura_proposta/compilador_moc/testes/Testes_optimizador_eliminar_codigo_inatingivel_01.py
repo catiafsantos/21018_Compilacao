@@ -2,21 +2,20 @@ import unittest
 from antlr4 import *
 from io import StringIO
 
-from MOCErrorListener import MOCErrorListener
-from OtimizadorTAC import otimizar_completo
-from TabelaSimbolos import TabelaDeSimbolos
-from VisitorSemantico import VisitorSemantico
-
+from ..src.parser.MOCErrorListener import MOCErrorListener
+from ..src.intermediate_code.OtimizadorTAC import otimizar_completo
+from ..src.utils.TabelaSimbolos import TabelaDeSimbolos
+from ..src.intermediate_code.VisitorSemantico import VisitorSemantico
 # Supondo que TabelaDeSimbolos é usada internamente pelo VisitorTAC ou não é necessária aqui
 # from TabelaSimbolos import TabelaDeSimbolos
 
 # Certifique-se que os imports funcionam a partir da localização do seu teste
 # Pode precisar de ajustar o sys.path se estiver numa estrutura de pastas diferente
 try:
-    from MOCLexer import MOCLexer
-    from MOCParser import MOCParser
+    from ..src.antrl.MOCLexer import MOCLexer
+    from ..src.antrl.MOCParser import MOCParser
     # Importa a classe VisitorTAC a ser testada
-    from VisitorTAC import VisitorTAC, gerar_texto_tac
+    from ..src.intermediate_code import VisitorTAC, gerar_texto_tac
     # VisitorSemantico pode ser necessário se o TAC depender de informações coletadas por ele
     # from VisitorSemantico import VisitorSemantico
 except ImportError as e:
