@@ -1,0 +1,30 @@
+ "Mover Código Invariante ao Loop" (Loop-Invariant Code Motion - LICM)
+ 
+int TAMANHO=1000;
+int main() {
+    int dados[TAMANHO];
+    int offset = 10; // Índice fixo
+    long long soma_ponderada = 0;
+    int fator = 2; // Fator que não muda no loop
+
+    // Inicializar dados (exemplo)
+    for(int i=0; i<TAMANHO; ++i) dados[i] = i;
+
+    printf("Código SEM otimização LICM (conceitual) com acesso a memória:\n");
+
+    for (int i = 0; i < TAMANHO / 2; i++) {
+        // A expressão 'dados[offset]' envolve calcular o endereço
+        // de memória de dados + offset. Como 'offset' não muda,
+        // este endereço é invariante ao loop.
+        int valor_invariante = dados[offset];
+
+        // Usa o valor lido de uma posição fixa e algo que varia (i)
+        soma_ponderada += (long long)valor_invariante * fator * i;
+    }
+
+    printf("Soma ponderada: %lld\n", soma_ponderada);
+    // Note que o endereço de dados[offset] foi calculado e o valor
+    // foi lido da memória 'TAMANHO / 2' vezes.
+
+    return 0;
+}

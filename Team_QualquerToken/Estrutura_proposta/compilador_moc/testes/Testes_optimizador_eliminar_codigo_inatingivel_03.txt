@@ -1,0 +1,28 @@
+/*eliminar_codigo_inatingivel()          # Remove código após saltos sem label
+
+Os exemplos mais comuns são após return, break, continue, goto (quando não há um label imediatamente a seguir que possa ser alvo de outro goto), ou chamadas a funções que nunca retornam  */
+
+
+EXEMPLO 3
+
+
+void verificar_erro(int erro) {
+    if (erro != 0) {
+        printf("Erro detectado! A terminar o programa.\n");
+        exit(1); // O programa termina AQUI.
+
+        // ---- INÍCIO DO CÓDIGO INATINGÍVEL ----
+        printf("Esta mensagem nunca será mostrada.\n");
+        // Qualquer outra limpeza ou lógica aqui é inútil.
+        // ---- FIM DO CÓDIGO INATINGÍVEL ----
+    }
+    printf("Nenhum erro detectado.\n");
+}
+
+int main() {
+    verificar_erro(0); // Teste sem erro
+    verificar_erro(5); // Teste com erro
+    printf("Esta linha só é alcançada se não houver erro.\n"); // Não será impressa no segundo teste
+    return 0;
+}
+

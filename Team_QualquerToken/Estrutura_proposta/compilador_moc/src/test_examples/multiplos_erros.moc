@@ -1,0 +1,20 @@
+/* exemplo com múltiplos erros semânticos */
+int fact(int);
+void main(void);
+
+int fact(int n) {
+    int n;                  // [Erro]: variável 'n' já foi declarada
+    if (k <= 1) {           // [Erro]: variável 'k' não declarada
+        return 1;
+    } else {
+        return k * fact();  // [Erro]: chamada à função 'fact' com número errado de argumentos
+    }
+}
+
+void main(void) {
+    int n;
+    writes("Introduza inteiro: ");
+    x = read();             // [Erro]: variável 'x' usada antes de ser declarada
+    write(fact(n));
+    writev(v);              // [Erro]: vetor 'v' usado antes de ser declarado
+}

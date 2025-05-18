@@ -1,0 +1,13 @@
+void main(void);
+
+void main(void) {
+    int i, n, x, y, z;
+    x = 10;
+    y = 20;
+    n = read();
+
+    for (i = 0; i < n; i = i + 1) {
+        z = x + y;
+        write(z);
+    }
+}
