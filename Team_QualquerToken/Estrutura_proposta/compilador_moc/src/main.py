@@ -1,5 +1,6 @@
 # main.py
 
+import os
 import sys
 import copy
 import subprocess
@@ -22,6 +23,11 @@ def main():
         return
 
     input_file = sys.argv[1]
+
+    # Check if the file exists
+    if not os.path.exists(input_file):
+        print("O ficheiro " + input_file + " não existe.")
+        return
 
     if "-tree" in sys.argv:
         run_antlr4_parse(input_file, "-tree")
