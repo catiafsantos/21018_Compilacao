@@ -702,39 +702,39 @@ class OtimizadorTAC:
 def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     otimizador = OtimizadorTAC(tac_quadruplos, variaveis_utilizador)
 
-    print("\n=== Início das Otimizações ===")
+    debug_print("\n=== Início das Otimizações ===")
 
-    print("\n[1] Constant Folding (primeira passagem)")
+    debug_print("\n[1] Constant Folding (primeira passagem)")
     otimizador.constant_folding()
     
-    print("\n[2] Propagação de Cópias")
+    debug_print("\n[2] Propagação de Cópias")
     otimizador.propagacao_copias()
 
-    print("\n[3] Eliminação de Subexpressões Comuns (CSE)")
+    debug_print("\n[3] Eliminação de Subexpressões Comuns (CSE)")
     otimizador.eliminar_subexpressoes_comuns_CSE()
 
-    print("\n[4] Loop Invariant Code Motion")
+    debug_print("\n[4] Loop Invariant Code Motion")
     otimizador.mover_invariantes()
 
-    print("\n[5] Constant Folding (segunda passagem)")
+    debug_print("\n[5] Constant Folding (segunda passagem)")
     otimizador.constant_folding()
 
-    print("\n[6] Propagação de Cópias(segunda passagem)")
+    debug_print("\n[6] Propagação de Cópias(segunda passagem)")
     otimizador.propagacao_copias()
 
-    print("\n[7] Eliminação de Código Inatingível")
+    debug_print("\n[7] Eliminação de Código Inatingível")
     otimizador.remover_codigo_inatingivel_metodo()
 
-    print("\n[8] Eliminação de Código Morto (com iterações)")
+    debug_print("\n[8] Eliminação de Código Morto (com iterações)")
     # Fase 2 — aplicar eliminação de código morto até estabilizar (ponto fixo)
     prev = None
     atual = otimizador.eliminar_codigo_morto()
     iteracao = 1
     while prev != atual:
-        print(f"[8.{iteracao}] - Iteração de código morto")
+        debug_print(f"[8.{iteracao}] - Iteração de código morto")
         prev = atual
         atual = otimizador.eliminar_codigo_morto()
         iteracao += 1
 
-    print("\n=== Fim das Otimizações ===")
+    debug_print("\n=== Fim das Otimizações ===")
     return atual

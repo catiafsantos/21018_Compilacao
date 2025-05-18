@@ -38,6 +38,8 @@ def main():
         return
 
     # --- Fase de Análise Sintática ---
+    print("\n--- A iniciar Análise Sintática ---")
+
     input_stream = FileStream(input_file, encoding='utf-8')
     lexer = MOCLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
@@ -55,7 +57,7 @@ def main():
         print(f"\n[Parsing interrompido]: {e}")
         return
 
-    print("--- Análise sintática concluída ---")
+    print("\n--- Análise Sintática concluída ---")
 
     if parser.getNumberOfSyntaxErrors() > 0:
         print("\nErros de sintaxe encontrados. A abortar o processo de geração de código intermédio.")
@@ -86,7 +88,7 @@ def main():
     except Exception as e:
         print(f"\nErro semântico durante geração de TAC: {e}")
         return
-    print("--- Geração de Código Intermédio Concluída ---")
+    print("\n--- Geração de Código Intermédio concluída ---")
 
     # --- Exibir TAC Gerado ---
     print("\n==== CÓDIGO TAC GERADO ====")
@@ -102,7 +104,8 @@ def main():
     for linha in tac_otimizado_txt:
         print(linha)
 
-    print(tabela_de_simbolos_principal)
+    #--- Preparação codigo máquina ---
+    #print(tabela_de_simbolos_principal)
 
 if __name__ == '__main__':
     main()
