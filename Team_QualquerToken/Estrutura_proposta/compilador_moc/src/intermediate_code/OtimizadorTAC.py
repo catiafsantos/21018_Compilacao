@@ -1,5 +1,4 @@
 import copy
-from collections import defaultdict
 from typing import List, Tuple, Dict, Set, Optional
 
 DEBUG_MODE_OTIMIZADOR_TAC = False
@@ -232,8 +231,7 @@ class OtimizadorTAC:
         Dobra expressões binárias de constantes e propaga atribuições de constantes.
         """
         novos_quadruplos = []             # Lista final de quadruplos com constantes já resolvidas
-        constantes_resolvidas = {}        # Mapeia variáveis para os seus valores constantes
-        constantes = {}
+        constantes_resolvidas = {}        # Mapeia variáveis para os seus valores constantes        constantes = {}
         fez_alteracoes = True
 
         while fez_alteracoes:
@@ -278,27 +276,12 @@ class OtimizadorTAC:
                         if res not in constantes_resolvidas or constantes_resolvidas[res] != v1:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
                             constantes_resolvidas[res] = v1
-                            changed_in_pass = True
+                            fez_alteracoes = True
                     else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
                         if res in constantes_resolvidas:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
                             del constantes_resolvidas[res]
-                            changed_in_pass = True
-#                elif op == "_": # Indice de array
-#                    novos_quadruplos.append(q)
-#                    continue
-#                    if c1:  # Atribuindo uma constante
-#                        if res not in constantes_resolvidas or constantes_resolvidas[res] != str(v1) + "*" + str(v2):
-#                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
-#                            constantes_resolvidas[res] = str(v1) + "*" + str(v2)
-#                            changed_in_pass = True
-#                    else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
-#                        if res in constantes_resolvidas:
-#                            #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
-#                            del constantes_resolvidas[res]
-#                            changed_in_pass = True
-#                elif op in {"-", "*", "/", "%"}:
-#                    continue
+                            fez_alteracoes = True
                 elif op in {"label"}:
                     #funcoes ou main
                     novos_quadruplos.append(q)
@@ -368,32 +351,6 @@ class OtimizadorTAC:
 
         # Substitui os quadruplos antigos pelos otimizados
         self.quadruplos = resultado
-        return self.quadruplos
-
-    # Método eliminar_codigo_inatingivel: remove instruções que nunca poderão ser executadas (por exemplo, após um return ou goto)
-    def eliminar_codigo_inatingivel(self):
-        novos_quadruplos = []  # Lista de instruções que devem ser mantidas
-        ignorar = False        # Flag para indicar se estamos num bloco de código inatingível
-        eliminadas = []        # Guardar instruções eliminadas para debug
-
-        for q in self.quadruplos:
-            if ignorar:
-                if q["op"] == "label":
-                    ignorar = False
-                    novos_quadruplos.append(q)
-                else:
-                    eliminadas.append(q)  # <-- Guarda a instrução eliminada
-                    continue
-            else:
-                novos_quadruplos.append(q)
-                if q["op"] in {"goto", "return"}:
-                    ignorar = True
-
-        # DEBUG: Mostrar o que foi eliminado
-        for q in eliminadas:
-            debug_print(f"[DEBUG]  [Inatingível] Eliminada: {q}")
-
-        self.quadruplos = novos_quadruplos
         return self.quadruplos
 
     # Método auxiliar _is_const: verifica se o argumento representa uma constante numérica (int ou float)
@@ -766,7 +723,6 @@ def otimizar_completo(tac_quadruplos, variaveis_utilizador=None):
     otimizador.propagacao_copias()
 
     print("\n[7] Eliminação de Código Inatingível")
-   #otimizador.eliminar_codigo_inatingivel()
     otimizador.remover_codigo_inatingivel_metodo()
 
     print("\n[8] Eliminação de Código Morto (com iterações)")
