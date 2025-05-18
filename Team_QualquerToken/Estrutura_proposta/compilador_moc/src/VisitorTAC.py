@@ -1,5 +1,5 @@
-from ..antrl.MOCVisitor import MOCVisitor
-from ..utils.TabelaSimbolos import TabelaDeSimbolos
+from antrl.MOCVisitor import MOCVisitor
+from utils.TabelaSimbolos import TabelaDeSimbolos
 
 
 # Classe que herda do MOCVisitor gerado pelo ANTLR e é responsável por gerar código intermédio (TAC)

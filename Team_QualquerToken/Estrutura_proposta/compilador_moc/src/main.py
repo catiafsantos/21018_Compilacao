@@ -9,9 +9,9 @@ from antrl.MOCLexer import MOCLexer
 from antrl.MOCParser import MOCParser
 from parser.MOCErrorListener import MOCErrorListener
 from utils.TabelaSimbolos import TabelaDeSimbolos
-from intermediate_code.VisitorSemantico import VisitorSemantico
-from intermediate_code.VisitorTAC import VisitorTAC, gerar_texto_tac
-from intermediate_code.OtimizadorTAC import otimizar_completo
+from VisitorSemantico import VisitorSemantico
+from VisitorTAC import VisitorTAC, gerar_texto_tac
+from OtimizadorTAC import otimizar_completo
 
 def run_antlr4_parse(file_path, option):
     cmd = f"cat {file_path} | antlr4-parse MOC.g4 programa {option}"

@@ -1,5 +1,5 @@
-from ..antrl.MOCVisitor import MOCVisitor
-from ..utils.TabelaSimbolos import TabelaDeSimbolos, Variavel, Funcao
+from antrl.MOCVisitor import MOCVisitor
+from utils.TabelaSimbolos import TabelaDeSimbolos, Variavel, Funcao
 
 
 # Classe responsável pela análise semântica do programa
