@@ -1,0 +1,121 @@
+Representação de Arrays em TAC
+Em Código de Três Endereços, cada instrução tem no máximo três operandos (ou endereços). Quando lidamos com arrays, as operações principais são aceder a um elemento (leitura) e modificar um elemento (escrita).
+
+Abordagem 1: Cálculo Explícito de Endereço
+Esta abordagem torna o cálculo do endereço de memória de um elemento do array explícito no TAC. Assume-se que:
+
+Cada elemento do array tem um tamanho fixo (por exemplo, 4 bytes para um inteiro).
+
+O array está armazenado contiguamente na memória.
+
+Conhecemos o endereço base do array (representado como &array_nome).
+
+Exemplo 1: Ler um elemento do array (x = a[i])
+
+Código de alto nível:
+
+int a[10];
+int i;
+int x;
+// ... inicializar i e a ...
+x = a[i];
+
+Representação TAC explícita:
+
+  // Assumindo que 'i' contém o índice e 'a' é o nome base do array.
+  // Assumindo que cada elemento de 'a' ocupa 4 bytes (tamanho de um int).
+  t1 = i * 4          // t1 = deslocamento (offset) em bytes
+  t2 = &a + t1        // t2 = endereço de a[i] (endereço base de 'a' + deslocamento)
+  x = *t2             // x = valor no endereço t2 (desreferenciação)
+
+t1, t2 são variáveis temporárias geradas pelo compilador.
+
+&a representa o endereço base do array a.
+
+*t2 representa o valor armazenado no endereço de memória t2.
+
+Exemplo 2: Escrever num elemento do array (a[i] = y)
+
+Código de alto nível:
+
+int a[10];
+int i;
+int y;
+// ... inicializar i e y ...
+a[i] = y;
+
+Representação TAC explícita:
+
+  // Assumindo que 'i' contém o índice, 'y' o valor a ser escrito,
+  // e 'a' é o nome base do array (elementos de 4 bytes).
+  t1 = i * 4          // t1 = deslocamento em bytes
+  t2 = &a + t1        // t2 = endereço de a[i]
+  *t2 = y             // Armazena o valor de 'y' no endereço t2
+
+Abordagem 2: Forma Abstrata (Mais Comum)
+Muitas representações TAC usam uma notação mais abstrata para acesso a arrays, que é mais próxima da sintaxe da linguagem
+de origem. O compilador ainda realizará os cálculos de endereço internamente ao traduzir este TAC para código de máquina, mas o TAC em si é mais legível.
+
+Nesta forma, as operações de acesso a arrays são frequentemente representadas diretamente:
+
+Exemplo 1: Ler um elemento do array (x = a[i])
+
+Representação TAC abstrata:
+
+  t1 = a[i]           // t1 recebe o valor de a[i]
+  x = t1
+
+Ou, mais diretamente, se a atribuição for simples:
+
+  x = a[i]
+
+Exemplo 2: Escrever num elemento do array (a[i] = y)
+
+Representação TAC abstrata:
+
+  a[i] = y
+
+Exemplo 3: Operação mais complexa (z = a[i] + b[j])
+
+Código de alto nível:
+
+int a[10], b[10];
+int i, j, z;
+// ... inicializar ...
+z = a[i] + b[j];
+
+Representação TAC abstrata:
+
+  t1 = a[i]           // Carrega a[i] para t1
+  t2 = b[j]           // Carrega b[j] para t2
+  t3 = t1 + t2        // Soma os valores
+  z = t3              // Armazena o resultado em z
+
+Arrays Multidimensionais
+Para arrays multidimensionais, o cálculo do endereço torna-se mais complexo, mas o princípio é o mesmo.
+ Por exemplo, para x = matriz[i][j] (assumindo uma matriz NUM_COLUNAS colunas e elementos de TAMANHO_ELEMENTO bytes):
+
+Cálculo do endereço (linearização): endereço_base + (i * NUM_COLUNAS + j) * TAMANHO_ELEMENTO
+
+Em TAC explícito:
+
+  t1 = i * NUM_COLUNAS
+  t2 = t1 + j
+  t3 = t2 * TAMANHO_ELEMENTO
+  t4 = &matriz + t3     // Endereço de matriz[i][j]
+  x = *t4
+
+Em TAC abstrato:
+
+  t1 = matriz[i][j]
+  x = t1
+
+Ou simplesmente:
+
+  x = matriz[i][j]
+
+Conclusão
+A forma abstrata (x = a[i] e a[i] = y) é frequentemente preferida nas fases iniciais da representação intermediária por
+ser mais simples e mais próxima do código fonte. O compilador tem a responsabilidade de expandir estas instruções para
+os cálculos de endereço detalhados (como na abordagem explícita) quando gera código de baixo nível ou otimiza o acesso à memória.
+ A escolha da representação pode depender do design específico do compilador e das otimizações que se pretende aplicar.

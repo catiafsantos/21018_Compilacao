@@ -1,0 +1,11 @@
+ /* teste de optimização em operações combinadas doubles */
+void main(void);
+void main(void) {
+	int a, b, c;
+	double d;
+	a = 5;
+	b = 10;
+	c = (a + b) * 2;
+	d = c / 5.0;
+	write(d);
+}

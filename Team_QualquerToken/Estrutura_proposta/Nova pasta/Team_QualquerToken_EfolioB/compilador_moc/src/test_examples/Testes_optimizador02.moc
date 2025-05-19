@@ -1,0 +1,10 @@
+/* teste de optimizacao 
+	constant_folding - Substitui expressões com constantes 
+	remove variavel não utilizada
+*/
+void main(void);
+void main(void) {
+	int x[]={1,2,3};
+	int y= x[0] + x[1];
+	write(y);
+}

@@ -1,0 +1,69 @@
+python.exe D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\main.py D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\test_examples\exemplo3.moc 
+
+--- A iniciar Análise Sintática ---
+
+--- Análise Sintática concluída ---
+
+--- A iniciar Análise Semântica ---
+
+--- Análise Semântica concluída ---
+
+--- A iniciar Geração de Código Intermédio ---
+
+--- Geração de Código Intermédio concluída ---
+
+==== CÓDIGO TAC GERADO ====
+avg:
+size = param1
+sum = 0
+i = 0
+L1:
+t1 = i < size
+ifFalse t1 goto L3
+L2:
+t2 = sum + i
+sum = t2
+t3 = i + 1
+i = t3
+goto L1
+L3:
+t4 = sum / size
+return t4
+end_avg:
+main:
+alloc v, 100
+writes "Introduza tamanho do vetor, seguido dos respetivos valores: "
+t5 = call read
+n = t5
+i = 0
+L4:
+t6 = i < n
+ifFalse t6 goto L6
+L5:
+t7 = i * 4
+t8 = call read
+v[t7] = t8
+t9 = i + 1
+i = t9
+goto L4
+L6:
+param v
+param n
+t10 = call avg
+write t10
+halt
+end_main:
+
+==== CÓDIGO TAC OTIMIZADO ====
+avg:
+sum = 0
+i = 0
+i = 1
+L1:
+t1 = i < param1
+ifFalse t1 goto L3
+L3:
+t4 = sum / param1
+return t4
+
+Process finished with exit code 0

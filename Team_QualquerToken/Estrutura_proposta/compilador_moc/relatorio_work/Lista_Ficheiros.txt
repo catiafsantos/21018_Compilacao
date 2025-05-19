@@ -1,0 +1,30 @@
+# Ficheiros gerados pelo ANTLR 4.13.2 usando o ficheiro MOC.g4
+
+MOCLexer.py 
+MOCLexer.tokens 
+MOCLexer.interp
+
+MOCParser.py 
+MOCVisitor.py 
+MOCListener.py 
+
+# Ficheiros do programa
+
+
+MOCErrorListener.py
+VisitorSemantico.py
+VisitorTAC.py
+OtimizadorTAC.py
+main.py
+
+no main.py
+
+Contem as fases por ordem:
+Análise Sintática
+Análise Semantica: VisitorSemantico
+
+Geracao de código intermédio: VisitorTAC
+Optimização: otimizar_completo
+
+
+

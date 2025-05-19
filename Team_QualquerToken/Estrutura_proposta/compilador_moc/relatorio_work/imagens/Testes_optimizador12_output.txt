@@ -1,0 +1,36 @@
+python.exe D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\main.py D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\test_examples\Testes_optimizador12.moc 
+
+--- A iniciar Análise Sintática ---
+
+--- Análise Sintática concluída ---
+
+--- A iniciar Análise Semântica ---
+
+--- Análise Semântica concluída ---
+
+--- A iniciar Geração de Código Intermédio ---
+
+--- Geração de Código Intermédio concluída ---
+
+==== CÓDIGO TAC GERADO ====
+main:
+a = 100
+write a
+b = a
+a = 10
+t1 = b + 20
+c = t1
+write c
+halt
+end_main:
+
+==== CÓDIGO TAC OTIMIZADO ====
+main:
+a = 100
+write a
+a = 10
+write 120
+halt
+end_main:
+
+Process finished with exit code 0

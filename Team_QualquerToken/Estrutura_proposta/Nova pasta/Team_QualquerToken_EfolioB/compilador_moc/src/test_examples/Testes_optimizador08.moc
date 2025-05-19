@@ -1,0 +1,13 @@
+/* teste de optimizacao de código morto */
+void main(void);
+void main(void) {
+	int x;
+	x = 10;
+	int y=x;  /* isto é variavel nao utilizada */
+	if (x == 10) {
+		writes("10");
+	} else {
+	/* isto é código morto */
+		x = x + 25;
+	}
+}
