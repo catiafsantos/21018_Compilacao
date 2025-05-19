@@ -44,11 +44,12 @@ compilador_moc/
 │   │
 │   ├── test_examples/             # Programas de teste em MOC (.moc) [exemplos do enuciado, adicionais ou funcionalidade]
 │   │   ├── exemplo1.moc, exemplo2.moc, exemplo3.moc       # Testes de exemplo do enunciado
-│   │   ├── exemplo5.moc, exemplo6.moc, exemplo7.moc       # Exemplos de teste adicionais
+│   │   ├── exemplo4.moc, exemplo5.moc, exemplo6.moc       # Exemplos de teste adicionais
+│   │   ├── variavel_n_duplicada.moc
 │   │   ├── compatibilidade_de_tipos.moc
 │   │   ├── variavel_k_nao_declarada.moc
 │   │   ├── compatibilidade_de_tipos.moc
-│   │   └── variavel_n_duplicada.moc (...)
+│   │   └── Testes_optimizador01.moc (...)                 # Testes para validar cada uma das otimizações aplicadas
 │   │
 │   ├── utils/
 │   │   ├── TabelaSimbolos.py      # Tabela de símbolos usada na análise semântica
@@ -56,6 +57,7 @@ compilador_moc/
 │   ├── VisitorSemantico.py        # Visitor que faz verificação semântica (tipos, declarações)
 │   ├── VisitorTAC.py              # Visitor responsável pela geração de TAC
 │   ├── OtimizadorTAC.py           # Aplicação das otimizações ao TAC gerado
+│   ├── Testes_semanticos.py       # Script para correr os testes semanticos
 │   └── main.py                    # Script principal com menu de execução
 |
 └── README.md                      # Instruções de instalação, execução e descrição do projeto
@@ -163,9 +165,105 @@ cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -tree
 ```bash
 cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -gui
 ```
+---
+### Testes Semânticos
+
+> Script de testes automáticos para verificar se a análise semântica está a detetar corretamente erros como:
+
+- variáveis ou funções não declaradas
+- declarações duplicadas
+- erros em condições `if`, ciclos `for` ou `while`
+
+O ficheiro de testes encontra-se em `src/Testes_semanticos.py`.
+
+#### Como correr
+
+No terminal, entre na pasta `src/`:
+
+```bash
+cd src
+python Testes_semanticos.py
+```
+
+Se tudo estiver correto, deve ver algo como:
+
+```bash
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.063s
+
+OK
+```
+---
+### Executar Ficheiros de Teste `.moc`
+
+> Todos os testes de código-fonte da linguagem MOC estão na pasta:
+
+```
+src/test_examples/
+```
+
+Pode correr qualquer um destes ficheiros com o script principal `main.py`, que irá:
+
+1. Fazer a análise sintática
+2. Fazer a análise semântica
+3. Gerar código intermediário (TAC), se não houver erros
+4. Aplicar otimizações ao TAC
+
+## Como correr
+
+No terminal, a partir da pasta `src/`, execute:
+
+```bash
+python main.py test_examples/nome_do_ficheiro.moc
+```
+
+#### Exemplos reais:
+
+```bash
+python main.py test_examples/Testes_optimizador12.moc
+```
+
+```bash
+python main.py test_examples/compatibilidade_de_tipos.moc
+```
+
+#### Resultado esperado (exemplo com sucesso)
+
+```text
+--- A iniciar Análise Sintática ---
+
+--- Análise Sintática concluída ---
+
+--- A iniciar Análise Semântica ---
+
+--- Análise Semântica concluída ---
+
+--- A iniciar Geração de Código Intermédio ---
+
+--- Geração de Código Intermédio concluída ---
+
+==== CÓDIGO TAC GERADO ====
+...
+
+==== CÓDIGO TAC OTIMIZADO ====
+...
+```
+
+### Resultado esperado (exemplo com erro)
+
+```text
+--- A iniciar Análise Sintática ---
+
+--- Análise Sintática concluída ---
+
+--- A iniciar Análise Semântica ---
+[Erro semântico] Atribuição de tipo incompatível em 'c' (esperado: int, obtido: double)
+
+Erros semânticos encontrados. A abortar o processo de geração de código intermédio.
+```
 
 ---
-
 ## Exemplos de código válidos (retirados do enunciado)
 
 ```c
@@ -196,18 +294,6 @@ void main(void) {
 - `Token inválido '#'` → A linguagem MOC não suporta diretivas como `#include`.
 - `mismatched input '=' expecting ';'` → Erro comum em inicializações incorretas de vetores com tamanho explícito.
 - `Função 'x' não definida.` → Chamada de função sem definição correspondente.
-
----
-
-## Regenerar ficheiros do ANTLR (opcional)
-
-Sempre que for alterada a gramática:
-
-```bash
-./reset_antlr.sh
-```
-
-Este script remove os ficheiros antigos e regenera todos os `.py` a partir do `MOC.g4`.
 
 ---
 
