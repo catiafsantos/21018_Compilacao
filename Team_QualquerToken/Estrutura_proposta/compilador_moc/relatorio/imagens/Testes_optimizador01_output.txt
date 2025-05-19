@@ -1,4 +1,4 @@
-python.exe D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\main.py D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\test_examples\Testes_optimizador01.moc 
+python.exe main.py .\test_examples\Testes_optimizador01.moc 
 
 --- A iniciar Análise Sintática ---
 
