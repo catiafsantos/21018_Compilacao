@@ -14,7 +14,7 @@ A linguagem MOC tem como objetivo permitir a exploração dos conceitos de anál
 > - Sistema com Java instalado (necessário para o ANTLR)
 
 Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na UC:  
-**[Enunciado do e-fólio A](https://elearning.uab.pt/pluginfile.php/3918150/mod_assign/introattachment/0/MOCC.pdf?forcedownload=1)**
+**[identificação da linguagem MOC](https://elearning.uab.pt/pluginfile.php/3918150/mod_assign/introattachment/0/MOCC.pdf?forcedownload=1)**
 
 ---
 
@@ -64,7 +64,7 @@ compilador_moc/
 ```
 ---
 
-## Como executar
+## Pré-requesitos
 
 ### Instalar o Python
 
@@ -124,46 +124,6 @@ brew install python
 2. Instale dependências:
 ```bash
 pip install antlr4-python3-runtime
-```
----
-### Compilar
-```bash
-antlr4 -Dlanguage=Python3 -visitor MOC.g4
-```
-
-### Executar exemplos com ErrorListener personalizado 
-> Assume-se que o ficheiro `exemplo1.txt` contém um exemplo de código na linguagem definida.
-
-> Valida o ficheiro `exemplo1.txt` de acordo com a gramática.
-```bash
-python3 main.py Exemplos_Teste/exemplo1.txt 
-```
-> Gera e imprime a árvore sintática textual (parse tree).
-
-```bash
-python3 main.py Exemplos_Teste/exemplo1.txt -tree
-```
-> Abre a árvore sintática numa interface gráfica (requer Java com GUI).
-
-```bash
-python3 main.py Exemplos_Teste/exemplo1.txt -gui
-```
-#### Executar exemplos com ErrorListener default do ANTLR
-> Assume-se que o ficheiro `exemplo1.txt` contém um exemplo de código na linguagem definida.
-
-> Valida o ficheiro `exemplo1.txt` de acordo com a gramática.
-```bash
-cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa
-```
-> Gera e imprime a árvore sintática textual (parse tree).
-
-```bash
-cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -tree
-```
-> Abre a árvore sintática numa interface gráfica (requer Java com GUI).
-
-```bash
-cat Exemplos_Teste/exemplo1.txt  | antlr4-parse MOC.g4 programa -gui
 ```
 ---
 ### Testes Semânticos
@@ -295,6 +255,9 @@ void main(void) {
 - `mismatched input '=' expecting ';'` → Erro comum em inicializações incorretas de vetores com tamanho explícito.
 - `Função 'x' não definida.` → Chamada de função sem definição correspondente.
 
+---
+### NOTA:
+> Para mais informações sobre a análise sintática/léxica ou mais sobre informções do efolioA verificar o link: **https://github.com/catiafsantos/21018_Compilacao/blob/main/README.md**
 ---
 
 ## Autores
