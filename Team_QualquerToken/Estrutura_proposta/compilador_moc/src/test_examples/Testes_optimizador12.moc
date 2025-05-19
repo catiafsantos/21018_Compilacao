@@ -3,7 +3,9 @@ void main(void);
 void main(void) {
 	int a, b, c; 
 	a = 100;
+	write(a);
 	b = a;
 	a = 10;
-	c = b +  20;
+	c = b + 20;
+	write(c);
 }
