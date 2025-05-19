@@ -14,7 +14,7 @@ A linguagem MOC tem como objetivo permitir a exploração dos conceitos de anál
 > - Sistema com Java instalado (necessário para o ANTLR)
 
 Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na UC:  
-**[identificação da linguagem MOC](https://elearning.uab.pt/pluginfile.php/3918150/mod_assign/introattachment/0/MOCC.pdf?forcedownload=1)**
+**[Identificação da linguagem MOC](https://elearning.uab.pt/pluginfile.php/3918150/mod_assign/introattachment/0/MOCC.pdf?forcedownload=1)**
 
 ---
 
@@ -126,59 +126,17 @@ brew install python
 pip install antlr4-python3-runtime
 ```
 ---
-### Testes Semânticos
 
-> Script de testes automáticos para verificar se a análise semântica está a detetar corretamente erros como:
 
-- variáveis ou funções não declaradas
-- declarações duplicadas
-- erros em condições `if`, ciclos `for` ou `while`
-
-O ficheiro de testes encontra-se em `src/Testes_semanticos.py`.
-
-#### Como correr
-
-No terminal, entre na pasta `src/`:
-
-```bash
-cd src
-python Testes_semanticos.py
-```
-
-Se tudo estiver correto, deve ver algo como:
-
-```bash
-..............
-----------------------------------------------------------------------
-Ran 14 tests in 0.063s
-
-OK
-```
----
-### Executar Ficheiros de Teste `.moc`
-
-> Todos os testes de código-fonte da linguagem MOC estão na pasta:
-
-```
-src/test_examples/
-```
-
-Pode correr qualquer um destes ficheiros com o script principal `main.py`, que irá:
-
-1. Fazer a análise sintática
-2. Fazer a análise semântica
-3. Gerar código intermediário (TAC), se não houver erros
-4. Aplicar otimizações ao TAC
-
-## Como correr
+## Instruções de execução
 
 No terminal, a partir da pasta `src/`, execute:
 
 ```bash
 python main.py test_examples/nome_do_ficheiro.moc
 ```
-
-#### Exemplos reais:
+---
+### Exemplos:
 
 ```bash
 python main.py test_examples/Testes_optimizador12.moc
@@ -209,8 +167,7 @@ python main.py test_examples/compatibilidade_de_tipos.moc
 ==== CÓDIGO TAC OTIMIZADO ====
 ...
 ```
-
-### Resultado esperado (exemplo com erro)
+#### Resultado esperado (exemplo com erro)
 
 ```text
 --- A iniciar Análise Sintática ---
@@ -222,39 +179,51 @@ python main.py test_examples/compatibilidade_de_tipos.moc
 
 Erros semânticos encontrados. A abortar o processo de geração de código intermédio.
 ```
-
 ---
-## Exemplos de código válidos (retirados do enunciado)
+## Testes
+### Testes manuais
 
-```c
-int fact(int);
-void main(void);
+> Todos os testes de código-fonte da linguagem MOC estão na pasta:
 
-int fact(int k) {
-    if (k <= 1) {
-        return 1;
-    } else {
-        return k * fact(k - 1);
-    }
-}
-void main(void) {
-    int n;
-    writes("Introduza inteiro: ");
-    n = read();
-    write(fact(n));
-}
+```
+src/test_examples/
 ```
 
-> Não são permitidas diretivas `#include` nem operadores como `++`, `--`, `+=`, etc.
+Pode correr qualquer um destes ficheiros com o script principal `main.py`, que irá:
 
+1. Fazer a análise sintática
+2. Fazer a análise semântica
+3. Gerar código intermediário (TAC), se não houver erros
+4. Aplicar otimizações ao TAC
 ---
+### Testes automatizados [Semânticos]
 
-## Erros comuns e mensagens
+> Script de testes automáticos para verificar se a análise semântica está a detetar corretamente erros como:
 
-- `Token inválido '#'` → A linguagem MOC não suporta diretivas como `#include`.
-- `mismatched input '=' expecting ';'` → Erro comum em inicializações incorretas de vetores com tamanho explícito.
-- `Função 'x' não definida.` → Chamada de função sem definição correspondente.
+- variáveis ou funções não declaradas
+- declarações duplicadas
+- erros em condições `if`, ciclos `for` ou `while`
 
+O ficheiro de testes encontra-se em `src/Testes_semanticos.py`.
+
+#### Instruções de execução
+
+No terminal, entre na pasta `src/`:
+
+```bash
+cd src
+python Testes_semanticos.py
+```
+
+Se tudo estiver correto, deve ver algo como:
+
+```bash
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 0.063s
+
+OK
+```
 ---
 ### NOTA:
 > Para mais informações sobre a análise sintática/léxica ou mais sobre informções do efolioA verificar o link: **https://github.com/catiafsantos/21018_Compilacao/blob/main/README.md**
