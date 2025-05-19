@@ -276,12 +276,10 @@ class OtimizadorTAC:
                         if res not in constantes_resolvidas or constantes_resolvidas[res] != v1:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
                             constantes_resolvidas[res] = v1
-                            #fez_alteracoes = True
                     else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
                         if res in constantes_resolvidas:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
                             del constantes_resolvidas[res]
-                            #fez_alteracoes = True
                 elif op in {"label"}:
                     #funcoes ou main
                     novos_quadruplos.append(q)
