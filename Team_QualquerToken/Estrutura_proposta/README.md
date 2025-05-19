@@ -23,21 +23,43 @@ Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na 
 Este projeto insere-se no eFolio B, continuação do eFolio A com a fusão de dois grupos para a continuação do projeto.
 
 - [Grupo: Qualquer] - [Andreia Romão - 1702430 / Cátia Santos - 1702194]
-- [Grupo: Token] - [Rui Menino - 1103425 / Luís Tavares - 1803237 / José Augusto Azevedo - 2200655]
+- [Grupo: Token]    - [Rui Menino - 1103425 / Luís Tavares - 1803237 / José Augusto Azevedo - 2200655]
 
-
-| Ficheiro              | Descrição                                                           |
-|-----------------------|---------------------------------------------------------------------|
-| `main.py`             | Script principal com menu e execução automática do ANTLR            |
-| `MOC.g4`              | Ficheiro de gramática (regras léxicas e sintáticas)                 |
-| `MOCErrorListener.py` | Tratamento de erros com mensagens legíveis para o utilizador        |
-| `MOCVisitorDEBUG.py`  | Visitor alternativo com debug passo-a-passo (não usado por defeito) |
-| `reset_antlr.sh`      | Script utilitário para limpar e regenerar ficheiros do ANTLR        |
-| `README.md`           | Instruções de utilização e documentação técnica do projeto          |
-| `Exemplos_Teste/`     | Pasta com 6 ficheiros de testes:exemplo1 a exemplo3 -> enunciado    |
-|                       | :exemplo 4 e exemplo 4 -> testes extremos, sucesso e falha          |
-|                       | :Possiveis_testes_Sucesso-Erro -> todos os testes criados           |
-
+```plaintext
+compilador_moc/
+│
+├── relatorio/                      # Relatório do efolioB
+│
+├── src/
+│   ├── antlr/                      # Ficheiros gerados automaticamente pelo ANTLR
+│   │   ├── MOCLexer.py
+│   │   ├── MOCVisitor.py
+│   │   ├── MOCListener.py
+│   │   ├── MOCParser.py
+│   │   └── MOC.tokens, .interp (...)
+│   │
+│   ├── parser/
+│   │   ├── MOC.g4                 # Gramática da linguagem MOC
+│   │   └── MOCErrorListener.py    # Listener com tratamento personalizado de erros
+│   │
+│   ├── test_examples/             # Programas de teste em MOC (.moc) [exemplos do enuciado, adicionais ou funcionalidade]
+│   │   ├── exemplo1.moc, exemplo2.moc, exemplo3.moc       # Testes de exemplo do enunciado
+│   │   ├── exemplo5.moc, exemplo6.moc, exemplo7.moc       # Exemplos de teste adicionais
+│   │   ├── compatibilidade_de_tipos.moc
+│   │   ├── variavel_k_nao_declarada.moc
+│   │   ├── compatibilidade_de_tipos.moc
+│   │   └── variavel_n_duplicada.moc (...)
+│   │
+│   ├── utils/
+│   │   ├── TabelaSimbolos.py      # Tabela de símbolos usada na análise semântica
+│   │
+│   ├── VisitorSemantico.py        # Visitor que faz verificação semântica (tipos, declarações)
+│   ├── VisitorTAC.py              # Visitor responsável pela geração de TAC
+│   ├── OtimizadorTAC.py           # Aplicação das otimizações ao TAC gerado
+│   └── main.py                    # Script principal com menu de execução
+|
+└── README.md                      # Instruções de instalação, execução e descrição do projeto
+```
 ---
 
 ## Como executar
