@@ -1,0 +1,25 @@
+ /* teste de optimizacao de odigo inantigivel */
+         
+int main();    
+int main() {
+	int soma = 0; 
+	int i;
+	for (i = 0; i < 10; i+1) {
+		if (i == 5) {
+			//writes("Encontrado i = 5, a sair do loop...");
+			break; // O loop termina AQUI quando i = 5.
+
+			// ---- INÍCIO DO CÓDIGO INATINGÍVEL (nesta iteração) ----
+			// Este código só seria alcançável se o break não existisse
+			// ou estivesse dentro de outra condição que pudesse ser falsa.
+			// Como está logo após um break incondicional DENTRO DO if(i==5),
+			// nunca é executado QUANDO i==5. 
+			write(i);
+			// ---- FIM DO CÓDIGO INATINGÍVEL ----
+		}
+		soma = soma + i;
+		write(soma);
+	}
+	write(soma); // Soma será 0+1+2+3+4 = 10
+	return 0;
+}

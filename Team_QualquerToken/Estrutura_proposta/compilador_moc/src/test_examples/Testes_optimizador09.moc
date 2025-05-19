@@ -1,0 +1,19 @@
+ /* teste de optimizacao de codigo inantigivel */
+int obter_valor();
+int main();
+int obter_valor() {
+	int valor = 42; 
+	return valor; // O controlo sai da função AQUI.
+
+	// ---- INÍCIO DO CÓDIGO INATINGÍVEL ----
+	
+	valor = valor + 10; // Esta atribuição nunca acontece.
+	write(valor);
+	// ---- FIM DO CÓDIGO INATINGÍVEL ----
+}
+
+int main() {
+	int resultado = obter_valor();
+	write(resultado);
+	return 0;
+}
