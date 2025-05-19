@@ -2,11 +2,11 @@ void main(void);
 void main(void) {
     int x;
     x = 10;
-    int y=x;  /* isto é código morto */
+    int y=x;  /* isto deve desaparecer */
     if (x == 10) {
         writes("10");
     } else {
-     /* isto é código morto */
+     /* isto deve desaparecer  */
         x = x + 25;
     }
 }

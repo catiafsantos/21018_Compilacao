@@ -4,32 +4,24 @@ void main(void) {
     int x = 2 + 3;            // constante dobrável → x = 5
     int y = x;                // cópia → y = 5
     int z = y;                // cópia → z = 5
-
     int r = 10 - 4;           // constante dobrável → r = 6
     int t = r;
-
     int a = 7;
     int b = 3;
     int soma = a + b;         // a + b = 10
-
     double d = (double) soma; // cast explícito
-
     int v[3] = {1, 2, 3};     // vetor com valores literais
-
     int i = 0;
     int total = 0;
-
     while (i < 3) {
         total = total + v[i]; // uso de vetor
         i = i + 1;
     }
-
     if (total > 5) {
         write(total);         // total = 6
     } else {
         write(0);
     }
-
     int copia = total;
     int resultado = copia;
     write(resultado);         // resultado = 6
@@ -38,7 +30,6 @@ void main(void) {
     read();
     readc();
     reads();
-
     // Escrita de literais
     writes("fim");
 }
