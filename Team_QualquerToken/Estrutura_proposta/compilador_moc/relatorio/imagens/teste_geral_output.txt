@@ -1,0 +1,88 @@
+python.exe D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\main.py D:\UAB\Compilacao\GitHub\21018_Compilacao\Team_QualquerToken\Estrutura_proposta\compilador_moc\src\test_examples\teste_geral.moc 
+
+--- A iniciar Análise Sintática ---
+
+--- Análise Sintática concluída ---
+
+--- A iniciar Análise Semântica ---
+
+--- Análise Semântica concluída ---
+
+--- A iniciar Geração de Código Intermédio ---
+
+--- Geração de Código Intermédio concluída ---
+
+==== CÓDIGO TAC GERADO ====
+main:
+t1 = 2 + 3
+x = t1
+y = x
+z = y
+t2 = 10 - 4
+r = t2
+t = r
+a = 7
+b = 3
+t3 = a + b
+soma = t3
+t4 = (double) soma
+d = t4
+alloc v, 3
+t5 = 0 * 4
+v[t5] = 1
+t6 = 1 * 4
+v[t6] = 2
+t7 = 2 * 4
+v[t7] = 3
+i = 0
+total = 0
+L1:
+t8 = i < 3
+ifFalse t8 goto L3
+L2:
+t9 = i * 4
+t10 = v[t9]
+t11 = total + t10
+total = t11
+t12 = i + 1
+i = t12
+goto L1
+L3:
+t13 = total > 5
+ifFalse t13 goto L5
+L4:
+write total
+goto L6
+L5:
+write 0
+L6:
+copia = total
+resultado = copia
+write resultado
+t14 = call read
+t15 = t14
+t16 = call readc
+t17 = t16
+t18 = call reads
+t19 = t18
+writes "fim"
+halt
+end_main:
+
+==== CÓDIGO TAC OTIMIZADO ====
+main:
+t4 = (double) 10
+alloc v, 3
+v[0] = 1
+v[4] = 2
+v[8] = 3
+total = 0
+t9 = 0
+L1:
+L2:
+t10 = v[t9]
+t11 = total + t10
+total = t11
+goto L1
+
+Process finished with exit code 0
