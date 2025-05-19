@@ -6,7 +6,6 @@ from ..src.parser.MOCErrorListener import MOCErrorListener
 from ..src.intermediate_code.OtimizadorTAC import otimizar_completo
 from ..src.utils.TabelaSimbolos import TabelaDeSimbolos
 from ..src.intermediate_code.VisitorSemantico import VisitorSemantico
-
 # Supondo que TabelaDeSimbolos é usada internamente pelo VisitorTAC ou não é necessária aqui
 # from TabelaSimbolos import TabelaDeSimbolos
 
@@ -100,24 +99,35 @@ class TestVisitorTAC(unittest.TestCase):
         self.assertListEqual(tac_resultante_list, tac_esperado_list, msg)
 
     # --- Testes para Geração de TAC ---
-     
-    def test_atribuicao_simples_int(self):
-        """Testa a geração de TAC para uma atribuição inteira simples."""
+
+    def test_constant_folding(self):
+        """Testa a geração de TAC com codigo inantigivel."""
         codigo = """
-        
-        void main(void);
-      
-        void main(void) {    
-            double x=5;
-            int a = 2.5;
+        /* teste de optimizacao de codigo inantigivel */
+        int obter_valor();
+        int main();
+        int obter_valor() {
+            int valor = 42; 
+            return valor; // O controlo sai da função AQUI.
+
+            // ---- INÍCIO DO CÓDIGO INATINGÍVEL ----
+            
+            valor = valor + 10; // Esta atribuição nunca acontece.
+            write(valor);
+            // ---- FIM DO CÓDIGO INATINGÍVEL ----
+        }
+
+        int main() {
+            int resultado = obter_valor();
+            write(resultado);
+            return 0;
         }
         """
 
         print(codigo)
         resultado_tac = self._parse_e_gera_tac(codigo)
-
-
-
+        print ("Testa a codigo inantigivel")
+        print("AVALIAR")
 
 # Para executar os testes a partir da linha de comando:
 # python -m unittest test_semantico.py
