@@ -12,6 +12,7 @@ from utils.TabelaSimbolos import TabelaDeSimbolos
 from VisitorSemantico import VisitorSemantico
 from VisitorTAC import VisitorTAC, gerar_texto_tac
 from OtimizadorTAC import otimizar_completo
+from Gerador_P3Assembly import Gerador_P3Assembly
 
 def run_antlr4_parse(file_path, option):
     cmd = f"cat {file_path} | antlr4-parse MOC.g4 programa {option}"
@@ -106,6 +107,34 @@ def main():
 
     #--- Preparação codigo máquina ---
     #print(tabela_de_simbolos_principal)
+
+    # --- INTEGRAÇÃO DO P3AssemblyGenerator ---
+    print("\n==== CÓDIGO ASSEMBLY P3 GERADO ====")
+    # 1. Instanciar o gerador P3
+    p3_generator = Gerador_P3Assembly()  # Se não precisar de p3_isa_details no construtor, ou passe-o
+
+    # 2. Chamar o método para gerar o código Assembly P3 a partir do TAC otimizado
+    #    Este método deve receber a lista de quádruplas TAC *otimizadas* (objetos, não texto).
+    #    No exemplo anterior, chamei este método de `generate_from_tac_list`.
+    try:
+        # 'tac_otimizado' deve ser a lista de objetos/quádruplas TAC
+        codigo_assembly_p3 = p3_generator.generate_from_tac_list(tac_otimizado)
+
+        # 3. Imprimir ou salvar o código Assembly P3
+        print(codigo_assembly_p3)
+
+        # Opcional: Salvar em um arquivo .as para o assembler p3as
+        with open("meuprograma.as", "w") as f:
+            f.write(codigo_assembly_p3)
+        print("\nCódigo Assembly P3 salvo em meuprograma.as")
+
+    except Exception as e:
+        print(f"\nErro ao gerar código Assembly P3: {e}")
+        # Pode ser útil imprimir mais detalhes do erro ou rastreamento da pilha aqui
+        import traceback
+        traceback.print_exc()
+
+    # --- FIM DA INTEGRAÇÃO ---
 
 if __name__ == '__main__':
     main()
