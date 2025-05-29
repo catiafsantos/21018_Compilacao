@@ -124,7 +124,7 @@ def main():
         print(codigo_assembly_p3)
 
         # Opcional: Salvar em um arquivo .as para o assembler p3as
-        with open("meuprograma.as", "w") as f:
+        with open("output.as", "w", encoding="cp1252") as f:
             f.write(codigo_assembly_p3)
         print("\nCódigo Assembly P3 salvo em meuprograma.as")
 
