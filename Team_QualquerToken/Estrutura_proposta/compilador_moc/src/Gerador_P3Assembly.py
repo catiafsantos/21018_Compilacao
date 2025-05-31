@@ -87,64 +87,64 @@ class GeradorP3Assembly:
         # Operações aritméticas e atribuição
         if op in ('ASSIGN_CONST', '(DOUBLE)', '='):
             # res = arg1
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('ADD', '+'):
             # res = arg1 + arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","ADD", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","ADD", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('SUB', '-'):
             # res = arg1 - arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","SUB", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","SUB", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('MUL', '*'):
             # res = arg1 * arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","MUL", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","MUL", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('DIV', '/'):
             # res = arg1 / arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","DIV", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","DIV", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op == 'NEG':
             # res = -arg1
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
             self.assembly_lines.append(self._format_line("","NEG", "R1"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
 
         # Operações lógicas
         elif op in ('AND',):
             # res = arg1 AND arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","AND", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","AND", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('OR',):
             # res = arg1 OR arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","OR",  "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","OR",  "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
         elif op in ('XOR',):
             # res = arg1 XOR arg2
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","XOR", "R1", "R2"))
-            self.assembly_lines.append(self._format_line("","MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","XOR", "R1, R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
 
         # Comparações (CMP + saltos)
         elif op in ('EQ', 'NE', 'LT', 'LE', 'GT', 'GE'):
             # res = (arg1 op arg2) ? 1 : 0
-            self.assembly_lines.append(self._format_line("","MOV", "R1", arg1_label))
-            self.assembly_lines.append(self._format_line("","MOV", "R2", arg2_label))
-            self.assembly_lines.append(self._format_line("","CMP", "R1", "R2"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+            self.assembly_lines.append(self._format_line("","CMP", "R1, R2"))
             true_label = self._gen_label("TRUE")
             end_label = self._gen_label("END")
             # Mapeamento do operador TAC para o salto P3 correspondente
@@ -172,7 +172,7 @@ class GeradorP3Assembly:
             self.assembly_lines.append(self._format_line("", "JMP", res))
         elif op == 'IFGOTO':
             # Salto se arg1 != 0
-            self.assembly_lines.append(self._format_line("", "MOV", "R1", arg1_label))
+            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
             self.assembly_lines.append(self._format_line("", "CMP", "R1", "0"))
             self.assembly_lines.append(self._format_line("", "JMP.NZ", res))
 
@@ -214,12 +214,12 @@ class GeradorP3Assembly:
         # Entrada/Saída (exemplo: print)
         elif op == 'PRINT':
             # Escreve valor de arg1 na janela de texto (endereço FFFEh)
-            self.assembly_lines.append(self._format_line("", "MOV", "R1", arg1_label))
+            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
             self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh]", "R1"))
         elif op == 'READ':
             # Lê valor da janela de texto (endereço FFFFh) para res
             self.assembly_lines.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
-            self.assembly_lines.append(self._format_line("", "MOV", res_label, "R1"))
+            self.assembly_lines.append(self._format_line("", "MOV", f"{res_label}, R1"))
         else:
             # Caso não exista tradução, insere comentário de aviso
             self.assembly_lines.append(f";; AVISO: Operação TAC '{op}' não traduzida para P3.")
