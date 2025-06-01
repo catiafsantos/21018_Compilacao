@@ -126,7 +126,8 @@ def main():
 
         # Gravar o código final num arquivo .as para o assembler P3, na mesma pasta do .moc
         output_file = input_file.replace(".moc", ".as")
-        with open(output_file, "w", encoding="cp1252") as f:
+#        with open(output_file, "w", encoding="cp1252") as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(codigo_assembly_p3)
         print("\nCódigo Assembly P3 gravado em '{}'.".format(output_file))
 

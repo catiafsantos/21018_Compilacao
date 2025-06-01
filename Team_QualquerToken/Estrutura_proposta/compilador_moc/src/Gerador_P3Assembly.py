@@ -33,7 +33,12 @@ class GeradorP3Assembly:
             return str(name)
         if not isinstance(name, str):
             return None
-        name = name.replace('$', 't_').replace('[', '_').replace(']', '')
+        name = (name.
+                replace('$', 't_').
+                replace('[', '_').
+                replace(']', '').
+                replace('"', '')
+                )
         return name
 
     def _get_var_label(self, name):
@@ -207,19 +212,26 @@ class GeradorP3Assembly:
         # Funções
         elif op == 'CALL':
             # Chamada de função (label)
-            self.assembly_lines.append(self._format_line("", "CALL", res))
-        elif op == 'RET':
+            self.assembly_lines.append(self._format_line("", "CALL", res_label))
+        elif op == 'RETURN':
             # Retorno de função
             self.assembly_lines.append(self._format_line("", "RET"))
         # Entrada/Saída (exemplo: print)
-        elif op == 'PRINT':
+        elif op == 'WRITE':
             # Escreve valor de arg1 na janela de texto (endereço FFFEh)
             self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
-            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh]", "R1"))
+            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1"))
+        elif op == 'WRITES':
+            # Escreve valor de arg1 string na janela de texto (endereço FFFEh)
+            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
+            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1"))
         elif op == 'READ':
             # Lê valor da janela de texto (endereço FFFFh) para res
             self.assembly_lines.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
             self.assembly_lines.append(self._format_line("", "MOV", f"{res_label}, R1"))
+        elif op == 'HALT':
+            # TErmina a execução do programa
+            self.assembly_lines.append(self._format_line("", "BR", "Fim"))
         else:
             # Caso não exista tradução, insere comentário de aviso
             self.assembly_lines.append(f";; AVISO: Operação TAC '{op}' não traduzida para P3.")
