@@ -238,19 +238,11 @@ class GeradorP3Assembly:
             self.assembly_lines.append(self._format_line(f"; {op.lower()}", "-"*25))
             self.assembly_lines.append(self._format_line("", "MOV", f"R1, M[{arg1_label}]", "; Lê o carater apontado por R1"))
             self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1", "; Escreve o carater no endereço de saída"))
-
         elif op == 'WRITES':
             # Rui Menino // OK -- REVER que a variável tem de ser do tipo STR e ter aspas
-            # Escreve valor de arg1 (STR) na janela de texto (endereço FFFEh)
             self.assembly_lines.append(self._format_line(f"; {op.lower()}", "-"*25))
             self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}", "; R1 aponta para o início da string"))
-            self.assembly_lines.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]", "; Lê o carater apontado por R1"))
-            self.assembly_lines.append(self._format_line("", "CMP", "R2, 0", "; Compara com o terminador"))
-            self.assembly_lines.append(self._format_line("", "BR.Z", "FimChar", "; Se for zero, salta para o fim"))
-            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R2", "; Escreve o carater no endereço de saída"))
-            self.assembly_lines.append(self._format_line("", "INC", "R1", "; Avança para o próximo carater"))
-            self.assembly_lines.append(self._format_line("", "BR", "MostraChar", "; Repete o ciclo"))
-            self.assembly_lines.append(self._format_line("FimChar:", "NOP", ""))
+            self.assembly_lines.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
         elif op == 'READ':
             # Lê valor da janela de texto (endereço FFFFh) para res
             self.assembly_lines.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
@@ -311,21 +303,37 @@ class GeradorP3Assembly:
         # Monta o código final
         output = []
         if self.data_declarations:
-            output.append(";============== Região de Dados (inicia no endereço 8000h) ========================")
+            output.append(self._format_line(";" + "=" * 14, "Região de Dados (inicia no endereço 8000h)"))
             output.append(self._format_line("", "ORIG", "8000h"))
             output.append("")
             output.extend(sorted(self.data_declarations))
             output.append("")
             output.append(self._format_line("SP_ADDRESS", "EQU", "FDFFh"))
             output.append("")
-        output.append(";============== Região de Código (inicia no endereço 0000h) ========================")
+        output.append(self._format_line(";"+"="*14, "Região de Código (inicia no endereço 0000h)"))
         output.append(self._format_line("", "ORIG", "0000h"))
+
+        output.append(self._format_line("", "JMP", "_start","; jump to main"))
+        output.append("")
+        output.append(self._format_line(";"+"-"*14, "Rotinas"))
+        output.append("")
+        output.append(self._format_line("WRITES:", "NOP", "","; escreve uma string na consola"))
+        output.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
+        output.append(self._format_line("", "CMP", "R2, 0","; Compara com o terminador"))
+        output.append(self._format_line("", "JMP.Z", "FimChar","; Se for zero, salta para o fim"))
+        output.append(self._format_line("", "MOV", "M[FFFEh], R2","; Escreve o carater no endereço de saída"))
+        output.append(self._format_line("", "INC", "R1","; Avança para o próximo carater"))
+        output.append(self._format_line("", "BR", "MostraChar","; Repete o ciclo"))
+        output.append(self._format_line("FimChar:", "RET",  "",""))
+        output.append("")
+        output.append(self._format_line(";"+"-"*14, "Programa Principal "))
+
         output.append(self._format_line(f"{self.program_entry_point}:", "NOP"))
-        output.append(self._format_line("", "MOV", "R7, FFFEh"))
-        output.append(self._format_line("", "MOV", "SP, R7"))
+        output.append(self._format_line("", "MOV", "R7, SP_ADDRESS"))
+        output.append(self._format_line("", "MOV", "SP, R7", "; Define o Stack Pointer"))
         output.append("")
         output.extend(self.assembly_lines)
         output.append("")
         output.append(self._format_line("Fim:", "BR", "Fim"))
-        output.append(";===================================================================================")
+        output.append("")
         return "\n".join(output)
