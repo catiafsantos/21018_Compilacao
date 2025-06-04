@@ -55,20 +55,6 @@ class GeradorP3Assembly:
             self.data_declarations.append(self._format_line(label, "WORD", "0", f"; {name}"))
         return self.var_labels[name]
 
-    def _get_var_label(self, name):
-        """
-        Devolve o label P3 associado a uma variável.
-        Se ainda não existir, cria a declaração no segmento de dados.
-        """
-        name = self._sanitize_var(name)
-        if name is None:
-            return None
-        if name not in self.var_labels:
-            label = f"VAR_{name.upper()}"
-            self.var_labels[name] = label
-            self.data_declarations.append(self._format_line(label, "WORD", "0", f"; {name}"))
-        return self.var_labels[name]
-
     def _declare_array(self, name, size):
         """
         Declara um array no segmento de dados.
@@ -159,7 +145,7 @@ class GeradorP3Assembly:
             self.assembly_lines.append(self._format_line("","MOV", f"{res_label}, R1"))
 
         # Comparações (CMP + saltos)
-        elif op in ('EQ', 'NE', 'LT', 'LE', 'GT', 'GE'):
+        elif op in ('=', '<>', '<', '<=', '>', '>='):
             # res = (arg1 op arg2) ? 1 : 0
             self.assembly_lines.append(self._format_line("","MOV", f"R1, {arg1_label}"))
             self.assembly_lines.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -168,12 +154,12 @@ class GeradorP3Assembly:
             end_label = self._gen_label("END")
             # Mapeamento do operador TAC para o salto P3 correspondente
             jump = {
-                'EQ': 'JMP.Z',   # igual
-                'NE': 'JMP.NZ',  # diferente
-                'LT': 'JMP.N',   # menor
-                'LE': 'JMP.NP',  # menor ou igual
-                'GT': 'JMP.P',   # maior
-                'GE': 'JMP.NN'   # maior ou igual
+                '=' : 'JMP.Z',   # igual
+                '<>': 'JMP.NZ',  # diferente
+                '<' : 'JMP.N',   # menor
+                '<=': 'JMP.NP',  # menor ou igual
+                '>' : 'JMP.P',   # maior
+                '>=': 'JMP.NN'   # maior ou igual
             }[op]
             self.assembly_lines.append(self._format_line("",jump, true_label))
             self.assembly_lines.append(self._format_line("","MOV", res_label, "0"))
