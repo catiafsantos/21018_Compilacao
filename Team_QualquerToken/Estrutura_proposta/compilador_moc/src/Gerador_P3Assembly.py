@@ -15,7 +15,7 @@ class GeradorP3Assembly:
         self.program_entry_point = "_start"
 
     @staticmethod
-    def _format_line(col1: str, col2: str, col3: str = "", col4: str = "") -> str:
+    def _format_line(col1: str, col2: str = "", col3: str = "", col4: str = "") -> str:
         """
         Formata quatro strings em uma linha única com colunas em posições fixas:
         """
@@ -40,6 +40,20 @@ class GeradorP3Assembly:
                 replace('"', '')
                 )
         return name
+
+    def _get_var_label(self, name):
+        """
+        Devolve o label P3 associado a uma variável.
+        Se ainda não existir, cria a declaração no segmento de dados.
+        """
+        name = self._sanitize_var(name)
+        if name is None:
+            return None
+        if name not in self.var_labels:
+            label = f"VAR_{name.upper()}"
+            self.var_labels[name] = label
+            self.data_declarations.append(self._format_line(label, "WORD", "0", f"; {name}"))
+        return self.var_labels[name]
 
     def _get_var_label(self, name):
         """
@@ -216,15 +230,27 @@ class GeradorP3Assembly:
         elif op == 'RETURN':
             # Retorno de função
             self.assembly_lines.append(self._format_line("", "RET"))
+
         # Entrada/Saída (exemplo: print)
         elif op == 'WRITE':
+            # Rui Menino // REVER. Está a imprimir o carater correspondente ao valor ascii que estiver na variável
             # Escreve valor de arg1 na janela de texto (endereço FFFEh)
-            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
-            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1"))
+            self.assembly_lines.append(self._format_line(f"; {op.lower()}", "-"*25))
+            self.assembly_lines.append(self._format_line("", "MOV", f"R1, M[{arg1_label}]", "; Lê o carater apontado por R1"))
+            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1", "; Escreve o carater no endereço de saída"))
+
         elif op == 'WRITES':
-            # Escreve valor de arg1 string na janela de texto (endereço FFFEh)
-            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
-            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R1"))
+            # Rui Menino // OK -- REVER que a variável tem de ser do tipo STR e ter aspas
+            # Escreve valor de arg1 (STR) na janela de texto (endereço FFFEh)
+            self.assembly_lines.append(self._format_line(f"; {op.lower()}", "-"*25))
+            self.assembly_lines.append(self._format_line("", "MOV", f"R1, {arg1_label}", "; R1 aponta para o início da string"))
+            self.assembly_lines.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]", "; Lê o carater apontado por R1"))
+            self.assembly_lines.append(self._format_line("", "CMP", "R2, 0", "; Compara com o terminador"))
+            self.assembly_lines.append(self._format_line("", "BR.Z", "FimChar", "; Se for zero, salta para o fim"))
+            self.assembly_lines.append(self._format_line("", "MOV", "M[FFFEh], R2", "; Escreve o carater no endereço de saída"))
+            self.assembly_lines.append(self._format_line("", "INC", "R1", "; Avança para o próximo carater"))
+            self.assembly_lines.append(self._format_line("", "BR", "MostraChar", "; Repete o ciclo"))
+            self.assembly_lines.append(self._format_line("FimChar:", "NOP", ""))
         elif op == 'READ':
             # Lê valor da janela de texto (endereço FFFFh) para res
             self.assembly_lines.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
@@ -247,12 +273,35 @@ class GeradorP3Assembly:
         self.label_counter = 0
 
         # Primeira passagem: declara arrays variáveis e constantes
+        # for instr in tac_list:
+        #     if instr.get('op', '').upper() == 'ALLOC':
+        #         self._declare_array(instr.get('arg1'), instr.get('arg2'))
+        #     else:
+        #         self._get_var_label(instr.get('res'))
+        #         self._get_var_label(instr.get('arg1'))
+        #         self._get_var_label(instr.get('arg2'))
         for instr in tac_list:
             if instr.get('op', '').upper() == 'ALLOC':
                 self._declare_array(instr.get('arg1'), instr.get('arg2'))
             else:
+                # Trata o resultado (res) como variável normal
                 self._get_var_label(instr.get('res'))
-                self._get_var_label(instr.get('arg1'))
+
+                # Trata arg1: se for constante numérica ou string literal, define como constante
+                arg1 = instr.get('arg1')
+                if arg1 is not None:
+                    if (
+                            isinstance(arg1, (int, float)) or
+                            (isinstance(arg1, str) and arg1.isdigit()) or
+                            (isinstance(arg1, str) and (arg1.startswith('"') and arg1.endswith('"')))
+                    ):
+                        # Aqui podes adicionar à tua estrutura de constantes, por exemplo:
+                        #self._constantes[arg1] = arg1
+                        self._get_var_label(arg1)
+                    else:
+                        self._get_var_label(arg1)
+
+                # Trata arg2 como variável normal
                 self._get_var_label(instr.get('arg2'))
 
         # Segunda passagem: traduz instruções TAC para assembly
@@ -264,7 +313,10 @@ class GeradorP3Assembly:
         if self.data_declarations:
             output.append(";============== Região de Dados (inicia no endereço 8000h) ========================")
             output.append(self._format_line("", "ORIG", "8000h"))
+            output.append("")
             output.extend(sorted(self.data_declarations))
+            output.append("")
+            output.append(self._format_line("SP_ADDRESS", "EQU", "FDFFh"))
             output.append("")
         output.append(";============== Região de Código (inicia no endereço 0000h) ========================")
         output.append(self._format_line("", "ORIG", "0000h"))
