@@ -180,7 +180,7 @@ class GeradorP3Assembly:
         """
         name = self._sanitize_var(name)
         label = f"VAR_{name.upper()}"
-        decl = f"{label} TAB {size} ; Array {name}"  # sem dois pontos!
+        decl = self._format_line(f"{label}", "TAB", size, f"; Array {name}")  # sem dois pontos!
         # Remove possíveis declarações anteriores da mesma variável
         self.data_section = [d for d in self.data_section if not d.startswith(f"{label} ")]
         self.data_section.append(decl)
@@ -223,19 +223,19 @@ class GeradorP3Assembly:
         # Operações aritméticas e atribuição
         # res = arg1 op arg2. Um operando P3 deve ser um registo
         # Padrão geral: MOV R1, arg1; MOV R2, arg2; P3_OP R1, R2; MOV res, R1
-        elif op in ['+', '-', '*', '/', '%', 'ADD', 'SUB', 'MUL', 'DIV', 'MOD', 'NEG']:
+        elif op in ['+', '-', '*', '/', '%']:
             # Load arg1 -> R1
             self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             # Load arg2 ->  R2
             self.assembly_code.append(self._format_line("",f"MOV R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
             p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
-            if op in ('ADD', '+'):
+            if op in '+':
                 # res = arg1 + arg2
                 #self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
                 self.assembly_code.append(self._format_line("","ADD", "R1, R2","; ZCNO flags affected"))
                 self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, R1"))
-            elif op in ('SUB', '-'):
+            elif op in '-':
                 # res = arg1 - arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -243,7 +243,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "SUB", "R1, R2", "; ZCNO flags affected"))
                 self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1"))
-            elif op in ('MUL', '*'): # MUL op1, op2 -> op1 has MSW, op2 has LSW.
+            elif op in '*': # MUL op1, op2 -> op1 has MSW, op2 has LSW.
                 # res = arg1 * arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -251,7 +251,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"))
                 self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Store LSW into result"))
-            elif op in ('DIV', '/'):  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
+            elif op in '/':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -259,7 +259,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
                 self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Guarda Quociente no resultado"))
-            elif op in ('%'):  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
+            elif op in '%':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -269,6 +269,7 @@ class GeradorP3Assembly:
                     self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
                 self.assembly_code.append(
                     self._format_line("", f"MOV {p3_res_syntax}, R2", "; Guarda Resto no resultado"))
+            # TESTAR REVER NO P3
             elif op == 'NEG':
                 # res = -arg1
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
@@ -296,7 +297,7 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
 
         # Comparações (CMP + saltos)
-        elif op in ('=', '<>', '<', '<=', '>', '>='):
+        elif op in ('==', '!=', '<', '<=', '>', '>='):
             # res = (arg1 op arg2) ? 1 : 0
             #self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
             #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
@@ -315,8 +316,8 @@ class GeradorP3Assembly:
 
             # Mapeamento do operador TAC para o salto P3 correspondente
             jump = {
-                '=' : 'JMP.Z',   # igual
-                '<>': 'JMP.NZ',  # diferente
+                '==': 'JMP.Z',   # igual
+                '!=': 'JMP.NZ',  # diferente
                 '<' : 'JMP.N',   # menor
                 '<=': 'JMP.NP',  # menor ou igual
                 '>' : 'JMP.P',   # maior
@@ -328,10 +329,10 @@ class GeradorP3Assembly:
             # Other relational ops would require more complex flag checking or specific P3 idioms
             # .... (f"; Relational op '{op}' requires more complex P3 flag logic or specific subroutines")
 
-            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, #0")) # False path
+            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, 0")) # False path
             self.assembly_code.append(self._format_line("",f"JMP {end_label}"))
             self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
-            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, #1"))  # True path
+            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, 1"))  # True path
             self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
 
         # Saltos e labels
@@ -441,7 +442,7 @@ class GeradorP3Assembly:
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
                 #self.assembly_code.append(self._format_line(f"; {op.lower()}", "-"*25))
-                self.assembly_code.append(self._format_line("", "MOV", f"R1, #{str_label} ", f"; R1 aponta para o endereço da string {arg1}"))
+                self.assembly_code.append(self._format_line("", "MOV", f"R1, {str_label}", f"; R1 aponta para o endereço da string {arg1}"))
                 self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
             else:
                 self.assembly_code.append(
@@ -481,7 +482,7 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
         elif op == 'HALT':
             # Termina a execução do programa
-            self.assembly_code.append(self._format_line("", "BR", "Fim com loop infinito"))
+            self.assembly_code.append(self._format_line("", "BR", "Fim", ";Fim com loop infinito"))
             # O manual P3 não lista uma instrução HALT.
             # Uma forma comum é um ciclo infinito
             # O VisitorTAC gera a abel "end_main" após "halt" para visitFuncaoPrincipal.
@@ -570,6 +571,7 @@ class GeradorP3Assembly:
         output.append(self._format_line(";"+"-"*14, "Programa Principal "))
 
         output.append(self._format_line(f"{self.program_entry_point}:", "NOP"))
+
         output.append(self._format_line("", "MOV", "R7, SP_ADDRESS"))
         output.append(self._format_line("", "MOV", "SP, R7", "; Define o Stack Pointer"))
         output.append("")
