@@ -9,7 +9,10 @@ class GeradorP3Assembly:
         self.assembly_code = [] 
         # Lista para armazenar as declarações de dados (variáveis, arrays)
         self.data_section = []
-        
+        # Lista para armazenar as linhas de código assembly geradas das funcoes
+        self.assemblyfunction_code = []
+        self.declared_functions = set() #vamos armazenar que funcoes já foram declaradas
+
         # Dicionário para mapear nomes de variáveis para labels P3
         self.var_labels = {}
 
@@ -444,6 +447,7 @@ class GeradorP3Assembly:
                 #self.assembly_code.append(self._format_line(f"; {op.lower()}", "-"*25))
                 self.assembly_code.append(self._format_line("", "MOV", f"R1, {str_label}", f"; R1 aponta para o endereço da string {arg1}"))
                 self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
+                self.add_function_writes()
             else:
                 self.assembly_code.append(
                     self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"))
@@ -494,6 +498,18 @@ class GeradorP3Assembly:
             # Caso não exista tradução, insere comentário de aviso
             self.assembly_code.append(f";; AVISO: Operação TAC '{op}' não traduzida para P3.")
 
+    def add_function_writes(self):
+        if 'writes' not in self.declared_functions:
+            self.declared_functions.add('writes')
+            self.assemblyfunction_code.append(self._format_line("WRITES:", "NOP", "","; escreve uma string na consola"))
+            self.assemblyfunction_code.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, 0","; Compara com o terminador"))
+            self.assemblyfunction_code.append(self._format_line("", "JMP.Z", "FimChar","; Se for zero, salta para o fim"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R2","; Escreve o carater no endereço de saída"))
+            self.assemblyfunction_code.append(self._format_line("", "INC", "R1","; Avança para o próximo carater"))
+            self.assemblyfunction_code.append(self._format_line("", "BR", "MostraChar","; Repete o ciclo"))
+            self.assemblyfunction_code.append(self._format_line("FimChar:", "RET",  "",""))
+
     def generate_from_tac_list(self, tac_list):
         """
         Gera o código Assembly P3 completo a partir de uma lista de instruções TAC.
@@ -501,6 +517,7 @@ class GeradorP3Assembly:
         """
         #self.data_section = []
         self.assembly_code = []
+        self.assemblyfunction_code = []
         #self.var_labels = {}
         #self.label_generator_count = 0
 
@@ -559,6 +576,9 @@ class GeradorP3Assembly:
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Rotinas"))
         output.append("")
+
+        output.extend(self.assemblyfunction_code)
+        """
         output.append(self._format_line("WRITES:", "NOP", "","; escreve uma string na consola"))
         output.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
         output.append(self._format_line("", "CMP", "R2, 0","; Compara com o terminador"))
@@ -567,6 +587,7 @@ class GeradorP3Assembly:
         output.append(self._format_line("", "INC", "R1","; Avança para o próximo carater"))
         output.append(self._format_line("", "BR", "MostraChar","; Repete o ciclo"))
         output.append(self._format_line("FimChar:", "RET",  "",""))
+        """
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Programa Principal "))
 
