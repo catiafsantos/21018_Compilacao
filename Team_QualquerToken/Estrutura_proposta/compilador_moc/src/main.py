@@ -112,7 +112,7 @@ def main():
     print("\n==== CÓDIGO ASSEMBLY P3 GERADO ====")
 
     # 1. Instanciar o gerador P3
-    p3_generator = GeradorP3Assembly()
+    p3_generator = GeradorP3Assembly(tac_otimizado)
 
     # 2. Chamar o método para gerar o código Assembly P3 a partir do TAC otimizado
     #    Este método deve receber a lista de quádruplas TAC *otimizadas* (objetos, não texto).
