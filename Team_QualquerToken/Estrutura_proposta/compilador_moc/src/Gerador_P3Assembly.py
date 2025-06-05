@@ -251,14 +251,24 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"))
                 self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Store LSW into result"))
-            elif op in ('DIV', '/'): # DIV op1, op2 -> op1 has Quotient, op2 has Remainder.
+            elif op in ('DIV', '/'):  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
                 # self.assembly_code.append(self._format_line("","DIV", "R1, R2"))
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
-                self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quot, R2=Rem. Unsigned. O on div by zero, CN=0."))
-                self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Store Quotient into result"))
+                self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
+                self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Guarda Quociente no resultado"))
+            elif op in ('%'):  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
+                # res = arg1 / arg2
+                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
+                # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
+                # self.assembly_code.append(self._format_line("","DIV", "R1, R2"))
+                # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
+                self.assembly_code.append(
+                    self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
+                self.assembly_code.append(
+                    self._format_line("", f"MOV {p3_res_syntax}, R2", "; Guarda Resto no resultado"))
             elif op == 'NEG':
                 # res = -arg1
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
