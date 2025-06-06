@@ -227,23 +227,23 @@ class GeradorP3Assembly:
                 p3_arg1_syntax = f"M[{arg1}]" if not self._is_immediate_val(str(arg1)) else str(arg1)
 
             self.assembly_code.append(self._format_line("","MOV", f"R1, {p3_arg1_syntax}"))
-            self.assembly_code.append(self._format_line("",f"MOV {self._get_p3_operand_syntax(res, 'store')}, R1"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1"))
 
         # Operações aritméticas e atribuição
         # res = arg1 op arg2. Um operando P3 deve ser um registo
         # Padrão geral: MOV R1, arg1; MOV R2, arg2; P3_OP R1, R2; MOV res, R1
         elif op in ['+', '-', '*', '/', '%']:
             # Load arg1 -> R1
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             # Load arg2 ->  R2
-            self.assembly_code.append(self._format_line("",f"MOV R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
             p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
             if op in '+':
                 # res = arg1 + arg2
                 #self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
                 self.assembly_code.append(self._format_line("","ADD", "R1, R2","; ZCNO flags affected"))
-                self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, R1"))
+                self.assembly_code.append(self._format_line("",f"MOV",f"{p3_res_syntax}, R1"))
             elif op in '-':
                 # res = arg1 - arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
@@ -251,7 +251,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","SUB", "R1, R2"))
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "SUB", "R1, R2", "; ZCNO flags affected"))
-                self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1"))
+                self.assembly_code.append(self._format_line("", f"MOV",f"{p3_res_syntax}, R1"))
             elif op in '*': # MUL op1, op2 -> op1 has MSW, op2 has LSW.
                 # res = arg1 * arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
@@ -259,7 +259,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","MUL", "R1, R2"))
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"))
-                self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Store LSW into result"))
+                self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R1","; Store LSW into result"))
             elif op in '/':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
@@ -267,7 +267,7 @@ class GeradorP3Assembly:
                 # self.assembly_code.append(self._format_line("","DIV", "R1, R2"))
                 # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
-                self.assembly_code.append(self._format_line("", f"MOV {p3_res_syntax}, R1","; Guarda Quociente no resultado"))
+                self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R1","; Guarda Quociente no resultado"))
             elif op in '%':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
@@ -277,13 +277,13 @@ class GeradorP3Assembly:
                 self.assembly_code.append(
                     self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
                 self.assembly_code.append(
-                    self._format_line("", f"MOV {p3_res_syntax}, R2", "; Guarda Resto no resultado"))
+                    self._format_line("", "MOV",f"{p3_res_syntax}, R2", "; Guarda Resto no resultado"))
             # TESTAR REVER NO P3
             elif op == 'NEG':
                 # res = -arg1
                 # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
                 self.assembly_code.append(self._format_line("","NEG", "R1"))
-                self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax},  R1"))
+                self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax},  R1"))
 
         # Operações lógicas
         elif op in ('AND',):
@@ -312,9 +312,9 @@ class GeradorP3Assembly:
             #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
             #self.assembly_code.append(self._format_line("","CMP", "R1, R2"))
 
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("",f"MOV R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
-            self.assembly_code.append(self._format_line("",f"CMP R1, R2 ; ZCNO flags affected"))
+            self.assembly_code.append(self._format_line("","MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.assembly_code.append(self._format_line("","MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
+            self.assembly_code.append(self._format_line("","CMP","R1, R2","; ZCNO flags affected"))
 
             #true_label = self._gen_label("TRUE")
             #end_label = self._gen_label("END")
@@ -338,10 +338,10 @@ class GeradorP3Assembly:
             # Other relational ops would require more complex flag checking or specific P3 idioms
             # .... (f"; Relational op '{op}' requires more complex P3 flag logic or specific subroutines")
 
-            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, 0")) # False path
-            self.assembly_code.append(self._format_line("",f"JMP {end_label}"))
+            self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 0")) # False path
+            self.assembly_code.append(self._format_line("","JMP",f"{end_label}"))
             self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
-            self.assembly_code.append(self._format_line("",f"MOV {p3_res_syntax}, 1"))  # True path
+            self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 1"))  # True path
             self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
 
         # Saltos e labels
@@ -359,7 +359,7 @@ class GeradorP3Assembly:
             # self.assembly_code.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
             self.assembly_code.append(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("", "CMP", "R1", "#0"))
-            self.assembly_code.append(self._format_line("", f"JMP.NZ {self._get_p3_operand_syntax(res, 'address')}"))
+            self.assembly_code.append(self._format_line("", f"JMP.NZ",f"{self._get_p3_operand_syntax(res, 'address')}"))
 
         # Arrays TESTAR
         elif op == 'ALLOC':
@@ -371,7 +371,7 @@ class GeradorP3Assembly:
             idx = self._get_var_label(arg2)
             self.assembly_code.append(self._format_line("", "MOV", "R1", idx))
             self.assembly_code.append(self._format_line("", "MOV", "R2", arr+"[R1]"))
-            self.assembly_code.append(self._format_line("", "MOV", res_label, "R2"))
+            self.assembly_code.append(self._format_line("", "MOV",res_label, "R2"))
         elif op == 'STORE_ARRAY':
             # arg1[arg2] = res
             arr = self._get_var_label(arg1)
@@ -387,34 +387,34 @@ class GeradorP3Assembly:
         elif op == '[]':  # res = array_name[byte_offset_var]
             # array_name (arg1), byte_offset_var (arg2), res (destination)
             # 1. Get byte_offset into R1
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
             # 2. Convert to word offset: R1 = R1 / 2 (or SHR R1, #1)
             self.assembly_code.append(self._format_line("",f"SHR R1, #1 ; R1 = word offset (P3 words are 2 bytes) [cite: 199]"))
             # 3. Get base address of array into R2. P3 doesn't have MOV REG, LABEL_ADDRESS directly for all instructions.
             #    We need to use EQU for base address or load it if dynamic.
             #    Let's assume arg1 (array_name) is a label whose value is the base address.
             #    MOV R2, #array_name (Loads immediate address value into R2)
-            self.assembly_code.append(self._format_line("",f"MOV R2, #{arg1} ; R2 = base address of array '{arg1}'"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ; R2 = base address of array '{arg1}'"))
             # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD R2, R1 ; R2 = address of element"))
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ; R2 = address of element"))
             # 5. Load value: R3 = M[R2] (register indirect)
-            self.assembly_code.append(self._format_line("",f"MOV R3, M[R2] ; Load value from array element"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ; Load value from array element"))
             # 6. Store in res: M[res] = R3
             self.assembly_code.append(self._format_line("",f"MOV {self._get_p3_operand_syntax(res, 'store')}, R3"))
         elif op == '[]=':  # array_name[byte_offset_var] = value_var
             # array_name (arg1), byte_offset_var (arg2), value_var (res in TAC quad)
             # 1. Get byte_offset into R1
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
             # 2. Convert to word offset
-            self.assembly_code.append(self._format_line("",f"SHR R1, #1 ; R1 = word offset [cite: 199]"))
+            self.assembly_code.append(self._format_line("",f"SHR",f"R1, #1 ; R1 = word offset [cite: 199]"))
             # 3. Get base address of array into R2
-            self.assembly_code.append(self._format_line("",f"MOV R2, #{arg1} ; R2 = base address of array '{arg1}'"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ; R2 = base address of array '{arg1}'"))
             # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD R2, R1 ; R2 = address of element"))
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ; R2 = address of element"))
             # 5. Get value_to_store into R3
-            self.assembly_code.append(self._format_line("",f"MOV R3, {self._get_p3_operand_syntax(res, 'load')} ; R3 = value to store"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ; R3 = value to store"))
             # 6. Store value: M[R2] = R3
-            self.assembly_code.append(self._format_line("",f"MOV M[R2], R3 ; Store value into array element"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ; Store value into array element"))
 
         # Pilha (stack)
         elif op == 'PUSH':
@@ -427,23 +427,23 @@ class GeradorP3Assembly:
         # Funções
         # --- Function Call Mechanism ---
         elif op == 'PARAM':  # param arg1
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("",f"PUSH R1 ; Push parameter"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.assembly_code.append(self._format_line("",f"PUSH",f"R1","; Push parameter"))
 
         elif op == 'CALL': # res = call func_name (arg1 is func_name, res is for return value)
             # Chamada de função (label)
             #self.assembly_code.append(self._format_line("", "CALL", res_label))
-            self.assembly_code.append(self._format_line("",f"CALL {self._get_p3_operand_syntax(arg1, 'address')} ; PC pushed to stack"))
+            self.assembly_code.append(self._format_line("",f"CALL",f"{self._get_p3_operand_syntax(arg1, 'address')}","; PC pushed to stack"))
             if res:  # Function has a return value, assume it's in R1 by convention
                 self.assembly_code.append(self._format_line("",
-                    f"MOV {self._get_p3_operand_syntax(res, 'store')}, R1 ; Store return value (conventionally R1)"))
+                    f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1","; Store return value (conventionally R1)"))
         elif op == 'RETURN': # return (optional_value)
             # Retorno de função
             # self.assembly_code.append(self._format_line("", "RET"))
             if arg1:  # There is a return value
                 self.assembly_code.append(self._format_line("",
-                    f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')} ; Load return value into R1 (convention)"))
-            self.assembly_code.append(self._format_line("",f"RET ; Return from subroutine, PC restored from stack [cite: 183]"))
+                    f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}","; Load return value into R1 (convention)"))
+            self.assembly_code.append(self._format_line("",f"RET","","; Return from subroutine, PC restored from stack [cite: 183]"))
 
         # Entrada/Saída (exemplo: print)
         elif op == 'WRITES':  # writes "string_literal"
@@ -461,8 +461,8 @@ class GeradorP3Assembly:
             str_label = self.string_literal_map.get(arg1.strip('"'))
 
         elif op == 'WRITEC':  # writec char_val_var
-            self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("",f"MOV M[FFFEh], R1 ; Write character to text output port"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"M[FFFEh], R1","; Write character to text output port"))
 
         elif op == 'WRITE':
             # Rui Menino // REVER. Está a imprimir o carater correspondente ao valor ascii que estiver na variável
@@ -477,7 +477,7 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
         elif op == 'HALT':
             # Termina a execução do programa
-            self.assembly_code.append(self._format_line("", "BR", "Fim", ";Fim com loop infinito"))
+            self.assembly_code.append(self._format_line("", "BR", "Fim", "; Fim com loop infinito"))
             # O manual P3 não lista uma instrução HALT.
             # Uma forma comum é um ciclo infinito
             # O VisitorTAC gera a abel "end_main" após "halt" para visitFuncaoPrincipal.
