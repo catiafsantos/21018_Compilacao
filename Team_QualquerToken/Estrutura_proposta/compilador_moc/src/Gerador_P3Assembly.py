@@ -123,6 +123,12 @@ class GeradorP3Assembly:
             if quad['op'] == 'writes':  # writes "string" esta intrução escreve uma string literal
                 str_content = quad['arg1'].strip('"')
                 self._add_string_literal(str_content)  # Declares in data_section
+            if quad['op'] == 'label':
+                # é uma label de uma funçáo
+                # se já existir main não coloca
+                for operand in operands:
+                    if operand and isinstance(operand, str):
+                        self.declared_functions.add(operand)
 
             for operand in operands:
                 if operand and isinstance(operand, str):
@@ -423,6 +429,7 @@ class GeradorP3Assembly:
         elif op == 'PARAM':  # param arg1
             self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("",f"PUSH R1 ; Push parameter"))
+
         elif op == 'CALL': # res = call func_name (arg1 is func_name, res is for return value)
             # Chamada de função (label)
             #self.assembly_code.append(self._format_line("", "CALL", res_label))
@@ -453,22 +460,6 @@ class GeradorP3Assembly:
                     self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"))
             str_label = self.string_literal_map.get(arg1.strip('"'))
 
-            """
-            if str_label:
-                loop_label = self._new_internal_label("WRITES_LOOP_")
-                end_label = self._new_internal_label("WRITES_END_")
-                self.assembly_code.append(self._format_line("",f"MOV R1, #{str_label} ; R1 = address of string '{arg1}'"))
-                self.assembly_code.append(self._format_line(f"{loop_label}:", "NOP"))
-                self.assembly_code.append(self._format_line("",f"MOV R2, M[R1]    ; Load character from string"))
-                self.assembly_code.append(self._format_line("",f"CMP R2, #0       ; Check for null terminator"))
-                self.assembly_code.append(self._format_line("",f"JMP.Z {end_label}"))
-                self.assembly_code.append(self._format_line("",f"MOV M[FFFEh], R2 ; Write char to text output port [cite: 36]"))
-                self.assembly_code.append(self._format_line("",f"INC R1           ; Move to next char in string [cite: 158]"))
-                self.assembly_code.append(self._format_line("",f"JMP {loop_label}"))
-                self.assembly_code.append(self._format_line("",f"{end_label}:", 0))
-            else:
-                self.assembly_code.append(self._format_line("",f"; ERROR: String literal for writes not found: {arg1}"))
-                """
         elif op == 'WRITEC':  # writec char_val_var
             self.assembly_code.append(self._format_line("",f"MOV R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("",f"MOV M[FFFEh], R1 ; Write character to text output port"))
@@ -578,16 +569,7 @@ class GeradorP3Assembly:
         output.append("")
 
         output.extend(self.assemblyfunction_code)
-        """
-        output.append(self._format_line("WRITES:", "NOP", "","; escreve uma string na consola"))
-        output.append(self._format_line("MostraChar:", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
-        output.append(self._format_line("", "CMP", "R2, 0","; Compara com o terminador"))
-        output.append(self._format_line("", "JMP.Z", "FimChar","; Se for zero, salta para o fim"))
-        output.append(self._format_line("", "MOV", "M[FFFEh], R2","; Escreve o carater no endereço de saída"))
-        output.append(self._format_line("", "INC", "R1","; Avança para o próximo carater"))
-        output.append(self._format_line("", "BR", "MostraChar","; Repete o ciclo"))
-        output.append(self._format_line("FimChar:", "RET",  "",""))
-        """
+
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Programa Principal "))
 
