@@ -29,7 +29,9 @@ def resource_path(relative_path):
     except Exception:
         # Se _MEIPASS não estiver definido, não estamos num executável
         # e o caminho base é o diretório do nosso script.
-        base_path = os.path.abspath(".")
+        #base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
 
     return os.path.join(base_path, relative_path)
 
