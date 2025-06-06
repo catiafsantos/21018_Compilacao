@@ -482,7 +482,11 @@ class OtimizadorTAC:
                 temp_mapa_labels_idx[quad['res']] = i
 
         for i, quad in enumerate(self.quadruplos):
-
+            # Regra 1: Label main é sempre líder
+            if quad['op'] == "label":
+                if quad['res'] is not None and quad['res'] in ("main","end_main"):
+                    if quad['res'] in temp_mapa_labels_idx:
+                        lideres.add(temp_mapa_labels_idx[quad['res']])
             # Regra 2: Alvo de um salto é um líder
             if quad['op'] in ("goto", "ifFalse"):
                 if quad['res'] is not None and quad['res'] in temp_mapa_labels_idx:
@@ -492,6 +496,7 @@ class OtimizadorTAC:
             if quad['op'] in ("goto", "ifFalse", "return"):
                 if i + 1 < len(self.quadruplos):
                     lideres.add(i + 1)
+
         return lideres
 
     def construir_blocos_basicos(self, lideres: Set[int]) -> List[BlocoBasico]:
@@ -634,66 +639,91 @@ class OtimizadorTAC:
 
     def remover_codigo_inatingivel_metodo(self) -> TAC:
         """
-        Função principal como método para remover código inatingível.
+        Versão melhorada que preserva:
+        - O bloco main
+        - Todas as funções chamadas direta ou indiretamente do main
+        - Blocos alvo de saltos
         """
         if not self.quadruplos:
             return []
 
-        debug_print("--- TAC Original (dentro do método) ---")
-        for i, q in enumerate(self.quadruplos): debug_print(f"{i:2d}: {q}")
-
+        # 1. Construir a estrutura básica (lideres, blocos, CFG)
         lideres = self.identificar_lideres()
-        debug_print("\n--- Líderes Identificados (índices) (dentro do método) ---")
-        debug_print(sorted(list(lideres)))
+        self.construir_blocos_basicos(lideres)
+        self.construir_cfg()
 
-        self.construir_blocos_basicos(lideres)  # Atualiza self.blocos
-        debug_print("\n--- Blocos Básicos Construídos (dentro do método) ---")
-        for b in self.blocos: debug_print(b)
+        # 2. Encontrar todos os pontos de entrada importantes
+        pontos_entrada = set()
 
-        self.construir_cfg()  # Atualiza sucessores em self.blocos e self.mapa_labels_para_id_bloco
-        debug_print("\n--- CFG Construído (Sucessores por Bloco) (dentro do método) ---")
-        for b in self.blocos: debug_print(
-            f"Bloco {b.id_bloco} (quads {b.inicio_idx}-{b.fim_idx}) -> Sucessores: {b.sucessores}")
-
-        ids_blocos_alcancaveis = self.encontrar_blocos_alcancaveis(0)
-        debug_print("\n--- IDs de Blocos Alcançáveis (dentro do método) ---")
-        debug_print(sorted(list(ids_blocos_alcancaveis)))
-
-        tac_otimizado: TAC = []
-        labels_alcancaveis_nos_blocos_otimizados: Set[str] = set()
-
-        # Coleta labels que PERTENCEM a blocos alcançáveis
+        # 2.1. Sempre incluir o main
+        bloco_main_id = None
         for bloco in self.blocos:
-            if bloco.id_bloco in ids_blocos_alcancaveis:
-                if bloco.quadruplas and bloco.quadruplas[0]['op'] == "label":
-                    label_name = bloco.quadruplas[0]['res']
-                    if label_name:
-                        labels_alcancaveis_nos_blocos_otimizados.add(label_name)
+            if any(quad['op'] == 'label' and quad['res'] == 'main' for quad in bloco.quadruplas):
+                bloco_main_id = bloco.id_bloco
+                pontos_entrada.add(bloco_main_id)
+                break
 
-        debug_print("\n--- Labels que pertencem a blocos alcançáveis ---")
-        debug_print(labels_alcancaveis_nos_blocos_otimizados)
+        if bloco_main_id is None:
+            debug_print("AVISO: Nenhum bloco 'main' encontrado!")
+            return []
 
-        for bloco in sorted(self.blocos, key=lambda b: b.inicio_idx):
-            if bloco.id_bloco in ids_blocos_alcancaveis:
+        # 2.2. Encontrar todas as funções chamadas a partir de blocos alcançáveis
+        funcoes_chamadas = set()
+
+        # Primeira passada: encontrar chamadas diretas do main
+        for bloco in self.blocos:
+            if bloco.id_bloco in pontos_entrada:
                 for quad in bloco.quadruplas:
-                    op, arg1, arg2, res = quad['op'], quad['arg1'], quad['arg2'], quad['res']
+                    if quad['op'] == 'call':
+                        funcoes_chamadas.add(quad['arg1'])
 
-                    # Verificação adicional para saltos: o label de destino deve ser de um bloco alcançável
-                    if op in ("goto", "ifFalse", "ifTrue"):
-                        if res is not None and res not in labels_alcancaveis_nos_blocos_otimizados:
-                            debug_print(
-                                f"Aviso: Salto em {quad} para label '{res}' que NÃO pertence a um bloco alcançável. A instrução será mantida, mas pode indicar um problema ou uma otimização perdida.")
-                        else:
-                            tac_otimizado.append(quad)
-                    else:
-                        tac_otimizado.append(quad)
+        # Segunda passada: encontrar funções chamadas por outras funções já identificadas
+        mudou = True
+        while mudou:
+            mudou = False
+            for bloco in self.blocos:
+                if (bloco.quadruplas and bloco.quadruplas[0]['op'] == 'label' and
+                        bloco.quadruplas[0]['res'] in funcoes_chamadas):
+                    for quad in bloco.quadruplas:
+                        if quad['op'] == 'call' and quad['res'] not in funcoes_chamadas:
+                            funcoes_chamadas.add(quad['res'])
+                            mudou = True
+
+        # 3. Adicionar os blocos das funções chamadas como pontos de entrada
+        for bloco in self.blocos:
+            if (bloco.quadruplas and bloco.quadruplas[0]['op'] == 'label' and
+                    bloco.quadruplas[0]['res'] in funcoes_chamadas):
+                pontos_entrada.add(bloco.id_bloco)
+
+        # 4. Encontrar todos os blocos alcançáveis a partir dos pontos de entrada
+        blocos_alcancaveis = set()
+        for entrada in pontos_entrada:
+            blocos_alcancaveis.update(self.encontrar_blocos_alcancaveis(entrada))
+
+        # 5. Coletar todos os labels que são alvos de saltos
+        labels_alvo_saltos = set()
+        for bloco in self.blocos:
+            if bloco.id_bloco in blocos_alcancaveis:
+                for quad in bloco.quadruplas:
+                    if quad['op'] in ('goto', 'ifFalse', 'ifTrue') and quad['res']:
+                        labels_alvo_saltos.add(quad['res'])
+
+        # 6. Adicionar blocos que são alvos de saltos
+        for bloco in self.blocos:
+            if (bloco.quadruplas and bloco.quadruplas[0]['op'] == 'label' and
+                    bloco.quadruplas[0]['res'] in labels_alvo_saltos):
+                blocos_alcancaveis.add(bloco.id_bloco)
+
+        # 7. Construir o TAC final
+        tac_otimizado = []
+        blocos_ordenados = sorted(self.blocos, key=lambda b: b.inicio_idx)
+
+        for bloco in blocos_ordenados:
+            if bloco.id_bloco in blocos_alcancaveis:
+                tac_otimizado.extend(bloco.quadruplas)
 
         self.quadruplos = tac_otimizado
-        debug_print("\n--- TAC Otimizado (Código Inatingível Removido) (dentro do método) ---")
-        for i, q in enumerate(self.quadruplos): debug_print(f"{i:2d}: {q}")
-
         return self.quadruplos
-
 
 
 # Função de conveniência otimizar_completo: aplica todas as otimizações ao código TAC fornecido
