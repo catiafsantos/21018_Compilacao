@@ -14,9 +14,11 @@ from VisitorTAC import VisitorTAC, gerar_texto_tac
 from OtimizadorTAC import otimizar_completo
 from Gerador_P3Assembly import GeradorP3Assembly
 
+
 def run_antlr4_parselinux(file_path, option):
     cmd = f"cat {file_path} | antlr4-parse MOC.g4 programa {option}"
     subprocess.run(cmd, shell=True)
+
 
 def resource_path(relative_path):
     """
@@ -31,9 +33,8 @@ def resource_path(relative_path):
         # e o caminho base é o diretório do nosso script.
         #base_path = os.path.abspath(".")
         base_path = os.path.dirname(os.path.abspath(__file__))
-
-
     return os.path.join(base_path, relative_path)
+
 
 def run_antlr4_parse(file_path, option):
     """
@@ -45,9 +46,8 @@ def run_antlr4_parse(file_path, option):
         print(f"Erro: O ficheiro de entrada '{file_path}' não foi encontrado.")
         return
 
-    # IMPORTANTE: Obtenha o caminho para o ficheiro de gramática usando a nova função.
     # O argumento "MOC.g4" deve corresponder à estrutura que você usou no --add-data.
-    # Veja a nota abaixo.
+    # Ver a nota abaixo.
     grammar_file_path = resource_path("gramatica/MOC.g4")
 
     # O comando agora usa o caminho absoluto correto para a gramática.
@@ -80,11 +80,13 @@ def run_antlr4_parse(file_path, option):
     except subprocess.CalledProcessError as e:
         # Este erro ocorre se o antlr4-parse for executado mas falhar (ex: erro de sintaxe no ficheiro)
         print(f"\nERRO: A análise do ANTLR falhou. Código de retorno: {e.returncode}")
-        # A saída de erro do antlr4-parse já terá sido impressa no terminal.
+        # A saída de erro do antlr4-parse já terá sido apresentada no terminal.
 
     except Exception as e:
         # Para outros erros inesperados.
         print(f"Ocorreu um erro inesperado: {e}")
+
+
 def main():
     # Determina se o script está a ser executado como um ficheiro .py ou como um executável "congelado".
     # A função getattr() é usada para aceder ao atributo de forma segura, retornando False se ele não existir.
@@ -102,21 +104,20 @@ def main():
         print(f"Uso: {program_name} <ficheiro> [-tree | -gui]")
         sys.exit(1)  # É uma boa prática usar sys.exit() para terminar o programa aqui.
 
-
     input_file = sys.argv[1]
 
     # Check if the file exists
     if not os.path.exists(input_file):
         print("O ficheiro " + input_file + " não existe.")
-        return
+        sys.exit(1)
 
     if "-tree" in sys.argv:
         run_antlr4_parse(input_file, "-tree")
-        return
+        sys.exit(1)
 
     if "-gui" in sys.argv:
         run_antlr4_parse(input_file, "-gui")
-        return
+        sys.exit(1)
 
     # --- Fase de Análise Sintática ---
     print("\n--- A iniciar Análise Sintática ---")
@@ -136,7 +137,7 @@ def main():
         tree = parser.programa()
     except Exception as e:
         print(f"\n[Parsing interrompido]: {e}")
-        return
+        sys.exit(1)
 
     print("\n--- Análise Sintática concluída ---")
 
@@ -159,7 +160,6 @@ def main():
         print("\nErros semânticos encontrados. A abortar o processo de geração de código intermédio.")
         exit(1)
 
-
     # --- GERAÇÃO DE CÓDIGO INTERMÉDIO ---
     print("\n--- A iniciar Geração de Código Intermédio ---")
     visitor = VisitorTAC(tabela_de_simbolos_principal)
@@ -168,7 +168,7 @@ def main():
         visitor.visit(tree)
     except Exception as e:
         print(f"\nErro semântico durante geração de TAC: {e}")
-        return
+        sys.exit(1)
     print("\n--- Geração de Código Intermédio concluída ---")
 
     # --- Exibir TAC Gerado ---
@@ -206,7 +206,7 @@ def main():
 
         # Gravar o código final num arquivo .as para o assembler P3, na mesma pasta do .moc
         output_file = input_file.replace(".moc", ".as")
-#        with open(output_file, "w", encoding="cp1252") as f:
+        #        with open(output_file, "w", encoding="cp1252") as f:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(codigo_assembly_p3)
         print("\nCódigo Assembly P3 gravado em '{}'.".format(output_file))
