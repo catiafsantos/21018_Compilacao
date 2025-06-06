@@ -168,7 +168,7 @@ class GeradorP3Assembly:
                 )
         return name
 
-    def _get_var_label(self, name):
+    def _get_var_label1(self, name):
         """
         Devolve o label P3 associado a uma variável.
         Se ainda não existir, cria a declaração no segmento de dados.
@@ -180,6 +180,35 @@ class GeradorP3Assembly:
             label = f"VAR_{name.upper()}"
             self.var_labels[name] = label
             self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
+        return self.var_labels[name]
+
+    def _get_var_label(self, name):
+        """
+        Devolve uma etiqueta P3 curta e única associada a uma variável.
+        Se a etiqueta para esta variável ainda não existir, cria a sua
+        declaração no segmento de dados.
+        """
+        # A sua função de sanitização continua aqui
+        name = self._sanitize_var(name)
+        if name is None:
+            return None
+
+        # Verifica se já foi criada uma etiqueta para este nome de variável
+        if name not in self.var_labels:
+            # Gera uma nova etiqueta curta e única usando o contador
+            self.label_generator_count += 1
+            label = f"VAR_{self.label_generator_count}"
+
+            # Associa o nome original da variável à nova etiqueta gerada
+            self.var_labels[name] = label
+
+            # Adiciona a declaração à secção de dados.
+            # Nota: Inicializamos com '0' e mantemos o nome original no comentário.
+            #linha_declaracao = f"{label}: WORD 0 ; Variável original: {name}"
+            #self.data_section.append(linha_declaracao)
+            self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
+
+        # Devolve a etiqueta curta e única associada ao nome
         return self.var_labels[name]
 
     def _declare_array(self, name, size):
