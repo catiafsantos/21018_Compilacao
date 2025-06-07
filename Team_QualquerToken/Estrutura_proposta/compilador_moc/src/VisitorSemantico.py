@@ -392,18 +392,31 @@ class VisitorSemantico(MOCVisitor):
             # Visita a expressão do índice
             self.visit(ctx.expressao(1))
 
-        # 3. Visita a expressão do valor atribuído - aqui temos que obter o valor atribuido
-        self.visit(ctx.expressao(0))
-        valor = ctx.expressao(0).getText()
-        simbolo.valor_inicial = valor
+            # 3. Visita a expressão do valor atribuído - aqui temos que obter o valor atribuido
+            self.visit(ctx.expressao(1))
+            valor = ctx.expressao(1).getText()
+            simbolo.valor_inicial = valor
 
-         # 4. Verificação de tipo entre variável e expressão atribuída
-        tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
-        if tipo_expressao and tipo_expressao != simbolo.tipo:
-            self.lista_erros.append(
-                f"[Erro semântico] Atribuição de tipo incompatível em '{nome_variavel}' "
-                f"(esperado: {simbolo.tipo}, obtido: {tipo_expressao})"
-            )
+            # 4. Verificação de tipo entre variável e expressão atribuída
+            tipo_expressao = self.obter_tipo_expressao(ctx.expressao(1))
+            if tipo_expressao and tipo_expressao != simbolo.tipo:
+                self.lista_erros.append(
+                    f"[Erro semântico] Atribuição de tipo incompatível em '{nome_variavel}' "
+                    f"(esperado: {simbolo.tipo}, obtido: {tipo_expressao})"
+                )
+        else:
+            # 3. Visita a expressão do valor atribuído - aqui temos que obter o valor atribuido
+            self.visit(ctx.expressao(0))
+            valor = ctx.expressao(0).getText()
+            simbolo.valor_inicial = valor
+
+             # 4. Verificação de tipo entre variável e expressão atribuída
+            tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
+            if tipo_expressao and tipo_expressao != simbolo.tipo:
+                self.lista_erros.append(
+                    f"[Erro semântico] Atribuição de tipo incompatível em '{nome_variavel}' "
+                    f"(esperado: {simbolo.tipo}, obtido: {tipo_expressao})"
+                )
 
     # Visita uma instrução 'while'
     def visitInstrucaoWhile(self, ctx):
