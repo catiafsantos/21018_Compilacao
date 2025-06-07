@@ -480,26 +480,26 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("",f"RET","","; Return from subroutine, PC restored from stack [cite: 183]"))
 
         # Entrada/Saída (exemplo: print)
-        elif op in ('WRITES', 'WRITEC'):  # writes "string_literal"
-
+        elif op in ('WRITES'):  # writes "string_literal"
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
-                #self.assembly_code.append(self._format_line(f"; {op.lower()}", "-"*25))
+                self.assembly_code.append(self._format_line(f"; {op.lower()} {str_label}", "", "-"*25))
                 self.assembly_code.append(self._format_line("", "PUSH", f"{str_label}", "; Endereço da string passado via pilha"))
                 self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
                 self.assembly_code.append(self._format_line("", "POP", "R0"))
                 self.assembly_code.append("")
-                if op == "WRITES":
-                    self.add_function_writes()
-                else:
-                    self.add_function_writec()
+                self.add_function_writes()
             else:
                 self.assembly_code.append(
                     self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"))
 
-        #elif op == 'WRITEC':  # writec char_val_var
-            #self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            #self.assembly_code.append(self._format_line("",f"MOV",f"M[FFFEh], R1","; Write character to text output port"))
+        elif op == 'WRITEC':  # writec char_val_var
+            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
+            self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
+            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
+            self.assembly_code.append(self._format_line("", "POP", "R0"))
+            self.assembly_code.append("")
+            self.add_function_writec()
 
         elif op == 'WRITE':
             # Rui Menino // REVER. Está a imprimir o carater correspondente ao valor ascii que estiver na variável
@@ -529,23 +529,33 @@ class GeradorP3Assembly:
     def add_function_writes(self):
         if 'writes' not in self.declared_functions:
             self.declared_functions.add('writes')
-            self.assemblyfunction_code.append(self._format_line("WRITES:", "NOP", "","; escreve uma string na consola"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; writes(\"texto\"): Imprime string (com \\n ao final)")
+            self.assemblyfunction_code.append(self._format_line("WRITES:", "NOP"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+2]","; Endereço da string passado via pilha"))
             self.assemblyfunction_code.append(self._format_line("WRITES_L1:", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
             self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, 0","; Compara com o terminador"))
-            self.assemblyfunction_code.append(self._format_line("", "JMP.Z", "WRITES_END","; Se for zero, salta para o fim"))
+            self.assemblyfunction_code.append(self._format_line("", "JMP.Z", "WRITES_LF","; Se for zero, salta para o fim"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R2","; Escreve o carater no endereço de saída"))
             self.assemblyfunction_code.append(self._format_line("", "INC", "R1","; Avança para o próximo carater"))
             self.assemblyfunction_code.append(self._format_line("", "JMP", "WRITES_L1","; Repete o ciclo"))
-            self.assemblyfunction_code.append(self._format_line("WRITES_END:", "RET",  "",""))
+            self.assemblyfunction_code.append(self._format_line("WRITES_LF:", "MOV", "R2, 10","; \\n"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R2"))
+            self.assemblyfunction_code.append(self._format_line("WRITES_END:", "RET"))
 
     def add_function_writec(self):
         if 'writec' not in self.declared_functions:
             self.declared_functions.add('writec')
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; writec(x): Imprime caracter (ASCII)")
             self.assemblyfunction_code.append(self._format_line("WRITEC:", "NOP", "","; escreve um carater na consola"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+2]","; Endereço da string passado via pilha"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R2, M[R1]","; Lê o carater apontado por R1"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R2","; Escreve o carater no endereço de saída"))
             self.assemblyfunction_code.append(self._format_line("WRITEC_END:", "RET",  "",""))
+
+            #self.assembly_code.append(self._format_line("", "MOV", f"R1, M[{arg1_label}]", "; Lê o carater apontado por R1"))
+            #self.assembly_code.append(self._format_line("", "MOV", "M[FFFEh], R1", "; Escreve o carater no endereço de saída"))
 
     def generate_from_tac_list(self, tac_list):
         """
@@ -612,7 +622,6 @@ class GeradorP3Assembly:
         output.append(self._format_line("", "JMP", "_start","; jump to main"))
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Rotinas"))
-        output.append("")
 
         output.extend(self.assemblyfunction_code)
 

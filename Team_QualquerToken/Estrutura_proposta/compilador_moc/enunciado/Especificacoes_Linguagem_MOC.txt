@@ -49,9 +49,9 @@ Lista das Especificações da Linguagem MOC
 
 9.2. Saída:
 9.2.1. write(x): Imprime valor de variável.
-9.2.2. writec(x): Imprime caracter (ASCII).
+9.2.2. writec(x): Imprime caracter (ASCII). ---------------------------------- OK
 9.2.3. writev(vetor): Imprime vetor no formato {1, 2, 0}.
-9.2.4. writes("texto"): Imprime string (com \n ao final).
+9.2.4. writes("texto"): Imprime string (com \n ao final). -------------------- OK
 
 10. Conversão de Tipos
 10.1. Implícita: int → double em operações mistas.
