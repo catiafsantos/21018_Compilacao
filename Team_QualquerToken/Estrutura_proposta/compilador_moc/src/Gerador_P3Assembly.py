@@ -110,6 +110,7 @@ class GeradorP3Assembly:
 
         for quad in self.quadruplos:
             operands = [quad['arg1'], quad['arg2'], quad['res']]
+
             if quad['op'] == 'alloc':  # alloc var, size_elements
                 var_name = quad['arg1']
                 num_elements_tac = int(quad['arg2'])
@@ -118,17 +119,20 @@ class GeradorP3Assembly:
                 self.data_section.append(
                     f"{var_name}: TAB {num_p3_words} ; alloc {num_elements_tac} TAC elements ({num_p3_words} P3 words)")
                 self.declared_vars.add(var_name)
-                continue
+
 
             if quad['op'] == 'writes':  # writes "string" esta intrução escreve uma string literal
                 str_content = quad['arg1'].strip('"')
                 self._add_string_literal(str_content)  # Declares in data_section
+
+
             if quad['op'] == 'label':
                 # é uma label de uma funçáo
                 # se já existir main não coloca
                 for operand in operands:
                     if operand and isinstance(operand, str):
                         self.declared_functions.add(operand)
+
 
             for operand in operands:
                 if operand and isinstance(operand, str):
@@ -194,6 +198,7 @@ class GeradorP3Assembly:
             return None
 
         # Verifica se já foi criada uma etiqueta para este nome de variável
+
         if name not in self.var_labels:
             # Gera uma nova etiqueta curta e única usando o contador
             self.label_generator_count += 1
