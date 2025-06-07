@@ -3,5 +3,8 @@ void main(void);
 
 void main(void) {
     double z[]= {1.2, 2.2, 3.2};
-	z[2]=5.2; /* isto deveria ser z[2] está a considerar que os indices têm que ter o valor de double */
+	z[2]=5.2;
 }
+
+
+ /* isto deveria ser z[2] está a considerar que os indices têm que ter o valor de double */
