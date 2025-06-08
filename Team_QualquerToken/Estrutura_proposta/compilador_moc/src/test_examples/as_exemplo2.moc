@@ -1,0 +1,15 @@
+/* exemplo 2
+   ciclo for com writes */
+void main(void);
+void main(void) {
+    int i, n = 5;
+    double v[100];
+    writec(48);
+    writec(10); // linha feed
+    writes("Introduza o texto a, seguido de ENTER: ");
+    /*for (i = 0; i < n; i = i + 1) {
+        writes("x");
+    }*/
+    v = reads();
+    writes(v);
+}
