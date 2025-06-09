@@ -421,34 +421,34 @@ class GeradorP3Assembly:
         elif op == '[]':  # res = array_name[byte_offset_var]
             # array_name (arg1), byte_offset_var (arg2), res (destination)
             # 1. Get byte_offset into R1
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ","; R1 = byte offset"))
             # 2. Convert to word offset: R1 = R1 / 2 (or SHR R1, #1)
-            self.assembly_code.append(self._format_line("",f"SHR R1, #1 ; R1 = word offset (P3 words are 2 bytes) [cite: 199]"))
+            self.assembly_code.append(self._format_line("",f"SHR",f"R1, #1 ","; R1 = word offset (P3 words are 2 bytes) [cite: 199]"))
             # 3. Get base address of array into R2. P3 doesn't have MOV REG, LABEL_ADDRESS directly for all instructions.
             #    We need to use EQU for base address or load it if dynamic.
             #    Let's assume arg1 (array_name) is a label whose value is the base address.
             #    MOV R2, #array_name (Loads immediate address value into R2)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ; R2 = base address of array '{arg1}'"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ","; R2 = base address of array '{arg1}'"))
             # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ; R2 = address of element"))
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = address of element"))
             # 5. Load value: R3 = M[R2] (register indirect)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ; Load value from array element"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ","; Load value from array element"))
             # 6. Store in res: M[res] = R3
-            self.assembly_code.append(self._format_line("",f"MOV {self._get_p3_operand_syntax(res, 'store')}, R3"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R3"))
         elif op == '[]=':  # array_name[byte_offset_var] = value_var
             # array_name (arg1), byte_offset_var (arg2), value_var (res in TAC quad)
             # 1. Get byte_offset into R1
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ; R1 = byte offset"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')}","; R1 = byte offset"))
             # 2. Convert to word offset
-            self.assembly_code.append(self._format_line("",f"SHR",f"R1, #1 ; R1 = word offset [cite: 199]"))
+            self.assembly_code.append(self._format_line("",f"SHR",f"R1, #1","; R1 = word offset [cite: 199]"))
             # 3. Get base address of array into R2
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ; R2 = base address of array '{arg1}'"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, #{arg1} ","; R2 = base address of array '{arg1}'"))
             # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ; R2 = address of element"))
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = address of element"))
             # 5. Get value_to_store into R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ; R3 = value to store"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ","; R3 = value to store"))
             # 6. Store value: M[R2] = R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ; Store value into array element"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ","; Store value into array element"))
 
         # Pilha (stack)
         elif op == 'PUSH':
