@@ -480,7 +480,7 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("",f"RET","","; Return from subroutine, PC restored from stack [cite: 183]"))
 
         # Entrada/Saída (exemplo: print)
-        elif op in ('WRITES'):  # writes "string_literal"
+        elif (op =='WRITES'):  # writes "string_literal"
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
                 self.assembly_code.append(self._format_line(f"; {op.lower()} {str_label}", "", "-"*25))
@@ -493,7 +493,7 @@ class GeradorP3Assembly:
                 self.assembly_code.append(
                     self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"))
 
-        elif op == 'WRITEC':  # writec char_val_var
+        elif (op == 'WRITEC'):  # writec char_val_var
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
             self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
@@ -501,18 +501,21 @@ class GeradorP3Assembly:
             self.assembly_code.append("")
             self.add_function_writec()
 
-        elif op == 'WRITE':
+        elif (op == 'WRITE'):
             # Rui Menino // REVER. Está a imprimir o carater correspondente ao valor ascii que estiver na variável
             # Escreve valor de arg1 na janela de texto (endereço FFFEh)
-            self.assembly_code.append(self._format_line(f"; {op.lower()}", "-"*25))
-            self.assembly_code.append(self._format_line("", "MOV", f"R1, M[{arg1_label}]", "; Lê o carater apontado por R1"))
-            self.assembly_code.append(self._format_line("", "MOV", "M[FFFEh], R1", "; Escreve o carater no endereço de saída"))
-
-        elif op == 'READ':
+            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25))
+            self.assembly_code.append(
+                self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
+            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
+            self.assembly_code.append(self._format_line("", "POP", "R0"))
+            self.assembly_code.append("")
+            self. add_function_write()
+        elif (op == 'READ'):
             # Lê valor da janela de texto (endereço FFFFh) para res
             self.assembly_code.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
             self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
-        elif op == 'HALT':
+        elif (op == 'HALT'):
             # Termina a execução do programa
             self.assembly_code.append(self._format_line("", "BR", "Fim", "; Fim com loop infinito"))
             # O manual P3 não lista uma instrução HALT.
@@ -525,6 +528,70 @@ class GeradorP3Assembly:
         else:
             # Caso não exista tradução, insere comentário de aviso
             self.assembly_code.append(f";; AVISO: Operação TAC '{op}' não traduzida para P3.")
+
+    def add_function_write(self):
+        """
+        Adiciona a sub-rotina WRITE ao código assembly.
+        Esta rotina recebe o ENDEREÇO de uma variável inteira na pilha,
+        carrega o seu valor e imprime-o na consola como uma sequência de dígitos decimais.
+        """
+        if 'write' not in self.declared_functions:
+            self.declared_functions.add('write')
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; write(endereco_da_variavel): Imprime um número inteiro.")
+            self.assemblyfunction_code.append("; Recebe o endereço do valor via pilha.")
+            self.assemblyfunction_code.append(self._format_line("WRITE:", "NOP"))
+
+            # 1. Obter o valor do inteiro a partir do endereço passado na pilha
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R1, M[SP+2]", "; R1 = Endereço da variável"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, M[R1]", "; R2 = Valor do inteiro a imprimir"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R5, 0", "; R5 = Contador de dígitos (inicia a 0)"))
+
+            # 2. Tratar números negativos
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, 0"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NN", "WRITE_POS", "; Salta se for positivo ou zero"))
+            # É negativo: imprime '-' e nega o número
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R3, '-'", "; Caracter '-' para impressão"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R3"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "NEG", "R2", "; Converte R2 para positivo para a conversão"))
+
+            # 3. Tratar o caso de o número ser zero
+            self.assemblyfunction_code.append(self._format_line("WRITE_POS:", "CMP", "R2, 0"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NZ", "WRITE_CONV_LOOP", "; Se não for zero, começa a conversão"))
+            # É zero: imprime '0' e termina
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R3, '0'"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[FFFEh], R3"))
+            self.assemblyfunction_code.append(self._format_line("", "JMP", "WRITE_END"))
+
+            # 4. Loop de conversão: extrai dígitos por divisão sucessiva
+            self.assemblyfunction_code.append(self._format_line("WRITE_CONV_LOOP:", "MOV", "R4, 10"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "DIV", "R2, R4", "; R2=Quociente, R4=Resto (dígito)"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R4", "; Guarda o dígito na pilha"))
+            self.assemblyfunction_code.append(self._format_line("", "INC", "R5", "; Incrementa contador de dígitos"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, 0"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NZ", "WRITE_CONV_LOOP", "; Repete se o quociente não for zero"))
+
+            # 5. Loop de impressão: retira dígitos da pilha e imprime
+            self.assemblyfunction_code.append(
+                self._format_line("WRITE_PRT_LOOP:", "POP", "R3", "; Retira dígito da pilha"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "ADD", "R3, '0'", "; Converte dígito (0-9) para caracter ASCII ('0'-'9')"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "M[FFFEh], R3", "; Escreve o caracter na saída"))
+            self.assemblyfunction_code.append(self._format_line("", "DEC", "R5", "; Decrementa o contador de dígitos"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NZ", "WRITE_PRT_LOOP", "; Repete até todos os dígitos serem impressos"))
+
+            # 6. Fim da rotina
+            self.assemblyfunction_code.append(self._format_line("WRITE_END:", "RET"))
 
     def add_function_writes(self):
         if 'writes' not in self.declared_functions:
