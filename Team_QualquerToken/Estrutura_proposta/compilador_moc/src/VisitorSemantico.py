@@ -410,7 +410,7 @@ class VisitorSemantico(MOCVisitor):
             valor = ctx.expressao(0).getText()
             simbolo.valor_inicial = valor
 
-             # 4. Verificação de tipo entre variável e expressão atribuída
+            # 4. Verificação de tipo entre variável e expressão atribuída
             tipo_expressao = self.obter_tipo_expressao(ctx.expressao(0))
             if tipo_expressao and tipo_expressao != simbolo.tipo:
                 self.lista_erros.append(
