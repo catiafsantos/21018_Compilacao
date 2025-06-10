@@ -386,7 +386,7 @@ class VisitorTAC(MOCVisitor):
     def visitUnarioNegativo(self, ctx):
         expr = self.visit(ctx.expressaoUnaria())
         # Gera '0 - expr' para simular o sinal negativo
-        return self.adicionar_quadruplo("-", "0", arg1=expr)
+        return self.adicionar_quadruplo("-",  "0",arg2=expr)
 
     # Geração de TAC para negação lógica (ex: !x)
     def visitNegacao(self, ctx):
