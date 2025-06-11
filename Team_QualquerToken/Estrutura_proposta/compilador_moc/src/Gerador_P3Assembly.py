@@ -491,24 +491,24 @@ class GeradorP3Assembly:
         # --------------------------------------------------------------------------------------------------------------
         # Funções Entrada/Saída
         # --------------------------------------------------------------------------------------------------------------
-        elif op == 'READ':
+        elif op == 'READ': #RM
             # read(): Lê int ou double.
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             #self.assembly_code.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
             #self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
 
-        elif op == 'READC':
+        elif op == 'READC': #RM
             # readc(): Lê caracter (retorna valor ASCII).
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
 
-        elif op == 'READS':
+        elif op == 'READS': #RM
             # reads(): Lê string para vetor de int (termina em 0).
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
             self.assembly_code.append("")
             self.add_function_reads()
 
-        elif op == 'WRITE':
+        elif op == 'WRITE': #RM
             # write(x): Imprime valor de variável.
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
@@ -518,7 +518,7 @@ class GeradorP3Assembly:
             #self.assembly_code.append(self._format_line("", "MOV", f"R1, M[{arg1_label}]", "; Lê o carater apontado por R1"))
             #self.assembly_code.append(self._format_line("", "MOV", "M[FFFEh], R1", "; Escreve o carater no endereço de saída"))
 
-        elif op == 'WRITEC':
+        elif op == 'WRITEC': #RM
             # writec(x): Imprime caracter (ASCII).
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
@@ -527,7 +527,7 @@ class GeradorP3Assembly:
             self.assembly_code.append("")
             self.add_function_writec()
 
-        elif op == 'WRITEV':
+        elif op == 'WRITEV': #RM
             # writev(vetor): Imprime vetor no formato {48, 49, 0}.
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
             self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
@@ -536,7 +536,8 @@ class GeradorP3Assembly:
             self.assembly_code.append("")
             self.add_function_writev()
 
-        elif op in ('WRITES'):  # writes "string_literal"
+        elif op in ('WRITES'): #RM
+            # writes "string_literal"
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
                 self.assembly_code.append(self._format_line(f"; {op.lower()} {str_label}", "", "-"*25))

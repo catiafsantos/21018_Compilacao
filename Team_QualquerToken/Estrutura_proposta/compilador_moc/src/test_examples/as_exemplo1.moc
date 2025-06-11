@@ -1,9 +1,8 @@
 void main(void);
 void main(void) {
-    int x;
-    x = 10;
-    write(x);
-    writes("abc");
-    writes("xpto");
-    writes("top");
+    int x = 0;
+    while (x<10) {
+        writes("a");
+        x = x + 1;
+    }
 }
