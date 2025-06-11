@@ -1,15 +1,22 @@
-/* exemplo 2
-   ciclo for com writes */
+/* exemplo 2 */
 void main(void);
 void main(void) {
-    int i, n = 5;
-    double v[100];
-    writec(48);
-    writec(10); // linha feed
-    writes("Introduza o texto a, seguido de ENTER: ");
-    /*for (i = 0; i < n; i = i + 1) {
-        writes("x");
-    }*/
-    v = reads();
-    writes(v);
+
+    int i = 5;
+    double d = 2.3;
+    int v[3] = {49,50,51};
+    int x[4];
+
+    write(i);         // deve imprimer 5
+    write(66);        // deve imprimir 6
+    write(d);         // deve imprimir 2.3 ('aldrabado' com chamada à write(2)+writes('.')+write(3) (atenção aos LF, neste caso)
+    writec(49);       // deve imprimir um 1
+    writec(10);       // deve imprimir uma quebra de linha
+
+    writev(v);        // imprime {49,50,51}
+
+    writes("Introduza o texto, seguido de ENTER: ");
+    x = reads();
+    writev(x);        // imprime os valores ascii dos carateres que foram digitados (que devem já estar no vetor)
+
 }
