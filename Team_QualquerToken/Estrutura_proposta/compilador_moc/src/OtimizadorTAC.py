@@ -88,7 +88,7 @@ class OtimizadorTAC:
         # Primeiro passo: identificar todas as variáveis que são utilizadas como argumentos nos quadruplos
         usados = set()
         for q in self.quadruplos:
-            for arg in ("arg1", "arg2"):
+            for arg in ("arg1", "arg2", "res"):
                 if isinstance(q.get(arg), str):  # Só se for string (nome de variável)
                     usados.add(q[arg])           # Adiciona ao conjunto de variáveis potencialmente relevantes
         debug_print(f"[DEBUG]  [Morto] Variáveis usadas na primeira fase: {usados}")
@@ -238,6 +238,17 @@ class OtimizadorTAC:
             fez_alteracoes = False
             novos_quadruplos.clear()
 
+            # ANÁLISE PRÉVIA: Identificar todas as variáveis que são modificadas.
+            # Uma variável que é reatribuída não pode ser considerada uma constante estável
+            # para otimizações futuras dentro de um ciclo.
+            variaveis_modificadas = set()
+            for q in self.quadruplos:
+                # Qualquer variável que aparece no resultado de uma operação que não seja
+                # uma declaração inicial é marcada como modificada.
+                if q.get('res') and q['op'] != 'label':  # Supondo que 'declare' não conta como modificação
+                    variaveis_modificadas.add(q['res'])
+
+
             for q in self.quadruplos:
                 op   = q["op"]
                 arg1 = q.get("arg1")
@@ -275,7 +286,8 @@ class OtimizadorTAC:
                     if c1:  # Atribuindo uma constante
                         if res not in constantes_resolvidas or constantes_resolvidas[res] != v1:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} ← {v1} (de {arg1})")
-                            constantes_resolvidas[res] = v1
+                            if res not in variaveis_modificadas:
+                                constantes_resolvidas[res] = v1
                     else:  # Atribuindo um valor não constante (variável ou expressão não dobrada)
                         if res in constantes_resolvidas:
                             #print(f"[DEBUG]  [ConstProp] Pass {nr_iteracoes}, Quad {i}: {res} removido do mapa de constantes (instrução: {q})")
@@ -637,7 +649,131 @@ class OtimizadorTAC:
                     fila.append(id_sucessor)
         return blocos_alcancaveis
 
-    def remover_codigo_inatingivel_metodo(self) -> TAC:
+    def remover_codigo_inatingivel_metodo(self) -> list:
+        """
+        Remove blocos de código que são inatingíveis a partir dos pontos de entrada (main e funções).
+        Esta versão corrige o problema do "fall-through" em saltos condicionais.
+        """
+        if not self.quadruplos:
+            return []
+
+        # --- Etapa 1: Identificar líderes e construir os blocos básicos ---
+        # (Assumindo que os seus métodos self.identificar_lideres() e
+        # self.construir_blocos_basicos() funcionam como esperado)
+        lideres = self.identificar_lideres()
+        self.construir_blocos_basicos(lideres)
+
+        # Mapear labels e IDs de bloco para fácil acesso
+        label_para_bloco = {}
+        id_para_bloco = {}
+        for bloco in self.blocos:
+            id_para_bloco[bloco.id_bloco] = bloco
+            primeira_quad = bloco.quadruplas[0]
+            if primeira_quad['op'] == 'label':
+                label_para_bloco[primeira_quad['res']] = bloco
+
+        # --- Etapa 2: Construir o Grafo de Fluxo de Controlo (CFG) CORRIGIDO ---
+        cfg = {bloco.id_bloco: [] for bloco in self.blocos}
+        blocos_ordenados = sorted(self.blocos, key=lambda b: b.id_bloco)
+
+        for i, bloco in enumerate(blocos_ordenados):
+            ultima_quad = bloco.quadruplas[-1]
+            op = ultima_quad['op']
+
+            if op in ('ifFalse', 'ifTrue'):
+                is_boolean_string = isinstance(ultima_quad['res'], str) and ultima_quad['res'].lower() in (
+                    'true', 'false')
+                if not is_boolean_string:
+                    # CORREÇÃO: Adiciona DUAS arestas: uma para o alvo do salto e outra para o "fall-through"
+                    alvo_salto_label = ultima_quad['res']
+                    if alvo_salto_label in label_para_bloco:
+                        bloco_alvo = label_para_bloco[alvo_salto_label]
+                        cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
+
+                    # Adiciona a aresta "fall-through" para o próximo bloco na sequência
+                    if i + 1 < len(blocos_ordenados):
+                        proximo_bloco = blocos_ordenados[i + 1]
+                        cfg[bloco.id_bloco].append(proximo_bloco.id_bloco)
+                else:
+                    if op == 'ifFalse':
+                        if ultima_quad['res']:
+                            # Adiciona a aresta "fall-through" para o próximo bloco na sequência
+                            if i + 1 < len(blocos_ordenados):
+                                proximo_bloco = blocos_ordenados[i + 1]
+                                cfg[bloco.id_bloco].append(proximo_bloco.id_bloco)
+                        else:
+                            # CORREÇÃO: Adiciona DUAS arestas: uma para o alvo do salto e outra para o "fall-through"
+                            alvo_salto_label = ultima_quad['res']
+                            if alvo_salto_label in label_para_bloco:
+                                bloco_alvo = label_para_bloco[alvo_salto_label]
+                                cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
+                    else:
+                        if ultima_quad['res']:
+                            # CORREÇÃO: Adiciona DUAS arestas: uma para o alvo do salto e outra para o "fall-through"
+                            alvo_salto_label = ultima_quad['res']
+                            if alvo_salto_label in label_para_bloco:
+                                bloco_alvo = label_para_bloco[alvo_salto_label]
+                                cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
+                        else:
+                            # Adiciona a aresta "fall-through" para o próximo bloco na sequência
+                            if i + 1 < len(blocos_ordenados):
+                                proximo_bloco = blocos_ordenados[i + 1]
+                                cfg[bloco.id_bloco].append(proximo_bloco.id_bloco)
+
+            elif op == 'goto':
+                # Saltos incondicionais só têm UMA aresta
+                alvo_salto_label = ultima_quad['res']
+                if alvo_salto_label in label_para_bloco:
+                    bloco_alvo = label_para_bloco[alvo_salto_label]
+                    cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
+
+            elif op not in ('halt', 'return'):
+                # Se não for um salto ou fim, a execução continua para o próximo bloco
+                if i + 1 < len(blocos_ordenados):
+                    proximo_bloco = blocos_ordenados[i + 1]
+                    cfg[bloco.id_bloco].append(proximo_bloco.id_bloco)
+
+        # --- Etapa 3: Encontrar todos os blocos alcançáveis ---
+        blocos_alcancaveis = set()
+        trabalho_a_fazer = []  # Fila de blocos a visitar
+
+        # Identifica os pontos de entrada: main e todas as funções chamadas
+        if 'main' in label_para_bloco:
+            bloco_main = label_para_bloco['main']
+            trabalho_a_fazer.append(bloco_main.id_bloco)
+            blocos_alcancaveis.add(bloco_main.id_bloco)
+        else:
+            # print("AVISO: Função 'main' não encontrada.")
+            return []  # Se não há main, não há código alcançável
+
+        # Adiciona todas as funções chamadas como pontos de entrada
+        for bloco in self.blocos:
+            for quad in bloco.quadruplas:
+                if quad['op'] == 'call':
+                    nome_funcao = quad['arg1']
+                    if nome_funcao in label_para_bloco:
+                        bloco_funcao = label_para_bloco[nome_funcao]
+                        if bloco_funcao.id_bloco not in blocos_alcancaveis:
+                            trabalho_a_fazer.append(bloco_funcao.id_bloco)
+                            blocos_alcancaveis.add(bloco_funcao.id_bloco)
+
+        # Travessia do grafo (BFS) para encontrar todos os blocos alcançáveis
+        while trabalho_a_fazer:
+            id_bloco_atual = trabalho_a_fazer.pop(0)
+            for id_vizinho in cfg.get(id_bloco_atual, []):
+                if id_vizinho not in blocos_alcancaveis:
+                    blocos_alcancaveis.add(id_vizinho)
+                    trabalho_a_fazer.append(id_vizinho)
+
+        # --- Etapa 4: Construir o TAC final apenas com os blocos alcançáveis ---
+        tac_otimizado = []
+        for bloco in blocos_ordenados:
+            if bloco.id_bloco in blocos_alcancaveis:
+                tac_otimizado.extend(bloco.quadruplas)
+
+        self.quadruplos = tac_otimizado
+        return self.quadruplos
+    def remover_codigo_inatingivel_metodo1(self) -> TAC:
         """
         Versão melhorada que preserva:
         - O bloco main
