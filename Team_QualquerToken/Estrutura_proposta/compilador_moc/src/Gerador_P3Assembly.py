@@ -87,7 +87,8 @@ class GeradorP3Assembly:
         elif self._is_tac_temp(s_tac_operand) or s_tac_operand in self.declared_vars:
             # These are variables/temporaries stored in memory
             if context == "store" or context == "load":
-                return f"M[{s_tac_operand}]"  # Access memory location
+                label= self._get_var_label(s_tac_operand)
+                return f"M[{label}]"  # Access memory location
             return s_tac_operand  # Return name for address context if needed (e.g. for LEA-like ops, not directly in P3)
         elif self._is_tac_label(s_tac_operand) or s_tac_operand in ["main", "end_main"] or s_tac_operand.startswith(
                 "end_"):  # Labels for jumps/calls
@@ -211,7 +212,22 @@ class GeradorP3Assembly:
             # Nota: Inicializamos com '0' e mantemos o nome original no comentário.
             #linha_declaracao = f"{label}: WORD 0 ; Variável original: {name}"
             #self.data_section.append(linha_declaracao)
-            self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
+            try:
+                # Tenta converter 'name' para um inteiro.
+                valor_inteiro = int(name)
+
+                # Se funcionar, é um número. Pode formatá-lo como quiser.
+                # Aqui, estamos a assumir que um inteiro de 32 bits ocupa 2 palavras.
+                #self.data_section.append(
+                #    self._format_line(label, "WORD", str(valor_inteiro & 0xFFFF), f"; literal inteiro '{name}' (low)"))
+                #self.data_section.append(
+                #    self._format_line("", "WORD", str((valor_inteiro >> 16) & 0xFFFF), f"; (high)"))
+                self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
+            except (ValueError, TypeError):
+                # Se a conversão falhar, não é um número. Trata-se de um nome de variável.
+                # Vamos assumir que uma variável não inicializada começa em 0.
+                self.data_section.append(self._format_line(label, "WORD", "0", f"; variável '{name}'"))
+            #self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
 
         # Devolve a etiqueta curta e única associada ao nome
         return self.var_labels[name]
@@ -254,11 +270,14 @@ class GeradorP3Assembly:
         if op in ('ASSIGN_CONST', '(DOUBLE)', '='):
             # res = arg1
             # Load arg1 -> R1
-            p3_arg1_syntax = self._get_p3_operand_syntax(arg1, 'load')
-            if not str(arg1).startswith("M[") and not self._is_immediate_val(str(arg1)) and not (
-                    str(arg1).startswith("'") and str(arg1).endswith("'")):
-                # if arg1 is a variable name, needs M[]
-                p3_arg1_syntax = f"M[{arg1}]" if not self._is_immediate_val(str(arg1)) else str(arg1)
+            if arg1_label is None:
+                p3_arg1_syntax = self._get_p3_operand_syntax(arg1, 'load')
+                if not str(arg1).startswith("M[") and not self._is_immediate_val(str(arg1)) and not (
+                        str(arg1).startswith("'") and str(arg1).endswith("'")):
+                    # if arg1 is a variable name, needs M[]
+                    p3_arg1_syntax = f"M[{arg1}]" if not self._is_immediate_val(str(arg1)) else str(arg1)
+            else:
+                p3_arg1_syntax = self._get_p3_operand_syntax(arg1_label, 'load')
 
             self.assembly_code.append(self._format_line("","MOV", f"R1, {p3_arg1_syntax}"))
             self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1"))
@@ -473,6 +492,10 @@ class GeradorP3Assembly:
                     f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1","; Store return value (conventionally R1)"))
             if arg1 == "reads":
                 self.add_function_reads()
+            if arg1 == "readc":
+                self.add_function_readc()
+            if arg1 == "read":
+                self.add_function_read()
 
         elif op == 'RETURN': # return (optional_value)
             # Retorno de função
@@ -500,6 +523,11 @@ class GeradorP3Assembly:
         elif op == 'READC': #RM
             # readc(): Lê caracter (retorna valor ASCII).
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
+            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
+            self.assembly_code.append(
+                self._format_line("", "MOV", f"M[{arg1_label}], R1", "; Endereço do valor passado via pilha"))
+            self.assembly_code.append("")
+            self.add_function_readc()
 
         elif op == 'READS': #RM
             # reads(): Lê string para vetor de int (termina em 0).
@@ -579,12 +607,6 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append("; ----- Função read(): Lê int ou double.")
 
-    def add_function_readc(self):
-        if 'readc' not in self.declared_functions:
-            self.declared_functions.add('readc')
-            self.assemblyfunction_code.append("")
-            self.assemblyfunction_code.append("; ----- Função readc(): Lê caracter (retorna valor ASCII).")
-
     def add_function_reads(self):
         if 'reads' not in self.declared_functions:
             self.declared_functions.add('reads')
@@ -617,6 +639,16 @@ class GeradorP3Assembly:
             #self.assemblyfunction_code.append(self._format_line("", "POP", "R2"))
             #self.assemblyfunction_code.append(self._format_line("", "POP", "R1"))
             self.assemblyfunction_code.append(self._format_line("READS_END:", "RET"))
+    def add_function_readc(self):
+        if 'readc' not in self.declared_functions:
+            self.declared_functions.add('readc')
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; ----- Função readc(): Lê caracter (retorna valor ASCII).")
+            self.assemblyfunction_code.append(self._format_line("READC:", "NOP"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "M[CTRL_PORT], R0", "; Verifica se há tecla disponível"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.Z", "READC", "; Espera enquanto não houver tecla"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[IN_PORT]", "; Lê o carater"))
+            self.assemblyfunction_code.append(self._format_line("READC_END:", "RET"))
 
     def add_function_write(self):
         if 'write' not in self.declared_functions:
