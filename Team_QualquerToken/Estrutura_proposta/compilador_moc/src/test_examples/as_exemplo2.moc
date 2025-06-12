@@ -8,7 +8,7 @@ void main(void) {
     int x[4];
 
     write(i);         // deve imprimer 5
-    write(66);        // deve imprimir 6
+    write(66);        // deve imprimir 66
     write(d);         // deve imprimir 2.3 ('aldrabado' com chamada à write(2)+writes('.')+write(3) (atenção aos LF, neste caso)
     writec(49);       // deve imprimir um 1
     writec(10);       // deve imprimir uma quebra de linha
