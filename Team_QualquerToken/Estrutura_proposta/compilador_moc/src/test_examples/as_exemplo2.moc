@@ -10,13 +10,18 @@ void main(void) {
     write(i);         // deve imprimer 5
     write(66);        // deve imprimir 66
     write(d);         // deve imprimir 2.3 ('aldrabado' com chamada à write(2)+writes('.')+write(3) (atenção aos LF, neste caso)
+
     writec(49);       // deve imprimir um 1
+    writec(50);       // deve imprimir um 2
+    writec(51);       // deve imprimir um 3
+    writec(52);       // deve imprimir um 4
+
     writec(10);       // deve imprimir uma quebra de linha
 
     writev(v);        // imprime {49,50,51}
 
     writes("Introduza o texto, seguido de ENTER: ");
-    x = reads();
-    writev(x);        // imprime os valores ascii dos carateres que foram digitados (que devem já estar no vetor)
+//    x = reads();
+//    writev(x);        // imprime os valores ascii dos carateres que foram digitados (que devem já estar no vetor)
 
 }
