@@ -5,7 +5,8 @@ void main(void) {
     int i = 5;
     double d = 2.3;
     int v[3] = {49,50,51};
-    int x[4];
+    int x1[4];
+    int x2[4];
 
     write(i);         // deve imprimer 5
     write(66);        // deve imprimir 66
@@ -20,8 +21,13 @@ void main(void) {
 
     writev(v);        // imprime {49,50,51}
 
-    writes("Introduza o texto, seguido de ENTER: ");
-//    x = reads();
+    writes("Introduza um carater, seguido de ENTER: ");
+    int c = readc();
+    writec(c);
+
+//    x1 = reads();
+//    x2 = reads();
+
 //    writev(x);        // imprime os valores ascii dos carateres que foram digitados (que devem já estar no vetor)
 
 }

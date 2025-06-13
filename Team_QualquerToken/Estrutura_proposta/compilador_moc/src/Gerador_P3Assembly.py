@@ -485,11 +485,16 @@ class GeradorP3Assembly:
 
         elif op == 'CALL': # res = call func_name (arg1 is func_name, res is for return value)
             # Chamada de função (label)
-            #self.assembly_code.append(self._format_line("", "CALL", res_label))
-            self.assembly_code.append(self._format_line("",f"CALL",f"{self._get_p3_operand_syntax(arg1, 'address').upper()}","; PC pushed to stack"))
-            if res:  # Function has a return value, assume it's in R1 by convention
-                self.assembly_code.append(self._format_line("",
-                    f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1","; Store return value (conventionally R1)"))
+            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1}", "", "-"*25))
+            # se a função tem valor de retorno, reserva espaço no stack
+            if res:
+                self.assembly_code.append(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"))
+            self.assembly_code.append(self._format_line("",f"CALL",f"{self._get_p3_operand_syntax(arg1, 'address').upper()}","; Chama a rotina"))
+            # se a função tem valor de retorno, está no stack
+            if res:
+                self.assembly_code.append(self._format_line("",f"POP",f"{self._get_p3_operand_syntax(res, 'store')}","; Atribui o valor à variável"))
+            self.assembly_code.append("")
+            # adicionar funções
             if arg1 == "reads":
                 self.add_function_reads()
             if arg1 == "readc":
@@ -520,12 +525,15 @@ class GeradorP3Assembly:
             #self.assembly_code.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
             #self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
 
+
+        #RM - REVER - Estas funções READ nunca são chamadas porque o CALL apanha-as primeiro
+
         elif op == 'READC':
             # readc(): Lê caracter (retorna valor ASCII).
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
+            self.assembly_code.append(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"))
             self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-            self.assembly_code.append(
-                self._format_line("", "MOV", f"M[{arg1_label}], R1", "; Endereço do valor passado via pilha"))
+            self.assembly_code.append(self._format_line("", "POP", f"M[{arg1_label}]", "; Atribui o valor à variável"))
             self.assembly_code.append("")
             self.add_function_readc()
 
@@ -585,6 +593,31 @@ class GeradorP3Assembly:
             self.declared_functions.add('read')
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append("; ----- Função read(): Lê int ou double.")
+            self.assemblyfunction_code.append(self._format_line("READ:", "NOP"))
+            self.assemblyfunction_code.append(self._format_line("READ_END:", "RET"))
+
+
+    def add_function_readc(self):
+        if 'readc' not in self.declared_functions:
+            self.declared_functions.add('readc')
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; ----- Função readc(): Lê caracter (retorna valor ASCII).")
+            self.assemblyfunction_code.append(self._format_line("READC:", "NOP"))
+            self.assemblyfunction_code.append(self._format_line("", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH","R1"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH","R2"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("READC_WAIT:", "NOP"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV","R2, M[CTRL_PORT]","; Verifica se há tecla disponível"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP","R2, R0"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.Z","READC_WAIT","; Espera enquanto não houver tecla"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV","R1, M[IN_PORT]","; Lê o carácter"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV","M[SP+4], R1","; Escreve o valor de retorno no espaço do stack"))
+            self.assemblyfunction_code.append(self._format_line("", "; Restaura os registos usados na função"))
+            self.assemblyfunction_code.append(self._format_line("", "POP","R2"))
+            self.assemblyfunction_code.append(self._format_line("", "POP","R1"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("READC_END:", "RET"))
 
     def add_function_reads(self):
         if 'reads' not in self.declared_functions:
@@ -618,17 +651,8 @@ class GeradorP3Assembly:
             #self.assemblyfunction_code.append(self._format_line("", "POP", "R2"))
             #self.assemblyfunction_code.append(self._format_line("", "POP", "R1"))
             self.assemblyfunction_code.append(self._format_line("READS_END:", "RET"))
-    def add_function_readc(self):
-        if 'readc' not in self.declared_functions:
-            self.declared_functions.add('readc')
-            self.assemblyfunction_code.append("")
-            self.assemblyfunction_code.append("; ----- Função readc(): Lê caracter (retorna valor ASCII).")
-            self.assemblyfunction_code.append(self._format_line("READC:", "NOP"))
-            self.assemblyfunction_code.append(self._format_line("", "CMP", "M[CTRL_PORT], R0", "; Verifica se há tecla disponível"))
-            self.assemblyfunction_code.append(self._format_line("", "BR.Z", "READC", "; Espera enquanto não houver tecla"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[IN_PORT]", "; Lê o carater"))
-            self.assemblyfunction_code.append(self._format_line("READC_END:", "RET"))
-
+            if not any(linha.startswith("BUFFER") for linha in self.data_section):
+                self.data_section.append(self._format_line("BUFFER", "TAB", "100", "; Buffer para a string lida"))
 
     def add_function_write(self):
         if 'write' not in self.declared_functions:
@@ -637,17 +661,17 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append("; ----- Função write(x): Imprime valor de variável.")
             self.assemblyfunction_code.append(self._format_line("WRITE:", "NOP"))
             self.assemblyfunction_code.append(self._format_line("", "; Guarda os registos usados na função"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R1"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R2"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R3"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R4"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R6"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH","R7"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R2"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R3"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R4"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R6"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R7"))
             self.assemblyfunction_code.append("")
-            self.assemblyfunction_code.append(self._format_line("", "MOV","R1, M[SP+8]","; R1 = valor a imprimir"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+8]","; R1 = valor a imprimir"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[R1]", "; R1 = valor a imprimir"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV","R7, 10000","; Divisor inicial (10^4)"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV","R6, R0","; Flag: dígito já impresso (0 = ainda não)"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, 10000","; Divisor inicial (10^4)"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R6, R0","; Flag: dígito já impresso (0 = ainda não)"))
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("WRITE_L1:", "MOV", "R2, R1", "; R2 = valor atual"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R3, R7", "; R3 = divisor"))
@@ -674,12 +698,12 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("WRITE_LF:", "MOV", "R2, LINEFEED","; Muda de linha"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
             self.assemblyfunction_code.append(self._format_line("", "; Restaura os registos usados na função"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R7"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R6"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R4"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R3"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R2"))
-            self.assemblyfunction_code.append(self._format_line("", "POP","R1"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R7"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R6"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R4"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R3"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R2"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R1"))
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("WRITE_END:", "RET"))
 
