@@ -21,11 +21,12 @@ class GeradorP3Assembly:
         self.string_literal_count = 0
         self.string_literal_map = {}  # Maps string content to a label
         self.declared_vars = set()  # To keep track of vars/temps for data section
-
+        self.last_op=""
         # Ponto de entrada do programa (label inicial)
         self.program_entry_point = "_start"
         # Pre-scan for all variables, temporaries, and array allocations
         self._pre_scan_quadruplos()
+
 
     def _new_internal_label(self, prefix="L_asm_"):
         self.label_generator_count += 1
@@ -361,41 +362,43 @@ class GeradorP3Assembly:
         # Comparações (CMP + saltos)
         elif op in ('==', '!=', '<', '<=', '>', '>='):
             # res = (arg1 op arg2) ? 1 : 0
-            #self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-            #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-            #self.assembly_code.append(self._format_line("","CMP", "R1, R2"))
 
             self.assembly_code.append(self._format_line("","MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("","MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
-            self.assembly_code.append(self._format_line("","CMP","R1, R2","; ZCNO flags affected"))
+            #self.assembly_code.append(self._format_line("","CMP","R1, R2","; ZCNO flags affected"))
+            self.assembly_code.append(self._format_line("", "CMP", "R1, R2", "; ZCNO flags affected"))
+            self.last_op = op
 
+
+        elif op == 'IFFALSE':
             #true_label = self._gen_label("TRUE")
             #end_label = self._gen_label("END")
 
-            p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
-            true_label = self._new_internal_label("REL_TRUE_")
-            end_label = self._new_internal_label("REL_END_")
-
+            #p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
+            #true_label = self._new_internal_label("REL_TRUE_")
+            #end_label = self._new_internal_label("REL_END_")
             # Mapeamento do operador TAC para o salto P3 correspondente
-            jump = {
-                '==': 'JMP.Z',   # igual
-                '!=': 'JMP.NZ',  # diferente
-                '<' : 'JMP.N',   # menor
-                '<=': 'JMP.NP',  # menor ou igual
-                '>' : 'JMP.P',   # maior
-                '>=': 'JMP.NN'   # maior ou igual
-            }[op]
+            salto = {
+                '==': 'JMP.NZ',  # igual
+                '!=': 'JMP.Z',  # diferente
+                '<': 'JMP.NO',  # menor
+                '<=': 'JMP.O',  # menor ou igual
+                '>': 'JMP.NN',  # maior
+                '>=': 'JMP.N'  # maior ou igual
+            }[self.last_op]
+
+
             # TESTAR DEVE ESTAR OK PARA = E <>
-            self.assembly_code.append(self._format_line("",jump, true_label))
+            self.assembly_code.append(self._format_line("", salto, f"{res}"))
 
             # Other relational ops would require more complex flag checking or specific P3 idioms
             # .... (f"; Relational op '{op}' requires more complex P3 flag logic or specific subroutines")
 
-            self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, R0")) # False path
-            self.assembly_code.append(self._format_line("","JMP",f"{end_label}"))
-            self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
-            self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 1"))  # True path
-            self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
+            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, R0")) # False path
+            #self.assembly_code.append(self._format_line("","JMP",f"{end_label}"))
+            #self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
+            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 1"))  # True path
+            #self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
 
         # Saltos e labels
         elif op == 'LABEL':
