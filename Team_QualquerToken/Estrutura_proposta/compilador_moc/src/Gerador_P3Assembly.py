@@ -642,15 +642,15 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(
                 self._format_line("", "PUSH", "R2", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R3", "; Guarda os registos usados na função"))
+                self._format_line(";", "PUSH", "R3", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R4", "; Guarda os registos usados na função"))
+                self._format_line(";", "PUSH", "R4", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R5", "; Guarda os registos usados na função"))
+                self._format_line(";", "PUSH", "R5", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R6", "; Guarda os registos usados na função"))
+                self._format_line(";", "PUSH", "R6", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R7", "; Guarda os registos usados na função"))
+                self._format_line(";", "PUSH", "R7", "; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R4, 0", "; armazena numero"))
             self.assemblyfunction_code.append(
@@ -754,19 +754,19 @@ class GeradorP3Assembly:
                 self._format_line("", "; Restaura os registos usados na função", "", ""))
 
 
-            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R7",""))
+            self.assemblyfunction_code.append(self._format_line(";", "POP", "R7",""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R6", ""))
+                self._format_line(";", "POP", "R6", ""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R5", ""))
+                self._format_line(";", "POP", "R5", ""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R4", ""))
+                self._format_line(";", "POP", "R4", ""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R3", ""))
+                self._format_line(";", "POP", "R3", ""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R2", ""))
+                self._format_line("", "POP", "R2", ""))
             self.assemblyfunction_code.append(
-                self._format_line("", "PUSH", "R1", ""))
+                self._format_line("", "POP", "R1", ""))
 
             self.assemblyfunction_code.append(
                 self._format_line("READ_END:", "RET", "", ""))
@@ -822,6 +822,20 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+8]","; R1 = valor a imprimir"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[R1]", "; R1 = valor a imprimir"))
+
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R0, 0", "; Tratamento de números negativos"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R1, R0", "; Compara o número com zero"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.NN", "WRITE_POSITIVE", "; Se R1 for Não Negativo (>= 0), salta para imprimir."))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, '-'", "; Sinal negativo para imprimir."))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "M[OUT_PORT], R2", "; Se R1 for negativo, imprime o sinal de menos"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "NEG", "R1", "; Converte R1 para seu valor absoluto (positivo)"))
+            self.assemblyfunction_code.append(self._format_line("WRITE_POSITIVE:", "NOP"))
+
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, 10000","; Divisor inicial (10^4)"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R6, R0","; Flag: dígito já impresso (0 = ainda não)"))
             self.assemblyfunction_code.append("")
@@ -848,6 +862,64 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, '0'"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R1"))
             self.assemblyfunction_code.append(self._format_line("WRITE_LF:", "MOV", "R2, LINEFEED","; Muda de linha"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
+            self.assemblyfunction_code.append(self._format_line("", "; Restaura os registos usados na função"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R7"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R6"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R4"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R3"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R2"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R1"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITE_END:", "RET"))
+
+    def add_function_write_(self):
+        if 'write' not in self.declared_functions:
+            self.declared_functions.add('write')
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; ----- Função write(x): Imprime valor de variável.")
+            self.assemblyfunction_code.append(self._format_line("WRITE:", "NOP"))
+            self.assemblyfunction_code.append(self._format_line("", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R2"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R3"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R4"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R6"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R7"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+8]", "; R1 = valor a imprimir"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[R1]", "; R1 = valor a imprimir"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, 10000", "; Divisor inicial (10^4)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R6, R0", "; Flag: dígito já impresso (0 = ainda não)"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITE_L1:", "MOV", "R2, R1", "; R2 = valor atual"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R3, R7", "; R3 = divisor"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "DIV", "R2, R3", "; R2 = quociente (dígito), R3 = resto"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R6, R0", "; Já imprimimos algum dígito?"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.NZ", "WRITE_L2", "; Se sim, imprime sempre"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, R0"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "BR.Z", "WRITE_L3", "; Se dígito é 0 e nada impresso, salta"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITE_L2:", "ADD", "R2, 48", "; Converte para ASCII"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2", "; Escreve dígito"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R6, 1", "; Marca que começámos a imprimir"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(
+                self._format_line("WRITE_L3:", "MOV", "R1, R3", "; Atualiza valor com o resto"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R4, 10"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "DIV", "R7, R4", "; R7 = R7 / 10 (próximo divisor)"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R7, R0"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.NZ", "WRITE_L1"))
+            self.assemblyfunction_code.append(self._format_line("", "; Caso número seja 0 imprime '0'"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R6, R0"))
+            self.assemblyfunction_code.append(self._format_line("", "BR.NZ", "WRITE_LF"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, '0'"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R1"))
+            self.assemblyfunction_code.append(self._format_line("WRITE_LF:", "MOV", "R2, LINEFEED", "; Muda de linha"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
             self.assemblyfunction_code.append(self._format_line("", "; Restaura os registos usados na função"))
             self.assemblyfunction_code.append(self._format_line("", "POP", "R7"))
