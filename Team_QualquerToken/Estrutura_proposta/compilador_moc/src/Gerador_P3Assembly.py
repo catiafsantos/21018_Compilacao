@@ -500,7 +500,7 @@ class GeradorP3Assembly:
             if arg1 == "readc":
                 self.add_function_readc()
             if arg1 == "read":
-                self.add_function_read()
+                self.add_function_read_int()
 
         elif op == 'RETURN': # return (optional_value)
             # Retorno de função
@@ -618,6 +618,158 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("", "POP","R1"))
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("READC_END:", "RET"))
+
+    def add_function_read_int(self):
+        """
+        Adds the READ_INT subroutine to the assembly code.
+
+        This routine reads a sequence of characters from the console until Enter
+        is pressed, converts the character string into a signed 16-bit integer,
+        and returns the result in register R1.
+
+        It requires a buffer in the data section to store user input.
+        """
+        if 'read_int' not in self.declared_functions:
+            self.declared_functions.add('read_int')
+
+
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append("; READ: Le inteiro da consola.")
+            self.assemblyfunction_code.append("; Return o inteiro em R1.")
+            self.assemblyfunction_code.append(self._format_line("READ:", "NOP"))
+
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1","; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R2", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R3", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R4", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R5", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R6", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R7", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R4, 0", "; armazena numero"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R7, 1", "; armazena sinal (1 positivo, -1 negativo)"))
+
+            self.assemblyfunction_code.append(self._format_line("READ_WAIT:", "NOP"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, M[CTRL_PORT]", "; Verifica se há tecla disponível"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R2, R0", ""))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "BR.Z", "READ_WAIT", "; Espera enquanto não houver tecla"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R1, M[IN_PORT]", "; Lê o carácter para R1 "))
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R1, '-'", "; verifica se é sinal"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NZ", "READ_CONT", "; Nao e '-', continua"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, -1","; armazena sinal (-1 negativo) "))
+
+            self.assemblyfunction_code.append(self._format_line("READ_CONT:", "NOP"))
+
+            self.assemblyfunction_code.append(self._format_line("", ";CMP", "R1, LINEFEED", "; verifica se foi o enter "))
+            self.assemblyfunction_code.append(self._format_line("", ";BR.Z", "READ_RET", "; label muito longe!!! "))
+
+            self.assemblyfunction_code.append(self._format_line("", "; verificar se é um número entre 0 e 9", "", ""))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, 30h", "; Load ASCII '0'- 30 dec - 1Eh"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R1, R2", "; Compara R2 ('0') with R1 (char)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "BR.N", "READ_WAIT", "; se menor '0', le novamente "))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, 39h", "; Load ASCII '9' - 39 dec - 27h"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R2, R1", "; Compara R1 (char) with R2 ('9')"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "BR.N", "READ_WAIT", "; se maior '9', le novamente "))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R2, 30h", "; Load ASCII '0'"))
+            self.assemblyfunction_code.append(self._format_line("", "; R4 contém o número a ser multiplicado por 10", "", ""))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "SUB", "R1, R2", "; R1 tem o valor inteiro digitado"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R5, R4", "; Copia o valor original para R5 (será X * 2)"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "SHL", "R5, 1", "; R5 = R5 * 2 (desloca R5 1 bit para a esquerda)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R6, R4", "; Copia o valor original para R6 (será X * 8)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "SHL", "R6, 3", "; R6 = R6 * 8 (desloca R6 3 bits para a esquerda)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "ADD", "R5, R6", "; R5 = (X * 2) + (X * 8) = X * 10"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "; O resultado da multiplicação por 10 está agora em R5", "", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R4, R1", "; Armazena em R4 numero digitado"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "ADD", "R4, R5", "; Adiciona R4 com R5 (numero anterior *10)"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R5, 0", "; Reset R5"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R6, 0", "; Reset R6"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("READ_NEXT:", "MOV", "R2, M[CTRL_PORT]", "; Verifica se há tecla disponível"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R2, R0", ""))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "BR.Z", "READ_NEXT", "; Espera enquanto não houver tecla"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "R1, M[IN_PORT]", "; Lê o carácter para R1 "))
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R1, LINEFEED", "; verifica se foi o enter "))
+            self.assemblyfunction_code.append(self._format_line("", "BR.Z", "READ_RET", "; termina "))
+            self.assemblyfunction_code.append(self._format_line("", "JMP", "READ_CONT", "; le outro numero "))
+
+            self.assemblyfunction_code.append(
+                self._format_line("READ_RET:", "NOP", "", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "CMP", "R7, 0", "; Se negativo o numero e negativo"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "JMP.NN", "READ1_END", "; Jump positivo"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "NEG", "R4", "; Negamos o numero"))
+            self.assemblyfunction_code.append(
+                self._format_line("READ1_END:", "MOV", "R1, R4", "; Colocamos em R1 o numero"))
+
+            self.assemblyfunction_code.append(
+                self._format_line("", "MOV", "M[SP+4], R1", "; Escreve o valor de retorno no espaço do stack"))
+            self.assemblyfunction_code.append(
+                self._format_line("", "; Restaura os registos usados na função", "", ""))
+
+
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R7",""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R6", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R5", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R4", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R3", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R2", ""))
+            self.assemblyfunction_code.append(
+                self._format_line("", "PUSH", "R1", ""))
+
+            self.assemblyfunction_code.append(
+                self._format_line("READ_END:", "RET", "", ""))
 
     def add_function_reads(self):
         if 'reads' not in self.declared_functions:
