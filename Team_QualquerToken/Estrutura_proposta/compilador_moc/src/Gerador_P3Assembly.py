@@ -11,22 +11,21 @@ class GeradorP3Assembly:
         self.data_section = []
         # Lista para armazenar as linhas de código assembly geradas das funcoes
         self.assemblyfunction_code = []
-        self.declared_functions = set() #vamos armazenar que funcoes já foram declaradas
-
+        # vamos armazenar que funcoes já foram declaradas
+        self.declared_functions = set()
         # Dicionário para mapear nomes de variáveis para labels P3
         self.var_labels = {}
 
         # Contador para gerar labels únicos (usado em saltos e condições)
         self.label_generator_count = 0
         self.string_literal_count = 0
-        self.string_literal_map = {}  # Maps string content to a label
-        self.declared_vars = set()  # To keep track of vars/temps for data section
+        self.string_literal_map = {}  # Mapeia as strings constant para uma label
+        self.declared_vars = set()  # Para termos o track das vars/temps para a seccao de dados
         self.last_op=""
         # Ponto de entrada do programa (label inicial)
         self.program_entry_point = "_start"
-        # Pre-scan for all variables, temporaries, and array allocations
+        # Pre-scan de todas as variaveis, temporarios, e alocacoes de arrays
         self._pre_scan_quadruplos()
-
 
     def _new_internal_label(self, prefix="L_asm_"):
         self.label_generator_count += 1
@@ -39,18 +38,9 @@ class GeradorP3Assembly:
         self.string_literal_count += 1
         label = f"STR_LIT_{self.string_literal_count}"
         self.string_literal_map[string_content] = label
-
-        # Create P3 STR pseudo-instruction parts
-        # STR '<texto>' | <const>[,'<texto>' |<const>] [cite: 125]
-        # Each char is a word in P3 STR.
-        # Example: STR_LIT_1: STR 'H','e','l','l','o',0
         char_parts = [f"'{char}'" for char in string_content]
         char_parts.append("0")  # Null terminator
-        #elf.data_section.append(f"{label}: STR {','.join(char_parts)}")
-
         self.data_section.append(self._format_line(f"{label}", "STR", f"{','.join(char_parts)}",f"; '{string_content}'"))
-
-
         return label
 
     def _is_tac_temp(self, operand_str):
@@ -80,36 +70,25 @@ class GeradorP3Assembly:
             return None
 
         s_tac_operand = str(tac_operand)
-
         if self._is_immediate_val(s_tac_operand):
-            return s_tac_operand  # P3 immediates are just numbers/chars
+            return s_tac_operand  # P3  numeros/caracteres
         elif s_tac_operand.startswith("'") and s_tac_operand.endswith("'") and len(s_tac_operand) == 3:  # char literal
-            return s_tac_operand  # e.g. 'A'
+            return s_tac_operand  # exemplo 'A'
         elif self._is_tac_temp(s_tac_operand) or s_tac_operand in self.declared_vars:
-            # These are variables/temporaries stored in memory
+            # Estas sáo variaveis/temporarias armazenadas em memoria
             if context == "store" or context == "load":
                 label= self._get_var_label(s_tac_operand)
-                return f"M[{label}]"  # Access memory location
-            return s_tac_operand  # Return name for address context if needed (e.g. for LEA-like ops, not directly in P3)
+                return f"M[{label}]"  # Accesso à localização da memória
+            return s_tac_operand  # Retorna nome para o contexto do endereço se necessário
         elif self._is_tac_label(s_tac_operand) or s_tac_operand in ["main", "end_main"] or s_tac_operand.startswith(
-                "end_"):  # Labels for jumps/calls
+                "end_"):  # Labels para jumps/calls
             return s_tac_operand
-        else:  # Default assumption for unknown symbols is a variable name / memory location
+        else:  # Default para simbolos desconhecidos, é o nome de uma variavel / localização de memoria
             if context == "store" or context == "load":
                 return f"M[{s_tac_operand}]"
             return s_tac_operand
 
     def _pre_scan_quadruplos(self):
-        """
-        Scans quadruples to identify all variables, temporaries, and array allocations
-        to declare them in the data section.
-        """
-        # Adicione endereços de E/S comuns como EQU para facilitar a leitura, caso sejam utilizados com frequência
-        # self.data_section.append("TEXT_OUT_PORT EQU FFFEh") [pagina: 4 do manual]
-        # self.data_section.append("TEXT_STAT_PORT EQU FFFDh")
-        # self.data_section.append("TEXT_IN_PORT EQU FFFFh")
-
-
         for quad in self.quadruplos:
             operands = [quad['arg1'], quad['arg2'], quad['res']]
 
@@ -122,44 +101,30 @@ class GeradorP3Assembly:
                     f"{var_name}", f"TAB", f"{num_p3_words}", f" ; alloc {num_elements_tac} TAC elements ({num_p3_words} P3 words)"))
                 self.declared_vars.add(var_name)
 
-
             if quad['op'] == 'writes':  # writes "string" esta intrução escreve uma string literal
                 str_content = quad['arg1'].strip('"')
-                self._add_string_literal(str_content)  # Declares in data_section
-
+                self._add_string_literal(str_content)  # Declara na data_section
 
             if quad['op'] == 'label':
-                # é uma label de uma funçáo
-                # se já existir main não coloca
+                # é uma label de uma funçáo se já existir main não coloca
                 for operand in operands:
                     if operand and isinstance(operand, str):
                         self.declared_functions.add(operand)
-
 
             for operand in operands:
                 if operand and isinstance(operand, str):
                     if self._is_tac_temp(operand) or (not self._is_immediate_val(operand) and not self._is_tac_label(
                             operand) and not operand.startswith("'") and not operand.endswith(":")):
                         self.declared_vars.add(operand)
-
-        # Adicionar declarações WORD para todas as variáveis/temporárias identificadas ainda não declaradas por alloc
-        # Certifique-se de que isto é feito após declarações específicas, como STR ou TAB, de alloc.
-        # Este será anexado posteriormente, após literais de string específicos.
-        # Aqui, apenas preenchemos self.declared_vars por enquanto.
-
     @staticmethod
     def _format_line(col1: str, col2: str = "", col3: str = "", col4: str = "") -> str:
-        """
-        Formata quatro strings em uma linha única com colunas em posições fixas:
-        """
+        # Formata quatro strings em uma linha única com colunas em posições fixas:
         return f"{col1:<16}{col2:<8}{col3:<16}{col4}"
 
     @staticmethod
     def _sanitize_var(name):
-        """
-        Limpa e adapta o nome da variável para ser usado como label no Assembly P3.
-        Substitui caracteres especiais e garante unicidade.
-        """
+        # Limpa e adapta o nome da variável para ser usado como label no Assembly P3.
+        # Substitui caracteres especiais e garante unicidade.
         if name is None:
             return None
         if isinstance(name, (int, float)):
@@ -175,10 +140,8 @@ class GeradorP3Assembly:
         return name
 
     def _get_var_label1(self, name):
-        """
-        Devolve o label P3 associado a uma variável.
-        Se ainda não existir, cria a declaração no segmento de dados.
-        """
+        # Devolve o label P3 associado a uma variável.
+        # Se ainda não existir, cria a declaração no segmento de dados.
         name = self._sanitize_var(name)
         if name is None:
             return None
@@ -189,55 +152,35 @@ class GeradorP3Assembly:
         return self.var_labels[name]
 
     def _get_var_label(self, name):
-        """
-        Devolve uma etiqueta P3 curta e única associada a uma variável.
-        Se a etiqueta para esta variável ainda não existir, cria a sua
-        declaração no segmento de dados.
-        """
-        # A sua função de sanitização continua aqui
+        # Devolve uma etiqueta P3 curta e única associada a uma variável.
+        # Se a etiqueta para esta variável ainda não existir, cria a sua
+        # declaração no segmento de dados.
         name = self._sanitize_var(name)
         if name is None:
             return None
-
         # Verifica se já foi criada uma etiqueta para este nome de variável
-
         if name not in self.var_labels:
             # Gera uma nova etiqueta curta e única usando o contador
             self.label_generator_count += 1
             label = f"VAR_{self.label_generator_count}"
-
             # Associa o nome original da variável à nova etiqueta gerada
             self.var_labels[name] = label
-
             # Adiciona a declaração à secção de dados.
             # Nota: Inicializamos com '0' e mantemos o nome original no comentário.
-            #linha_declaracao = f"{label}: WORD 0 ; Variável original: {name}"
-            #self.data_section.append(linha_declaracao)
             try:
                 # Tenta converter 'name' para um inteiro.
                 valor_inteiro = int(name)
-
-                # Se funcionar, é um número. Pode formatá-lo como quiser.
-                # Aqui, estamos a assumir que um inteiro de 32 bits ocupa 2 palavras.
-                #self.data_section.append(
-                #    self._format_line(label, "WORD", str(valor_inteiro & 0xFFFF), f"; literal inteiro '{name}' (low)"))
-                #self.data_section.append(
-                #    self._format_line("", "WORD", str((valor_inteiro >> 16) & 0xFFFF), f"; (high)"))
+                # Se funcionar, é um número.
                 self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
             except (ValueError, TypeError):
                 # Se a conversão falhar, não é um número. Trata-se de um nome de variável.
-                # Vamos assumir que uma variável não inicializada começa em 0.
                 self.data_section.append(self._format_line(label, "WORD", "0", f"; variável '{name}'"))
-            #self.data_section.append(self._format_line(label, "WORD", name, f"; {name}"))
-
         # Devolve a etiqueta curta e única associada ao nome
         return self.var_labels[name]
 
     def _declare_array(self, name, size):
-        """
-        Declara um array no segmento de dados.
-        Remove declarações anteriores do mesmo nome para evitar duplicação.
-        """
+        # Declara um array no segmento de dados.
+        # Remove declarações anteriores do mesmo nome para evitar duplicação.
         name = self._sanitize_var(name)
         label = f"VAR_{name.upper()}"
         decl = self._format_line(f"{label}", "TAB", size, f"; Array {name}")  # sem dois pontos!
@@ -248,16 +191,12 @@ class GeradorP3Assembly:
         return label
 
     def _gen_label(self, base="L"):
-        """
-        Gera um label único para saltos condicionais ou blocos de código.
-        """
+        # Gera um label único para saltos condicionais ou blocos de código.
         self.label_generator_count += 1
         return f"{base}{self.label_generator_count}"
 
     def translate_tac_instruction(self, instr, quad_num):
-        """
-        Traduz uma instrução TAC (dicionário) para Assembly P3 e adiciona as linhas geradas.
-        """
+        # Traduz uma instrução TAC (dicionário) para Assembly P3 e adiciona as linhas geradas.
         op = instr.get('op', '').upper()
         arg1 = instr.get('arg1')
         arg2 = instr.get('arg2')
@@ -275,11 +214,10 @@ class GeradorP3Assembly:
                 p3_arg1_syntax = self._get_p3_operand_syntax(arg1, 'load')
                 if not str(arg1).startswith("M[") and not self._is_immediate_val(str(arg1)) and not (
                         str(arg1).startswith("'") and str(arg1).endswith("'")):
-                    # if arg1 is a variable name, needs M[]
+                    # se arg1 é o nome de uma variavel, necessitamos de M[]
                     p3_arg1_syntax = f"M[{arg1}]" if not self._is_immediate_val(str(arg1)) else str(arg1)
             else:
                 p3_arg1_syntax = self._get_p3_operand_syntax(arg1_label, 'load')
-
             self.assembly_code.append(self._format_line("","MOV", f"R1, {p3_arg1_syntax}"))
             self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1"))
 
@@ -294,51 +232,28 @@ class GeradorP3Assembly:
             p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
             if op in '+':
                 # res = arg1 + arg2
-                #self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                #self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
                 self.assembly_code.append(self._format_line("","ADD", "R1, R2","; ZCNO flags affected"))
                 self.assembly_code.append(self._format_line("",f"MOV",f"{p3_res_syntax}, R1"))
             elif op in '-':
                 # res = arg1 - arg2
-                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-                # self.assembly_code.append(self._format_line("","SUB", "R1, R2"))
-                # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "SUB", "R1, R2", "; ZCNO flags affected"))
                 self.assembly_code.append(self._format_line("", f"MOV",f"{p3_res_syntax}, R1"))
             elif op in '*': # MUL op1, op2 -> op1 has MSW, op2 has LSW.
                 # res = arg1 * arg2
-                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-                # self.assembly_code.append(self._format_line("","MUL", "R1, R2"))
-                # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"))
                 self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R2","; Store LSW into result"))
             elif op in '/':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
-                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-                # self.assembly_code.append(self._format_line("","DIV", "R1, R2"))
-                # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
                 self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R1","; Guarda Quociente no resultado"))
             elif op in '%':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
-                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                # self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-                # self.assembly_code.append(self._format_line("","DIV", "R1, R2"))
-                # self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
                 self.assembly_code.append(
                     self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
                 self.assembly_code.append(
                     self._format_line("", "MOV",f"{p3_res_syntax}, R2", "; Guarda Resto no resultado"))
-            # TESTAR REVER NO P3
         elif op == '!':
-            # res = -arg1
-            #self.assembly_code.append(self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("","CMP", "R2, R1"))
-            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax},  R1"))
-
         # Operações lógicas
         elif op in ('AND',):
             # res = arg1 AND arg2
@@ -365,19 +280,12 @@ class GeradorP3Assembly:
 
             self.assembly_code.append(self._format_line("","MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("","MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
-            #self.assembly_code.append(self._format_line("","CMP","R1, R2","; ZCNO flags affected"))
             self.assembly_code.append(self._format_line("", "CMP", "R1, R2", "; ZCNO flags affected"))
             self.last_op = op
 
-
         elif op == 'IFFALSE':
-            #true_label = self._gen_label("TRUE")
-            #end_label = self._gen_label("END")
-
-            #p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
-            #true_label = self._new_internal_label("REL_TRUE_")
-            #end_label = self._new_internal_label("REL_END_")
             # Mapeamento do operador TAC para o salto P3 correspondente
+            # Verificamos a last_op que contem a condição
             salto = {
                 '==': 'JMP.NZ',  # igual
                 '!=': 'JMP.Z',  # diferente
@@ -395,21 +303,13 @@ class GeradorP3Assembly:
                 '>=': ''  # maior ou igual
             }[self.last_op]
 
-            # TESTAR DEVE ESTAR OK PARA = E <>
             self.assembly_code.append(self._format_line("", salto, f"{res}"))
             if (salto2!=''):
                 self.assembly_code.append(self._format_line("", salto2, f"{res}"))
 
-            # Other relational ops would require more complex flag checking or specific P3 idioms
-            # .... (f"; Relational op '{op}' requires more complex P3 flag logic or specific subroutines")
-
-            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, R0")) # False path
-            #self.assembly_code.append(self._format_line("","JMP",f"{end_label}"))
-            #self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
-            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 1"))  # True path
-            #self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
         elif op == 'IFGOTO':
             # Mapeamento do operador TAC para o salto P3 correspondente
+            # Verificamos a last_op que contem a condição
             salto = {
                 '==': 'JMP.Z',  # igual
                 '!=': 'JMP.NZ',  # diferente
@@ -427,7 +327,6 @@ class GeradorP3Assembly:
                 '>=': ''  # maior ou igual
             }[self.last_op]
 
-            # TESTAR DEVE ESTAR OK PARA = E <>
             self.assembly_code.append(self._format_line("", salto, f"{res}"))
             if (salto2!=''):
                 self.assembly_code.append(self._format_line("", salto2, f"{res}"))
@@ -440,11 +339,6 @@ class GeradorP3Assembly:
             # Salto incondicional
             self.assembly_code.append(self._format_line("", "JMP", self._get_p3_operand_syntax(res, 'address')))
         elif op == 'IFGOTO2': # if cond_var goto label
-            # Salto se arg1 != 0
-            # MOV R1, M[cond_var]
-            # CMP R1, #0
-            # JMP.NZ label ; Jump if Not Zero (condition is true)
-            # self.assembly_code.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
             self.assembly_code.append(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("", "CMP", "R1, 0", ))
             self.assembly_code.append(self._format_line("", f"JMP.NZ",f"{self._get_p3_operand_syntax(res, 'address')}"))
@@ -474,35 +368,31 @@ class GeradorP3Assembly:
             # P3: word_offset = byte_offset / 2
         elif op == '[]':  # res = array_name[byte_offset_var]
             # array_name (arg1), byte_offset_var (arg2), res (destination)
-            # 1. Get byte_offset into R1
             self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ","; R1 = byte offset"))
-            # 2. Convert to word offset: R1 = R1 / 2 (or SHR R1, 1)
-            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1 ","; R1 = word offset (P3 words are 2 bytes) [cite: 199]"))
-            # 3. Get base address of array into R2. P3 doesn't have MOV REG, LABEL_ADDRESS directly for all instructions.
-            #    We need to use EQU for base address or load it if dynamic.
-            #    Let's assume arg1 (array_name) is a label whose value is the base address.
-            #    MOV R2, #array_name (Loads immediate address value into R2)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = base address of array '{arg1}'"))
-            # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = address of element"))
+            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1 ","; R1 = word offset"))
+            # 3. base address do array em R2
+            # MOV R2, #array_name (Loads  address no R2)
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = endereco base do array '{arg1}'"))
+            # 4. offset: R2 = R2 + R1
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = endereco do elemento"))
             # 5. Load value: R3 = M[R2] (register indirect)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ","; Load value from array element"))
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ","; Load value no array element"))
             # 6. Store in res: M[res] = R3
             self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R3"))
         elif op == '[]=':  # array_name[byte_offset_var] = value_var
             # array_name (arg1), byte_offset_var (arg2), value_var (res in TAC quad)
-            # 1. Get byte_offset into R1
+            # byte_offset -> R1
             self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')}","; R1 = byte offset"))
-            # 2. Convert to word offset
-            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1","; R1 = word offset [cite: 199]"))
-            # 3. Get base address of array into R2
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = base address of array '{arg1}'"))
-            # 4. Add offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = address of element"))
-            # 5. Get value_to_store into R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ","; R3 = value to store"))
-            # 6. Store value: M[R2] = R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ","; Store value into array element"))
+            # Converter para word offset
+            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1","; R1 = word offset"))
+            # Obter endrreco base do array -> R2
+            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = endereco base do array '{arg1}'"))
+            # Adicionar offset: R2 = R2 + R1
+            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = endereco do elemento"))
+            # Obter value_to_store -> R3
+            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ","; R3 = valor a guardar"))
+            # Store value: M[R2] = R3
+            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ","; Guarda valor no array element"))
 
         # Pilha (stack)
         elif op == 'PUSH':
@@ -513,12 +403,11 @@ class GeradorP3Assembly:
             self.assembly_code.append(self._format_line("", "POP", res_label))
 
         # Funções
-        # --- Function Call Mechanism ---
         elif op == 'PARAM':  # param arg1
             self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
             self.assembly_code.append(self._format_line("",f"PUSH",f"R1","; Push parameter"))
 
-        elif op == 'CALL': # res = call func_name (arg1 is func_name, res is for return value)
+        elif op == 'CALL':
             # Chamada de função (label)
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1}", "", "-"*25))
             # se a função tem valor de retorno, reserva espaço no stack
@@ -539,7 +428,6 @@ class GeradorP3Assembly:
 
         elif op == 'RETURN': # return (optional_value)
             # Retorno de função
-            # self.assembly_code.append(self._format_line("", "RET"))
             if arg1:  # There is a return value
                 self.assembly_code.append(self._format_line("",
                     f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}","; Load return value into R1 (convention)"))
@@ -557,11 +445,6 @@ class GeradorP3Assembly:
         elif op == 'READ':
             # read(): Lê int ou double.
             self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
-            #self.assembly_code.append(self._format_line("", "MOV", "R1", "M[FFFFh]"))
-            #self.assembly_code.append(self._format_line("", "MOV", f"{res_label}, R1"))
-
-
-        #RM - REVER - Estas funções READ nunca são chamadas porque o CALL apanha-as primeiro
 
         elif op == 'READC':
             # readc(): Lê caracter (retorna valor ASCII).
@@ -631,7 +514,6 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("READ:", "NOP"))
             self.assemblyfunction_code.append(self._format_line("READ_END:", "RET"))
 
-
     def add_function_readc(self):
         if 'readc' not in self.declared_functions:
             self.declared_functions.add('readc')
@@ -655,24 +537,12 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("READC_END:", "RET"))
 
     def add_function_read_int(self):
-        """
-        Adds the READ_INT subroutine to the assembly code.
-
-        This routine reads a sequence of characters from the console until Enter
-        is pressed, converts the character string into a signed 16-bit integer,
-        and returns the result in register R1.
-
-        It requires a buffer in the data section to store user input.
-        """
         if 'read_int' not in self.declared_functions:
             self.declared_functions.add('read_int')
-
-
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append("; READ: Le inteiro da consola.")
             self.assemblyfunction_code.append("; Return o inteiro em R1.")
             self.assemblyfunction_code.append(self._format_line("READ:", "NOP"))
-
             self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1","; Guarda os registos usados na função"))
             self.assemblyfunction_code.append(
                 self._format_line("", "PUSH", "R2", "; Guarda os registos usados na função"))
@@ -690,14 +560,11 @@ class GeradorP3Assembly:
                 self._format_line("", "MOV", "R4, 0", "; armazena numero"))
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R7, 1", "; armazena sinal (1 positivo, -1 negativo)"))
-
             self.assemblyfunction_code.append(self._format_line("READ_WAIT:", "NOP"))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R2, M[CTRL_PORT]", "; Verifica se há tecla disponível"))
             self.assemblyfunction_code.append(
                 self._format_line("", "CMP", "R2, R0", ""))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "BR.Z", "READ_WAIT", "; Espera enquanto não houver tecla"))
             self.assemblyfunction_code.append(
@@ -707,17 +574,12 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(
                 self._format_line("", "JMP.NZ", "READ_CONT", "; Nao e '-', continua"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, -1","; armazena sinal (-1 negativo) "))
-
             self.assemblyfunction_code.append(self._format_line("READ_CONT:", "NOP"))
-
             self.assemblyfunction_code.append(self._format_line("", ";CMP", "R1, LINEFEED", "; verifica se foi o enter "))
             self.assemblyfunction_code.append(self._format_line("", ";BR.Z", "READ_RET", "; label muito longe!!! "))
-
             self.assemblyfunction_code.append(self._format_line("", "; verificar se é um número entre 0 e 9", "", ""))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R2, 30h", "; Load ASCII '0'- 30 dec - 1Eh"))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "CMP", "R1, R2", "; Compara R2 ('0') with R1 (char)"))
             self.assemblyfunction_code.append(
@@ -728,7 +590,6 @@ class GeradorP3Assembly:
                 self._format_line("", "CMP", "R2, R1", "; Compara R1 (char) with R2 ('9')"))
             self.assemblyfunction_code.append(
                 self._format_line("", "BR.N", "READ_WAIT", "; se maior '9', le novamente "))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R2, 30h", "; Load ASCII '0'"))
             self.assemblyfunction_code.append(self._format_line("", "; R4 contém o número a ser multiplicado por 10", "", ""))
@@ -756,13 +617,10 @@ class GeradorP3Assembly:
                 self._format_line("", "MOV", "R5, 0", "; Reset R5"))
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R6, 0", "; Reset R6"))
-
             self.assemblyfunction_code.append(
                 self._format_line("READ_NEXT:", "MOV", "R2, M[CTRL_PORT]", "; Verifica se há tecla disponível"))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "CMP", "R2, R0", ""))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "BR.Z", "READ_NEXT", "; Espera enquanto não houver tecla"))
             self.assemblyfunction_code.append(
@@ -771,7 +629,6 @@ class GeradorP3Assembly:
                 self._format_line("", "CMP", "R1, LINEFEED", "; verifica se foi o enter "))
             self.assemblyfunction_code.append(self._format_line("", "BR.Z", "READ_RET", "; termina "))
             self.assemblyfunction_code.append(self._format_line("", "JMP", "READ_CONT", "; le outro numero "))
-
             self.assemblyfunction_code.append(
                 self._format_line("READ_RET:", "NOP", "", ""))
             self.assemblyfunction_code.append(
@@ -782,13 +639,10 @@ class GeradorP3Assembly:
                 self._format_line("", "NEG", "R4", "; Negamos o numero"))
             self.assemblyfunction_code.append(
                 self._format_line("READ1_END:", "MOV", "R1, R4", "; Colocamos em R1 o numero"))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "M[SP+4], R1", "; Escreve o valor de retorno no espaço do stack"))
             self.assemblyfunction_code.append(
                 self._format_line("", "; Restaura os registos usados na função", "", ""))
-
-
             self.assemblyfunction_code.append(self._format_line(";", "POP", "R7",""))
             self.assemblyfunction_code.append(
                 self._format_line(";", "POP", "R6", ""))
@@ -802,7 +656,6 @@ class GeradorP3Assembly:
                 self._format_line("", "POP", "R2", ""))
             self.assemblyfunction_code.append(
                 self._format_line("", "POP", "R1", ""))
-
             self.assemblyfunction_code.append(
                 self._format_line("READ_END:", "RET", "", ""))
 
@@ -857,20 +710,16 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+8]","; R1 = valor a imprimir"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[R1]", "; R1 = valor a imprimir"))
-
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R0, 0", "; Tratamento de números negativos"))
             self.assemblyfunction_code.append(self._format_line("", "CMP", "R1, R0", "; Compara o número com zero"))
             self.assemblyfunction_code.append(self._format_line("", "BR.NN", "WRITE_POSITIVE", "; Se R1 for Não Negativo (>= 0), salta para imprimir."))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "R2, '-'", "; Sinal negativo para imprimir."))
-
             self.assemblyfunction_code.append(
                 self._format_line("", "MOV", "M[OUT_PORT], R2", "; Se R1 for negativo, imprime o sinal de menos"))
             self.assemblyfunction_code.append(
                 self._format_line("", "NEG", "R1", "; Converte R1 para seu valor absoluto (positivo)"))
             self.assemblyfunction_code.append(self._format_line("WRITE_POSITIVE:", "NOP"))
-
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R7, 10000","; Divisor inicial (10^4)"))
             self.assemblyfunction_code.append(self._format_line("", "MOV", "R6, R0","; Flag: dígito já impresso (0 = ainda não)"))
             self.assemblyfunction_code.append("")
@@ -1038,55 +887,16 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append("")
             self.assemblyfunction_code.append(self._format_line("WRITES_END:", "RET"))
 
-
     # -------------------------------------------------------------------------------------------------------------------
-
 
     def generate_from_tac_list(self, tac_list):
         """
         Gera o código Assembly P3 completo a partir de uma lista de instruções TAC.
         Retorna o código como uma string pronta a ser escrita num ficheiro .as.
         """
-        #self.data_section = []
         self.assembly_code = []
         self.assemblyfunction_code = []
-        #self.var_labels = {}
-        #self.label_generator_count = 0
-
-        # Primeira passagem: declara arrays variáveis e constantes
-        # for instr in tac_list:
-        #     if instr.get('op', '').upper() == 'ALLOC':
-        #         self._declare_array(instr.get('arg1'), instr.get('arg2'))
-        #     else:
-        #         self._get_var_label(instr.get('res'))
-        #         self._get_var_label(instr.get('arg1'))
-        #         self._get_var_label(instr.get('arg2'))
-        '''
-        for instr in tac_list:
-            if instr.get('op', '').upper() == 'ALLOC':
-                self._declare_array(instr.get('arg1'), instr.get('arg2'))
-            else:
-                # Trata o resultado (res) como variável normal
-                self._get_var_label(instr.get('res'))
-
-                # Trata arg1: se for constante numérica ou string literal, define como constante
-                arg1 = instr.get('arg1')
-                if arg1 is not None:
-                    if (
-                            isinstance(arg1, (int, float)) or
-                            (isinstance(arg1, str) and arg1.isdigit()) or
-                            (isinstance(arg1, str) and (arg1.startswith('"') and arg1.endswith('"')))
-                    ):
-                        # Aqui podes adicionar à tua estrutura de constantes, por exemplo:
-                        #self._constantes[arg1] = arg1
-                        self._get_var_label(arg1)
-                    else:
-                        self._get_var_label(arg1)
-
-                # Trata arg2 como variável normal
-                self._get_var_label(instr.get('arg2'))
-'''
-        # Segunda passagem: traduz instruções TAC para assembly
+        # traduz instruções TAC para assembly
         for indice, instr in enumerate(tac_list):
             quad_num = indice + 1
             self.translate_tac_instruction(instr, quad_num)
@@ -1107,21 +917,16 @@ class GeradorP3Assembly:
         output.append(self._format_line("OUT_PORT","EQU","FFFEh", "; Porto de saída (consola)"))
         output.append(self._format_line("LINEFEED","EQU","10", "; Código ASCII da tecla enter na consola (LF)"))
         output.append("")
-
         output.append(self._format_line(";"+"="*14, "Região de Código (inicia no endereço 0000h)"))
         output.append(self._format_line("", "ORIG", "0000h"))
-
         output.append(self._format_line("", "JMP", "_start","; jump to main"))
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Rotinas"))
-
         output.extend(self.assemblyfunction_code)
 
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Programa Principal "))
-
         output.append(self._format_line(f"{self.program_entry_point}:", "NOP"))
-
         output.append(self._format_line("", "MOV", "R7, SP_ADDRESS"))
         output.append(self._format_line("", "MOV", "SP, R7", "; Define o Stack Pointer"))
         output.append("")
