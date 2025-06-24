@@ -11,5 +11,4 @@ void main(void) {
         write(i);
     }
     writes ("fim");
-
 }
