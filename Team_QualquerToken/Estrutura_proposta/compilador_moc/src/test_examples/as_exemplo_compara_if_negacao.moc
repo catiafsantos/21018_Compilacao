@@ -9,7 +9,6 @@ void main(void) {
         writes("numero e superior a 10");
     }
     writes ("fim");
-
 }
 /*
 7. Tipos de Dados
