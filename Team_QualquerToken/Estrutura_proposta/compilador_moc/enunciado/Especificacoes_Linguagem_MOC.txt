@@ -12,7 +12,7 @@ Lista das Especificações da Linguagem MOC
 4.1. Terminação: Todas as instruções terminam com ;. ------------------------------------------- OK
 4.2. Operadores:
 4.2.1. Aritméticos: +, -, *, /, %.
-4.2.2. Relacionais: ==, !=, >, <, >=, <=.
+4.2.2. Relacionais: ==, !=, >, <, >=, <=. . ---------------------------------------------------- OK
 4.2.3. Lógicos: && (E), || (OU), ! (NÃO).
 4.2.4. Atribuição: =.
 4.3. Condições: Formato restrito a Expr ou Expr OpCond Expr (e.g., x > 5 && y != 0).

@@ -381,15 +381,24 @@ class GeradorP3Assembly:
             salto = {
                 '==': 'JMP.NZ',  # igual
                 '!=': 'JMP.Z',  # diferente
-                '<': 'JMP.NO',  # menor
-                '<=': 'JMP.O',  # menor ou igual
-                '>': 'JMP.NN',  # maior
+                '<': 'JMP.P',  # menor
+                '<=': 'JMP.P',  # menor ou igual
+                '>': 'JMP.N',  # maior
                 '>=': 'JMP.N'  # maior ou igual
             }[self.last_op]
-
+            salto2 = {
+                '==': '',  # igual
+                '!=': '',  # diferente
+                '<': 'JMP.Z',  # menor
+                '<=': '',  # menor ou igual
+                '>': 'JMP.Z',  # maior
+                '>=': ''  # maior ou igual
+            }[self.last_op]
 
             # TESTAR DEVE ESTAR OK PARA = E <>
             self.assembly_code.append(self._format_line("", salto, f"{res}"))
+            if (salto2!=''):
+                self.assembly_code.append(self._format_line("", salto2, f"{res}"))
 
             # Other relational ops would require more complex flag checking or specific P3 idioms
             # .... (f"; Relational op '{op}' requires more complex P3 flag logic or specific subroutines")
