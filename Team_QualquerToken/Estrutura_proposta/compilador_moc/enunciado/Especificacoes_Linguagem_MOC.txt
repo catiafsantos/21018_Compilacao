@@ -13,7 +13,7 @@ Lista das Especificações da Linguagem MOC
 4.2. Operadores:
 4.2.1. Aritméticos: +, -, *, /, %.
 4.2.2. Relacionais: ==, !=, >, <, >=, <=. . ---------------------------------------------------- OK
-4.2.3. Lógicos: && (E), || (OU), ! (NÃO).
+4.2.3. Lógicos: && (E), || (OU), ! (NÃO). ----««------------------------------------------------ OK
 4.2.4. Atribuição: =.
 4.3. Condições: Formato restrito a Expr ou Expr OpCond Expr (e.g., x > 5 && y != 0).
 
@@ -22,7 +22,7 @@ Lista das Especificações da Linguagem MOC
 5.1.1. if (condicao){…} ou if(condicao){…}else{…} ---------------------------------------------- OK
 5.1.2. switch/case.
 5.2. Loops:
-5.2.1. for
+5.2.1. for ------------------------------------------------------------------------------------- OK
 5.2.2. while.
 
 6. Declaração de Funções
