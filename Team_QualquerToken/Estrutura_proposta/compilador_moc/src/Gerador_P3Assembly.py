@@ -333,11 +333,11 @@ class GeradorP3Assembly:
                 self.assembly_code.append(
                     self._format_line("", "MOV",f"{p3_res_syntax}, R2", "; Guarda Resto no resultado"))
             # TESTAR REVER NO P3
-            elif op == 'NEG':
-                # res = -arg1
-                # self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-                self.assembly_code.append(self._format_line("","NEG", "R1"))
-                self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax},  R1"))
+        elif op == '!':
+            # res = -arg1
+            #self.assembly_code.append(self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.assembly_code.append(self._format_line("","CMP", "R2, R1"))
+            #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax},  R1"))
 
         # Operações lógicas
         elif op in ('AND',):
@@ -408,6 +408,29 @@ class GeradorP3Assembly:
             #self.assembly_code.append(self._format_line(f"{true_label}:", "NOP"))
             #self.assembly_code.append(self._format_line("","MOV",f"{p3_res_syntax}, 1"))  # True path
             #self.assembly_code.append(self._format_line(f"{end_label}:", "NOP"))
+        elif op == 'IFGOTO':
+            # Mapeamento do operador TAC para o salto P3 correspondente
+            salto = {
+                '==': 'JMP.Z',  # igual
+                '!=': 'JMP.NZ',  # diferente
+                '<': 'JMP.N',  # menor
+                '<=': 'JMP.N',  # menor ou igual
+                '>': 'JMP.P',  # maior
+                '>=': 'JMP.P'  # maior ou igual
+            }[self.last_op]
+            salto2 = {
+                '==': '',  # igual
+                '!=': '',  # diferente
+                '<': 'JMP.Z',  # menor
+                '<=': '',  # menor ou igual
+                '>': 'JMP.Z',  # maior
+                '>=': ''  # maior ou igual
+            }[self.last_op]
+
+            # TESTAR DEVE ESTAR OK PARA = E <>
+            self.assembly_code.append(self._format_line("", salto, f"{res}"))
+            if (salto2!=''):
+                self.assembly_code.append(self._format_line("", salto2, f"{res}"))
 
         # Saltos e labels
         elif op == 'LABEL':
@@ -416,14 +439,14 @@ class GeradorP3Assembly:
         elif op == 'GOTO':
             # Salto incondicional
             self.assembly_code.append(self._format_line("", "JMP", self._get_p3_operand_syntax(res, 'address')))
-        elif op == 'IFGOTO': # if cond_var goto label
+        elif op == 'IFGOTO2': # if cond_var goto label
             # Salto se arg1 != 0
             # MOV R1, M[cond_var]
             # CMP R1, #0
             # JMP.NZ label ; Jump if Not Zero (condition is true)
             # self.assembly_code.append(self._format_line("", "MOV", f"R1, {arg1_label}"))
             self.assembly_code.append(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("", "CMP", "R1", "0"))
+            self.assembly_code.append(self._format_line("", "CMP", "R1, 0", ))
             self.assembly_code.append(self._format_line("", f"JMP.NZ",f"{self._get_p3_operand_syntax(res, 'address')}"))
 
         # Arrays TESTAR

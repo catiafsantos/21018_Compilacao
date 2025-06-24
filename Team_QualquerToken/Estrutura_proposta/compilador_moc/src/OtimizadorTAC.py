@@ -726,7 +726,12 @@ class OtimizadorTAC:
                 if alvo_salto_label in label_para_bloco:
                     bloco_alvo = label_para_bloco[alvo_salto_label]
                     cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
-
+            elif op == 'ifgoto':
+                # Saltos incondicionais só têm UMA aresta
+                alvo_salto_label = ultima_quad['res']
+                if alvo_salto_label in label_para_bloco:
+                    bloco_alvo = label_para_bloco[alvo_salto_label]
+                    cfg[bloco.id_bloco].append(bloco_alvo.id_bloco)
             elif op not in ('halt', 'return'):
                 # Se não for um salto ou fim, a execução continua para o próximo bloco
                 if i + 1 < len(blocos_ordenados):
@@ -756,7 +761,13 @@ class OtimizadorTAC:
                         if bloco_funcao.id_bloco not in blocos_alcancaveis:
                             trabalho_a_fazer.append(bloco_funcao.id_bloco)
                             blocos_alcancaveis.add(bloco_funcao.id_bloco)
-
+                if quad['op'] == 'ifgoto':
+                    nome_funcao = quad['res']
+                    if nome_funcao in label_para_bloco:
+                        bloco_funcao = label_para_bloco[nome_funcao]
+                        if bloco_funcao.id_bloco not in blocos_alcancaveis:
+                            trabalho_a_fazer.append(bloco_funcao.id_bloco)
+                            blocos_alcancaveis.add(bloco_funcao.id_bloco)
         # Travessia do grafo (BFS) para encontrar todos os blocos alcançáveis
         while trabalho_a_fazer:
             id_bloco_atual = trabalho_a_fazer.pop(0)
@@ -841,7 +852,7 @@ class OtimizadorTAC:
         for bloco in self.blocos:
             if bloco.id_bloco in blocos_alcancaveis:
                 for quad in bloco.quadruplas:
-                    if quad['op'] in ('goto', 'ifFalse', 'ifTrue') and quad['res']:
+                    if quad['op'] in ('goto', 'ifgoto', 'ifFalse', 'ifTrue') and quad['res']:
                         labels_alvo_saltos.add(quad['res'])
 
         # 6. Adicionar blocos que são alvos de saltos
