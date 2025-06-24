@@ -1,8 +1,17 @@
+int fact(int,int);
 void main(void);
-void main(void) {
-    int x = 0;
-    while (x<10) {
-        writes("a");
-        x = x + 1;
+
+int fact(int k,int i) {
+    if (k <= 1) {
+        return 1;
+    } else {
+        return k * fact(k - 1);
     }
+}
+
+void main(void) {
+    int n;
+    writes("Introduza inteiro: ");
+    n = read();
+    write(fact(n));
 }
