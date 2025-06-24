@@ -1,0 +1,19 @@
+void main(void);
+void main(void) {
+    writes("insira numero: ");
+	int x = read();
+    write(x);
+    int a = x - 5;
+    writes("x - 5: ");
+    write (a);
+    writes("(x - 5) + 20: ");
+    write (a + 20);
+    writes("(x - 5) * 2: ");
+    write (a * 2);
+    writes("(x - 5) % 2: ");
+    write (a % 2);
+    writes("(x - 5) / 2: ");
+    write (a / 2);
+    writes ("fim");
+
+}
