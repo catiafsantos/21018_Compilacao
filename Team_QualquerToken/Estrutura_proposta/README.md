@@ -38,6 +38,12 @@ compilador_moc/
 │   │   ├── MOCParser.py
 │   │   └── MOC.tokens, .interp (...)
 │   │
+│   ├── dist/
+│   │   ├── compilador_moc.exe      # Ficheiro .exe para gerar o código assemblly P3
+│   │   ├── criar_exe.txt           # Ficheiro com as instruções de geração do .exe
+│   │   ├── exemplo1.as             # Ficheiro com o código assembly gerado pelo compilador (.exe)
+│   │   └── exemplo1.moc            # Ficheiro com o programa a ser convertido para assembly
+│   │
 │   ├── parser/
 │   │   ├── MOC.g4                 # Gramática da linguagem MOC
 │   │   └── MOCErrorListener.py    # Listener com tratamento personalizado de erros
@@ -54,6 +60,7 @@ compilador_moc/
 │   ├── utils/
 │   │   ├── TabelaSimbolos.py      # Tabela de símbolos usada na análise semântica
 │   │
+│   ├── Gerador_P3Assembly.py      # Aplicação do gerador de código assemblyP3
 │   ├── VisitorSemantico.py        # Visitor que faz verificação semântica (tipos, declarações)
 │   ├── VisitorTAC.py              # Visitor responsável pela geração de TAC
 │   ├── OtimizadorTAC.py           # Aplicação das otimizações ao TAC gerado
