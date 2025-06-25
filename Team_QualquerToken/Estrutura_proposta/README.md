@@ -146,7 +146,7 @@ No terminal, a partir da pasta `src/dist/`, execute:
 .\compilador_moc.exe exemplo1.moc
 ```
 
-#### Resultado esperado (exemplo com sucesso)
+#### Resultado esperado
 
 ```text
 
@@ -155,13 +155,12 @@ No terminal, a partir da pasta `src/dist/`, execute:
 ==== CÓDIGO ASSEMBLY P3 GERADO ====
 ;============== Região de Dados (inicia no endereço 8000h)
                 ORIG    8000h
-...
+(...)
 Código Assembly P3 gravado em 'exemplo1.as'.
 ```
 ---
 ### NOTA:
 > As fases anteriores do projeto, nomeadamente as verificações léxicas, semânticas e os testes automáticos parciais, devem ser consideradas e integradas nesta etapa, garantindo a continuidade e coerência evolutiva do desenvolvimento.
-> Para mais informações sobre a análise sintática/léxica ou mais sobre informções do efolioA verificar o link: **https://github.com/catiafsantos/21018_Compilacao/blob/main/README.md**
 ---
 
 ## Autores
