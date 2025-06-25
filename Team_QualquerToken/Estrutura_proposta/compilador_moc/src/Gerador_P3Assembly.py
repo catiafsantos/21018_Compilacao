@@ -11,6 +11,8 @@ class GeradorP3Assembly:
         self.data_section = []
         # Lista para armazenar as linhas de código assembly geradas das funcoes
         self.assemblyfunction_code = []
+        # Lista para armazenar temporariamente as linhas de código assembly geradas das funcoes
+        self.assemblyfunction_codetemp = []
         # vamos armazenar que funcoes já foram declaradas
         self.declared_functions = set()
         # Dicionário para mapear nomes de variáveis para labels P3
@@ -195,7 +197,21 @@ class GeradorP3Assembly:
         self.label_generator_count += 1
         return f"{base}{self.label_generator_count}"
 
-    def translate_tac_instruction(self, instr, quad_num):
+    def adicionar_codigo(self, codigo_str: str, tipo_codigo: str):
+        """
+        Adiciona uma string de código ao local apropriado (assemblycode ou assemblyfunction_code).
+        Args:
+            codigo_str (str): A string de código assembly a ser adicionada.
+            tipo_codigo (str): Indica onde o código deve ser adicionado.
+                               Pode ser 'geral' para assemblycode ou 'funcao' para assemblyfunction_code.        """
+        if tipo_codigo == 'geral':
+            self.assembly_code.append(codigo_str)
+        elif tipo_codigo == 'funcao':
+            self.assemblyfunction_codetemp.append(codigo_str)
+        else:
+            print(f"Tipo de código '{tipo_codigo}' inválido. Usar 'geral' ou 'funcao'.")
+
+    def translate_tac_instruction(self, instr, quad_num, tipo_codigo: str):
         # Traduz uma instrução TAC (dicionário) para Assembly P3 e adiciona as linhas geradas.
         op = instr.get('op', '').upper()
         arg1 = instr.get('arg1')
@@ -218,69 +234,82 @@ class GeradorP3Assembly:
                     p3_arg1_syntax = f"M[{arg1}]" if not self._is_immediate_val(str(arg1)) else str(arg1)
             else:
                 p3_arg1_syntax = self._get_p3_operand_syntax(arg1_label, 'load')
-            self.assembly_code.append(self._format_line("","MOV", f"R1, {p3_arg1_syntax}"))
-            self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R1"))
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {p3_arg1_syntax}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", f"MOV", f"{self._get_p3_operand_syntax(res, 'store')}, R1"),
+                                  tipo_codigo)
 
         # Operações aritméticas e atribuição
         # res = arg1 op arg2. Um operando P3 deve ser um registo
         # Padrão geral: MOV R1, arg1; MOV R2, arg2; P3_OP R1, R2; MOV res, R1
         elif op in ['+', '-', '*', '/', '%']:
             # Load arg1 -> R1
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"),
+                                  tipo_codigo)
             # Load arg2 ->  R2
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"),
+                                  tipo_codigo)
             p3_res_syntax = self._get_p3_operand_syntax(res, 'store')
             if op in '+':
                 # res = arg1 + arg2
-                self.assembly_code.append(self._format_line("","ADD", "R1, R2","; ZCNO flags affected"))
-                self.assembly_code.append(self._format_line("",f"MOV",f"{p3_res_syntax}, R1"))
+                self.adicionar_codigo(self._format_line("", "ADD", "R1, R2", "; ZCNO flags affected"), tipo_codigo)
+                self.adicionar_codigo(self._format_line("", f"MOV", f"{p3_res_syntax}, R1"), tipo_codigo)
             elif op in '-':
                 # res = arg1 - arg2
-                self.assembly_code.append(self._format_line("", "SUB", "R1, R2", "; ZCNO flags affected"))
-                self.assembly_code.append(self._format_line("", f"MOV",f"{p3_res_syntax}, R1"))
-            elif op in '*': # MUL op1, op2 -> op1 has MSW, op2 has LSW.
+                self.adicionar_codigo(self._format_line("", "SUB", "R1, R2", "; ZCNO flags affected"), tipo_codigo)
+                self.adicionar_codigo(self._format_line("", f"MOV", f"{p3_res_syntax}, R1"), tipo_codigo)
+            elif op in '*':  # MUL op1, op2 -> op1 has MSW, op2 has LSW.
                 # res = arg1 * arg2
-                self.assembly_code.append(self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"))
-                self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R2","; Store LSW into result"))
+                self.adicionar_codigo(
+                    self._format_line("", "MUL", "R1, R2", "; R1=MSW, R2=LSW. Unsigned. Z based on 32bit, CNO=0"),
+                    tipo_codigo)
+                self.adicionar_codigo(self._format_line("", "MOV", f"{p3_res_syntax}, R2", "; Store LSW into result"),
+                                      tipo_codigo)
             elif op in '/':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
-                self.assembly_code.append(self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
-                self.assembly_code.append(self._format_line("", "MOV",f"{p3_res_syntax}, R1","; Guarda Quociente no resultado"))
+                self.adicionar_codigo(self._format_line("", "DIV", "R1, R2",
+                                                        "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."),
+                                      tipo_codigo)
+                self.adicionar_codigo(
+                    self._format_line("", "MOV", f"{p3_res_syntax}, R1", "; Guarda Quociente no resultado"),
+                    tipo_codigo)
             elif op in '%':  # DIV op1, op2 -> op1 tem Quociente, op2 tem Resto.
                 # res = arg1 / arg2
-                self.assembly_code.append(
-                    self._format_line("", "DIV", "R1, R2", "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."))
-                self.assembly_code.append(
-                    self._format_line("", "MOV",f"{p3_res_syntax}, R2", "; Guarda Resto no resultado"))
+                self.adicionar_codigo(
+                    self._format_line("", "DIV", "R1, R2",
+                                      "; R1=Quociente, R2=Resto. Unsigned. O on div by zero, CN=0."), tipo_codigo)
+                self.adicionar_codigo(
+                    self._format_line("", "MOV", f"{p3_res_syntax}, R2", "; Guarda Resto no resultado"), tipo_codigo)
         elif op == '!':
-            self.assembly_code.append(self._format_line("","CMP", "R2, R1"))
+            self.adicionar_codigo(self._format_line("", "CMP", "R2, R1"), tipo_codigo)
         # Operações lógicas
         elif op in ('AND',):
             # res = arg1 AND arg2
-            self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-            self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-            self.assembly_code.append(self._format_line("","AND", "R1, R2"))
-            self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {arg1_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"R2, {arg2_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "AND", "R1, R2"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"{res_label}, R1"), tipo_codigo)
         elif op in ('OR',):
             # res = arg1 OR arg2
-            self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-            self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-            self.assembly_code.append(self._format_line("","OR",  "R1, R2"))
-            self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {arg1_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"R2, {arg2_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "OR", "R1, R2"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"{res_label}, R1"), tipo_codigo)
         elif op in ('XOR',):
             # res = arg1 XOR arg2
-            self.assembly_code.append(self._format_line("","MOV", f"R1, {arg1_label}"))
-            self.assembly_code.append(self._format_line("","MOV", f"R2, {arg2_label}"))
-            self.assembly_code.append(self._format_line("","XOR", "R1, R2"))
-            self.assembly_code.append(self._format_line("","MOV", f"{res_label}, R1"))
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {arg1_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"R2, {arg2_label}"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "XOR", "R1, R2"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"{res_label}, R1"), tipo_codigo)
 
         # Comparações (CMP + saltos)
         elif op in ('==', '!=', '<', '<=', '>', '>='):
             # res = (arg1 op arg2) ? 1 : 0
 
-            self.assembly_code.append(self._format_line("","MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("","MOV",f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"))
-            self.assembly_code.append(self._format_line("", "CMP", "R1, R2", "; ZCNO flags affected"))
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"),
+                                  tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", f"R2, {self._get_p3_operand_syntax(arg2, 'load')}"),
+                                  tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CMP", "R1, R2", "; ZCNO flags affected"), tipo_codigo)
             self.last_op = op
 
         elif op == 'IFFALSE':
@@ -303,9 +332,9 @@ class GeradorP3Assembly:
                 '>=': ''  # maior ou igual
             }[self.last_op]
 
-            self.assembly_code.append(self._format_line("", salto, f"{res}"))
-            if (salto2!=''):
-                self.assembly_code.append(self._format_line("", salto2, f"{res}"))
+            self.adicionar_codigo(self._format_line("", salto, f"{res}"), tipo_codigo)
+            if (salto2 != ''):
+                self.adicionar_codigo(self._format_line("", salto2, f"{res}"), tipo_codigo)
 
         elif op == 'IFGOTO':
             # Mapeamento do operador TAC para o salto P3 correspondente
@@ -327,21 +356,24 @@ class GeradorP3Assembly:
                 '>=': ''  # maior ou igual
             }[self.last_op]
 
-            self.assembly_code.append(self._format_line("", salto, f"{res}"))
-            if (salto2!=''):
-                self.assembly_code.append(self._format_line("", salto2, f"{res}"))
+            self.adicionar_codigo(self._format_line("", salto, f"{res}"), tipo_codigo)
+            if (salto2 != ''):
+                self.adicionar_codigo(self._format_line("", salto2, f"{res}"), tipo_codigo)
 
         # Saltos e labels
         elif op == 'LABEL':
             # Marca um label no código
-            self.assembly_code.append(self._format_line(res+":", "NOP"))
+            self.adicionar_codigo(self._format_line(res.upper() + ":", "NOP"), tipo_codigo)
         elif op == 'GOTO':
             # Salto incondicional
-            self.assembly_code.append(self._format_line("", "JMP", self._get_p3_operand_syntax(res, 'address')))
-        elif op == 'IFGOTO2': # if cond_var goto label
-            self.assembly_code.append(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("", "CMP", "R1, 0", ))
-            self.assembly_code.append(self._format_line("", f"JMP.NZ",f"{self._get_p3_operand_syntax(res, 'address')}"))
+            self.adicionar_codigo(self._format_line("", "JMP", self._get_p3_operand_syntax(res, 'address')),
+                                  tipo_codigo)
+        elif op == 'IFGOTO2':  # if cond_var goto label
+            self.adicionar_codigo(self._format_line("", "MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"),
+                                  tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CMP", "R1, 0", ), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", f"JMP.NZ", f"{self._get_p3_operand_syntax(res, 'address')}"),
+                                  tipo_codigo)
 
         # Arrays TESTAR
         elif op == 'ALLOC':
@@ -351,73 +383,86 @@ class GeradorP3Assembly:
             # res = arg1[arg2]
             arr = self._get_var_label(arg1)
             idx = self._get_var_label(arg2)
-            self.assembly_code.append(self._format_line("", "MOV", "R1", idx))
-            self.assembly_code.append(self._format_line("", "MOV", "R2", arr+"[R1]"))
-            self.assembly_code.append(self._format_line("", "MOV",res_label, "R2"))
+            self.adicionar_codigo(self._format_line("", "MOV", "R1", idx), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", "R2", arr + "[R1]"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", res_label, "R2"), tipo_codigo)
         elif op == 'STORE_ARRAY':
             # arg1[arg2] = res
             arr = self._get_var_label(arg1)
             idx = self._get_var_label(arg2)
             val = self._get_var_label(res)
-            self.assembly_code.append(self._format_line("", "MOV", "R1", idx))
-            self.assembly_code.append(self._format_line("", "MOV", "R2", val))
-            self.assembly_code.append(self._format_line("", "MOV", arr+"[R1]", "R2"))
+            self.adicionar_codigo(self._format_line("", "MOV", "R1", idx), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", "R2", val), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "MOV", arr + "[R1]", "R2"), tipo_codigo)
 
             # --- Array Operations ---
             # TAC: t_offset = index * 4 (bytes)
             # P3: word_offset = byte_offset / 2
         elif op == '[]':  # res = array_name[byte_offset_var]
             # array_name (arg1), byte_offset_var (arg2), res (destination)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ","; R1 = byte offset"))
-            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1 ","; R1 = word offset"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg2, 'load')} ",
+                                                    "; R1 = byte offset"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", f"SHR", f"R1, 1 ", "; R1 = word offset"), tipo_codigo)
             # 3. base address do array em R2
             # MOV R2, #array_name (Loads  address no R2)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = endereco base do array '{arg1}'"))
+            self.adicionar_codigo(
+                self._format_line("", f"MOV", f"R2, {arg1} ", "; R2 = endereco base do array '{arg1}'"), tipo_codigo)
             # 4. offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = endereco do elemento"))
+            self.adicionar_codigo(self._format_line("", f"ADD", f"R2, R1 ", "; R2 = endereco do elemento"), tipo_codigo)
             # 5. Load value: R3 = M[R2] (register indirect)
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, M[R2] ","; Load value no array element"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R3, M[R2] ", "; Load value no array element"),
+                                  tipo_codigo)
             # 6. Store in res: M[res] = R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"{self._get_p3_operand_syntax(res, 'store')}, R3"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"{self._get_p3_operand_syntax(res, 'store')}, R3"),
+                                  tipo_codigo)
         elif op == '[]=':  # array_name[byte_offset_var] = value_var
             # array_name (arg1), byte_offset_var (arg2), value_var (res in TAC quad)
             # byte_offset -> R1
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg2, 'load')}","; R1 = byte offset"))
+            self.adicionar_codigo(
+                self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg2, 'load')}", "; R1 = byte offset"),
+                tipo_codigo)
             # Converter para word offset
-            self.assembly_code.append(self._format_line("",f"SHR",f"R1, 1","; R1 = word offset"))
+            self.adicionar_codigo(self._format_line("", f"SHR", f"R1, 1", "; R1 = word offset"), tipo_codigo)
             # Obter endrreco base do array -> R2
-            self.assembly_code.append(self._format_line("",f"MOV",f"R2, {arg1} ","; R2 = endereco base do array '{arg1}'"))
+            self.adicionar_codigo(
+                self._format_line("", f"MOV", f"R2, {arg1} ", "; R2 = endereco base do array '{arg1}'"), tipo_codigo)
             # Adicionar offset: R2 = R2 + R1
-            self.assembly_code.append(self._format_line("",f"ADD",f"R2, R1 ","; R2 = endereco do elemento"))
+            self.adicionar_codigo(self._format_line("", f"ADD", f"R2, R1 ", "; R2 = endereco do elemento"), tipo_codigo)
             # Obter value_to_store -> R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"R3, {self._get_p3_operand_syntax(res, 'load')} ","; R3 = valor a guardar"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R3, {self._get_p3_operand_syntax(res, 'load')} ",
+                                                    "; R3 = valor a guardar"), tipo_codigo)
             # Store value: M[R2] = R3
-            self.assembly_code.append(self._format_line("",f"MOV",f"M[R2], R3 ","; Guarda valor no array element"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"M[R2], R3 ", "; Guarda valor no array element"),
+                                  tipo_codigo)
 
         # Pilha (stack)
         elif op == 'PUSH':
             # Empilha valor de arg1
-            self.assembly_code.append(self._format_line("", "PUSH", arg1_label))
+            self.adicionar_codigo(self._format_line("", "PUSH", arg1_label), tipo_codigo)
         elif op == 'POP':
             # Retira valor do topo da pilha para res
-            self.assembly_code.append(self._format_line("", "POP", res_label))
+            self.adicionar_codigo(self._format_line("", "POP", res_label), tipo_codigo)
 
         # Funções
         elif op == 'PARAM':  # param arg1
-            self.assembly_code.append(self._format_line("",f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"))
-            self.assembly_code.append(self._format_line("",f"PUSH",f"R1","; Push parameter"))
+            self.adicionar_codigo(self._format_line("", f"MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}"),
+                                  tipo_codigo)
+            self.adicionar_codigo(self._format_line("", f"PUSH", f"R1", "; Push parameter"), tipo_codigo)
 
         elif op == 'CALL':
             # Chamada de função (label)
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1}", "", "-"*25))
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1}", "", "-" * 25), tipo_codigo)
             # se a função tem valor de retorno, reserva espaço no stack
             if res:
-                self.assembly_code.append(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"))
-            self.assembly_code.append(self._format_line("",f"CALL",f"{self._get_p3_operand_syntax(arg1, 'address').upper()}","; Chama a rotina"))
+                self.adicionar_codigo(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"), tipo_codigo)
+            self.adicionar_codigo(
+                self._format_line("", f"CALL", f"{self._get_p3_operand_syntax(arg1, 'address').upper()}",
+                                  "; Chama a rotina"), tipo_codigo)
             # se a função tem valor de retorno, está no stack
             if res:
-                self.assembly_code.append(self._format_line("",f"POP",f"{self._get_p3_operand_syntax(res, 'store')}","; Atribui o valor à variável"))
-            self.assembly_code.append("")
+                self.adicionar_codigo(self._format_line("", f"POP", f"{self._get_p3_operand_syntax(res, 'store')}",
+                                                        "; Atribui o valor à variável"), tipo_codigo)
+            self.adicionar_codigo("", tipo_codigo)
             # adicionar funções
             if arg1 == "reads":
                 self.add_function_reads()
@@ -426,48 +471,51 @@ class GeradorP3Assembly:
             if arg1 == "read":
                 self.add_function_read_int()
 
-        elif op == 'RETURN': # return (optional_value)
+        elif op == 'RETURN':  # return (optional_value)
             # Retorno de função
             if arg1:  # There is a return value
-                self.assembly_code.append(self._format_line("",
-                    f"MOV",f"R1, {self._get_p3_operand_syntax(arg1, 'load')}","; Load return value into R1 (convention)"))
-            self.assembly_code.append(self._format_line("",f"RET","","; Return from subroutine, PC restored from stack [cite: 183]"))
+                self.adicionar_codigo(self._format_line("",
+                                                        f"MOV", f"R1, {self._get_p3_operand_syntax(arg1, 'load')}",
+                                                        "; Load valor de retorno R1 "), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", f"RET", "", "; Returna da subroutina"), tipo_codigo)
 
         elif op == 'HALT':
             # Termina a execução do programa
             # O P3 não tem uma instrução HALT, definimos 'Fim' como ponto de paragem.
-            self.assembly_code.append(self._format_line(f"; {op.lower()}", "-" * 25))
-            self.assembly_code.append(self._format_line("", "BR", "Fim", "; Fim com loop infinito"))
+            self.adicionar_codigo(self._format_line(f"; {op.lower()}", "-" * 25), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "BR", "Fim", "; Fim com loop infinito"), tipo_codigo)
 
         # --------------------------------------------------------------------------------------------------------------
         # Funções Entrada/Saída
         # --------------------------------------------------------------------------------------------------------------
         elif op == 'READ':
             # read(): Lê int ou double.
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
 
         elif op == 'READC':
             # readc(): Lê caracter (retorna valor ASCII).
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
-            self.assembly_code.append(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"))
-            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-            self.assembly_code.append(self._format_line("", "POP", f"M[{arg1_label}]", "; Atribui o valor à variável"))
-            self.assembly_code.append("")
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "PUSH", "R0", "; Reserva espaço para retorno"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "POP", f"M[{arg1_label}]", "; Atribui o valor à variável"),
+                                  tipo_codigo)
+            self.adicionar_codigo("", tipo_codigo)
             self.add_function_readc()
 
         elif op == 'READS':
             # reads(): Lê string para vetor de int (termina em 0).
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
-            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-            self.assembly_code.append("")
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
+            self.adicionar_codigo("", tipo_codigo)
             self.add_function_reads()
 
         elif op in ('WRITE', 'WRITEC'):
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
-            self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
-            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-            self.assembly_code.append(self._format_line("", "POP", "R0", "; Limpa a pilha"))
-            self.assembly_code.append("")
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
+            self.adicionar_codigo(
+                self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "POP", "R0", "; Limpa a pilha"), tipo_codigo)
+            self.adicionar_codigo("", tipo_codigo)
             if op == 'WRITE':
                 # write(x): Imprime valor de variável.
                 self.add_function_write()
@@ -477,31 +525,33 @@ class GeradorP3Assembly:
 
         elif op == 'WRITEV':
             # writev(vetor): Imprime vetor no formato {48, 49, 0}.
-            self.assembly_code.append(self._format_line(f"; {op.lower()} {arg1_label}", "", "-"*25))
-            self.assembly_code.append(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"))
-            self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-            self.assembly_code.append(self._format_line("", "POP", "R0"))
-            self.assembly_code.append("")
+            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
+            self.adicionar_codigo(
+                self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "POP", "R0"), tipo_codigo)
+            self.adicionar_codigo("", tipo_codigo)
             self.add_function_writev()
 
         elif op in ('WRITES',):
             # writes "string_literal"
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
-                self.assembly_code.append(self._format_line(f"; {op.lower()} {str_label}", "", "-"*25))
-                self.assembly_code.append(self._format_line("", "PUSH", f"{str_label}", "; Endereço da string passado via pilha"))
-                self.assembly_code.append(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"))
-                self.assembly_code.append(self._format_line("", "POP", "R0"))
-                self.assembly_code.append("")
+                self.adicionar_codigo(self._format_line(f"; {op.lower()} {str_label}", "", "-" * 25), tipo_codigo)
+                self.adicionar_codigo(
+                    self._format_line("", "PUSH", f"{str_label}", "; Endereço da string passado via pilha"),
+                    tipo_codigo)
+                self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
+                self.adicionar_codigo(self._format_line("", "POP", "R0"), tipo_codigo)
+                self.adicionar_codigo("", tipo_codigo)
                 self.add_function_writes()
             else:
-                self.assembly_code.append(
-                    self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"))
+                self.adicionar_codigo(
+                    self._format_line("", f"; ERROR: String literal para writes não encontrado: {arg1}"), tipo_codigo)
 
         else:
             # Caso não exista tradução, insere comentário de aviso
-            self.assembly_code.append(f";; AVISO: Operação TAC '{op}' não traduzida para P3.")
-
+            self.adicionar_codigo(f";; AVISO: Operação TAC '{op}' não traduzida para P3.", tipo_codigo)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Definição de funções Entrada/Saída
@@ -896,10 +946,14 @@ class GeradorP3Assembly:
         """
         self.assembly_code = []
         self.assemblyfunction_code = []
+        self.assemblyfunction_codetemp  = []
+        tipo_codigo='funcao'# 'geral'ou 'funcao' - é geral quando encontra o main, antes é funcao
         # traduz instruções TAC para assembly
         for indice, instr in enumerate(tac_list):
             quad_num = indice + 1
-            self.translate_tac_instruction(instr, quad_num)
+            if ((instr['op'] == 'label') and (instr['res'] == 'main')):
+                tipo_codigo = 'geral'
+            self.translate_tac_instruction(instr, quad_num, tipo_codigo)
 
         # Monta o código final
         output = []
@@ -923,7 +977,7 @@ class GeradorP3Assembly:
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Rotinas"))
         output.extend(self.assemblyfunction_code)
-
+        output.extend(self.assemblyfunction_codetemp)
         output.append("")
         output.append(self._format_line(";"+"-"*14, "Programa Principal "))
         output.append(self._format_line(f"{self.program_entry_point}:", "NOP"))
