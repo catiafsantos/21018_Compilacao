@@ -173,6 +173,12 @@ python main.py test_examples/compatibilidade_de_tipos.moc
 
 ==== CÓDIGO TAC OTIMIZADO ====
 ...
+
+==== CÓDIGO ASSEMBLY P3 GERADO ====
+;============== Região de Dados (inicia no endereço 8000h)
+                ORIG    8000h
+...
+Código Assembly P3 gravado em 'test_examples/as_exemplo_ciclo_for_inputs.as'
 ```
 #### Resultado esperado (exemplo com erro)
 
