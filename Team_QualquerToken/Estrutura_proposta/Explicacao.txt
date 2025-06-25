@@ -1,19 +1,20 @@
 compilador_moc/
 │
 ├── src/
-│   ├── parser/                 # Ficheiros ANTLR (gramática, lexer/parser gerados)
-│   ├── visitors/               # Visitors para análise semântica e geração de TAC
-│   │   ├── SemanticVisitor.py  # Verificação de erros semânticos
-│   │   ├── TACVisitor.py       # Geração de Three-Address Code (TAC)
-│   │   └── OptimizerVisitor.py # Otimizações do TAC
-│   ├── utils/                  # Utilitários (manipulação de quádruplos, etc.)
-│   └── main.py                 # Ponto de entrada
+│   ├── parser/                   	# Ficheiros ANTLR (gramática, lexer/parser gerados)
+│   ├── visitors/                 	# Visitors para análise semântica e geração de TAC
+│   │   ├── SemanticVisitor.py    	# Verificação de erros semânticos
+│   │   ├── TACVisitor.py         	# Geração de Three-Address Code (TAC)
+│   │   └── OptimizerVisitor.py   	# Otimizações do TAC
+│   │   └── Gerador_P3Assembly.py	# Criação de P3 Assembly apartir do TAC
+│   ├── utils/                    	# Utilitários (manipulação de quádruplos, etc.)
+│   └── main.py                   	# Ponto de entrada
 │
-├── testes/                     # Casos de teste
-│   ├── erros_semanticos/      # Testes com erros semânticos
-│   ├── programas_validos/     # Programas MOCC válidos
+├── testes/                       	# Casos de teste
+│   ├── erros_semanticos/         	# Testes com erros semânticos
+│   ├── programas_validos/        	# Programas MOCC válidos
 │
-├── relatorio/                # Relatório e documentação
-│   └── report.docx           # Relatório detalhado
+├── relatorio/                    	# Relatório e documentação
+│   └── report.docx               	# Relatório detalhado
 │
-└── README.md                 # Instruções
+└── README.md                     	# Instruções
