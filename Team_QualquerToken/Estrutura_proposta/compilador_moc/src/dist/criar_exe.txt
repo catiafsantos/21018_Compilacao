@@ -1,0 +1,3 @@
+No directorio src executar:
+
+ pyinstaller --onefile  --add-data "gramatica;gramatica" main.py compilador_moc.exe
