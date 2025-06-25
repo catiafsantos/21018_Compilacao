@@ -136,106 +136,31 @@ python main.py test_examples/nome_do_ficheiro.moc
 No terminal, a partir da pasta `src/dist/`, execute:
 
 ```bash
-compilador_moc.exe exemplo1.moc
+.\compilador_moc.exe nome_do_ficheiro.moc
 ```
 
 ---
 ### Exemplos:
 
 ```bash
-python main.py test_examples/Testes_optimizador12.moc
-```
-
-```bash
-python main.py test_examples/compatibilidade_de_tipos.moc
+.\compilador_moc.exe exemplo1.moc
 ```
 
 #### Resultado esperado (exemplo com sucesso)
 
 ```text
---- A iniciar Análise Sintática ---
 
---- Análise Sintática concluída ---
-
---- A iniciar Análise Semântica ---
-
---- Análise Semântica concluída ---
-
---- A iniciar Geração de Código Intermédio ---
-
---- Geração de Código Intermédio concluída ---
-
-==== CÓDIGO TAC GERADO ====
-...
-
-==== CÓDIGO TAC OTIMIZADO ====
-...
+(...)
 
 ==== CÓDIGO ASSEMBLY P3 GERADO ====
 ;============== Região de Dados (inicia no endereço 8000h)
                 ORIG    8000h
 ...
-Código Assembly P3 gravado em 'test_examples/as_exemplo_ciclo_for_inputs.as'
-```
-#### Resultado esperado (exemplo com erro)
-
-```text
---- A iniciar Análise Sintática ---
-
---- Análise Sintática concluída ---
-
---- A iniciar Análise Semântica ---
-[Erro semântico] Atribuição de tipo incompatível em 'c' (esperado: int, obtido: double)
-
-Erros semânticos encontrados. A abortar o processo de geração de código intermédio.
-```
----
-## Testes
-### Testes manuais
-
-> Todos os testes de código-fonte da linguagem MOC estão na pasta:
-
-```
-src/test_examples/
-```
-
-Pode correr qualquer um destes ficheiros com o script principal `main.py`, que irá:
-
-1. Fazer a análise sintática
-2. Fazer a análise semântica
-3. Gerar código intermediário (TAC), se não houver erros
-4. Aplicar otimizações ao TAC
----
-### Testes automatizados [Semânticos]
-
-> Script de testes automáticos para verificar se a análise semântica está a detetar corretamente erros como:
-
-- variáveis ou funções não declaradas
-- declarações duplicadas
-- erros em condições `if`, ciclos `for` ou `while`
-
-O ficheiro de testes encontra-se em `src/Testes_semanticos.py`.
-
-#### Instruções de execução
-
-No terminal, entre na pasta `src/`:
-
-```bash
-cd src
-python Testes_semanticos.py
-```
-
-Se tudo estiver correto, deve ver algo como:
-
-```bash
-..............
-----------------------------------------------------------------------
-Ran 14 tests in 0.063s
-
-OK
+Código Assembly P3 gravado em 'exemplo1.as'.
 ```
 ---
 ### NOTA:
+> As fases anteriores do projeto, nomeadamente as verificações léxicas, semânticas e os testes automáticos parciais, devem ser consideradas e integradas nesta etapa, garantindo a continuidade e coerência evolutiva do desenvolvimento.
 > Para mais informações sobre a análise sintática/léxica ou mais sobre informções do efolioA verificar o link: **https://github.com/catiafsantos/21018_Compilacao/blob/main/README.md**
 ---
 
