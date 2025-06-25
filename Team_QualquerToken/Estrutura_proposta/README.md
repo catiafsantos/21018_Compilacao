@@ -20,15 +20,10 @@ Para mais contexto sobre a linguagem, consulta o enunciado oficial fornecido na 
 
 ## Estrutura do Projeto
 
-Este projeto insere-se no eFolio B, continuação do eFolio A com a fusão de dois grupos para a continuação do projeto.
-
-- [Grupo: Qualquer] - [Andreia Romão - 1702430 / Cátia Santos - 1702194]
-- [Grupo: Token]    - [Rui Menino - 1103425 / Luís Tavares - 1803237 / José Augusto Azevedo - 2200655]
-
 ```plaintext
 compilador_moc/
 │
-├── relatorio/                      # Relatório do efolioB
+├── relatorio/                      # Relatório Final
 │
 ├── src/
 │   ├── antlr/                      # Ficheiros gerados automaticamente pelo ANTLR
@@ -40,9 +35,11 @@ compilador_moc/
 │   │
 │   ├── dist/
 │   │   ├── compilador_moc.exe      # Ficheiro .exe para gerar o código assemblly P3
-│   │   ├── criar_exe.txt           # Ficheiro com as instruções de geração do .exe
 │   │   ├── exemplo1.as             # Ficheiro com o código assembly gerado pelo compilador (.exe)
 │   │   └── exemplo1.moc            # Ficheiro com o programa a ser convertido para assembly
+│   │
+│   ├── gramatica/
+│   │   └── MOC.g4                 # Gramática da linguagem MOC usada na criação do .exe
 │   │
 │   ├── parser/
 │   │   ├── MOC.g4                 # Gramática da linguagem MOC
@@ -58,7 +55,7 @@ compilador_moc/
 │   │   └── Testes_optimizador01.moc (...)                 # Testes para validar cada uma das otimizações aplicadas
 │   │
 │   ├── utils/
-│   │   ├── TabelaSimbolos.py      # Tabela de símbolos usada na análise semântica
+│   │   └── TabelaSimbolos.py      # Tabela de símbolos usada na análise semântica
 │   │
 │   ├── Gerador_P3Assembly.py      # Aplicação do gerador de código assemblyP3
 │   ├── VisitorSemantico.py        # Visitor que faz verificação semântica (tipos, declarações)
@@ -98,15 +95,6 @@ Para que o comando `main.py -tree` funcione corretamente no Windows, é necessá
 3. Durante a instalação, pode aceitar todas as opções por defeito
 4. Após a instalação, abra o **Git Bash** (procure "Git Bash" no menu Iniciar, ou altere o tipo de terminal no IDE que está a usar)
 
-#### Como utilizar:
-
-No Git Bash, pode executar os comandos do projeto normalmente. Exemplo:
-
-```
-python3 main.py Exemplos_Teste/exemplo1.txt -tree
-```
----
-
 ### Linux (Debian/Ubuntu)
 
 ```bash
@@ -142,6 +130,15 @@ No terminal, a partir da pasta `src/`, execute:
 ```bash
 python main.py test_examples/nome_do_ficheiro.moc
 ```
+
+### Compilar ficheiro moc (via executável)
+
+No terminal, a partir da pasta `src/dist/`, execute:
+
+```bash
+compilador_moc.exe exemplo1.moc
+```
+
 ---
 ### Exemplos:
 
