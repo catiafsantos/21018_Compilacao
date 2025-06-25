@@ -519,38 +519,29 @@ class GeradorP3Assembly:
             self.adicionar_codigo("", tipo_codigo)
             self.add_function_reads()
 
-        elif op in ('WRITE', 'WRITEC'):
+        elif op in ('WRITE', 'WRITEC', 'WRITEV'):
             self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
-            self.adicionar_codigo(
-                self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"), tipo_codigo)
+            self.adicionar_codigo(self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"), tipo_codigo)
             self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
             self.adicionar_codigo(self._format_line("", "POP", "R0", "; Limpa a pilha"), tipo_codigo)
             self.adicionar_codigo("", tipo_codigo)
             if op == 'WRITE':
                 # write(x): Imprime valor de variável.
                 self.add_function_write()
-            else:
+            elif op == 'WRITEC':
                 # writec(x): Imprime caracter (ASCII).
                 self.add_function_writec()
-
-        elif op == 'WRITEV':
-            # writev(vetor): Imprime vetor no formato {48, 49, 0}.
-            self.adicionar_codigo(self._format_line(f"; {op.lower()} {arg1_label}", "", "-" * 25), tipo_codigo)
-            self.adicionar_codigo(
-                self._format_line("", "PUSH", f"{arg1_label}", "; Endereço do valor passado via pilha"), tipo_codigo)
-            self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
-            self.adicionar_codigo(self._format_line("", "POP", "R0"), tipo_codigo)
-            self.adicionar_codigo("", tipo_codigo)
-            self.add_function_writev()
+            else:
+                # writev(vetor): Imprime vetor no formato {48,49,0}.
+                self.add_function_writev()
+                self.add_function_write()  # usada pela writev
 
         elif op in ('WRITES',):
             # writes "string_literal"
             str_label = self.string_literal_map.get(arg1.strip('"'))
             if str_label:
                 self.adicionar_codigo(self._format_line(f"; {op.lower()} {str_label}", "", "-" * 25), tipo_codigo)
-                self.adicionar_codigo(
-                    self._format_line("", "PUSH", f"{str_label}", "; Endereço da string passado via pilha"),
-                    tipo_codigo)
+                self.adicionar_codigo(self._format_line("", "PUSH", f"{str_label}", "; Endereço da string passado via pilha"), tipo_codigo)
                 self.adicionar_codigo(self._format_line("", "CALL", f"{op.upper()}", "; Chama a rotina"), tipo_codigo)
                 self.adicionar_codigo(self._format_line("", "POP", "R0"), tipo_codigo)
                 self.adicionar_codigo("", tipo_codigo)
@@ -887,29 +878,41 @@ class GeradorP3Assembly:
         if 'writev' not in self.declared_functions:
             self.declared_functions.add('writev')
             self.assemblyfunction_code.append("")
-            self.assemblyfunction_code.append("; ----- Função writev(vetor): Imprime vetor no formato {48, 49, 0}.")
-            self.assemblyfunction_code.append(self._format_line("", ";RM ------------------------------------------------------------------------"))
-            self.assemblyfunction_code.append(self._format_line("", ";RM - agora está a terminar se apanhar um valor 0"))
-            self.assemblyfunction_code.append(self._format_line("", ";RM - é preciso alterar para passar 2 valores no stack, o vetor e o tamanho..."))
-            self.assemblyfunction_code.append(self._format_line("", ";RM ------------------------------------------------------------------------"))
+            self.assemblyfunction_code.append("; ----- Função writev(vetor): Imprime vetor no formato {48,49,0}.")
             self.assemblyfunction_code.append(self._format_line("WRITEV:", "NOP"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+2]","; Endereço da string passado via pilha"))
-            self.assemblyfunction_code.append(self._format_line("WRITEV_LOOP:", "MOV", "R2, M[R1]", "; Lê o carater apontado por R1"))
-            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, R0","; Compara com o terminador"))
-            self.assemblyfunction_code.append(self._format_line("", "JMP.Z", "WRITEV_END","; Se for zero, salta para o fim"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV", "R3, R1"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1", "; Guarda R1"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R2", "; Guarda R2"))
-            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R3", "; Endereço do valor passado via pilha"))
-            self.assemblyfunction_code.append(self._format_line("", "CALL", "WRITE","; Chama a rotina"))
-            self.assemblyfunction_code.append(self._format_line("", "POP", "R0"))
+            self.assemblyfunction_code.append(self._format_line("", "; Guarda os registos usados na função"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH","R1"))
+            self.assemblyfunction_code.append(self._format_line("", "PUSH","R2"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITEV_ABRE:", "MOV", "R2, M[ABRE]", "; Abre chaveta"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R1, M[SP+4]", "; Endereço da string passado via pilha"))
+            self.assemblyfunction_code.append(self._format_line("WRITEV_L1:", "MOV", "R2, M[R1]", "; Lê o carater apontado por R1"))
+            self.assemblyfunction_code.append(self._format_line("", "CMP", "R2, R0", "; Compara com o terminador"))
+            self.assemblyfunction_code.append(self._format_line("", "JMP.Z", "WRITEV_FECHA", "; Se for zero, salta para o fim"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "PUSH", "R1", "; Endereço do valor passado via pilha"))
+            self.assemblyfunction_code.append(self._format_line("", "CALL", "WRITE", "; Chama a rotina"))
+            self.assemblyfunction_code.append(self._format_line("", "POP", "R0", "; Limpa a pilha"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "R2, M[VIRGULA]", "; Virgula"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "INC", "R1", "; Avança para o próximo carater"))
+            self.assemblyfunction_code.append(self._format_line("", "JMP", "WRITEV_L1", "; Repete o ciclo"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITEV_FECHA:", "MOV", "R2, M[FECHA]", "; Fecha chaveta"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2 "))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("WRITEV_LF:", "MOV", "R2, LINEFEED", "; Muda de linha"))
+            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
+            self.assemblyfunction_code.append("")
+            self.assemblyfunction_code.append(self._format_line("", "; Restaura registos pela ordem inversa"))
             self.assemblyfunction_code.append(self._format_line("", "POP", "R2"))
             self.assemblyfunction_code.append(self._format_line("", "POP", "R1"))
-            self.assemblyfunction_code.append(self._format_line("", "INC", "R1","; Avança para a próxima posição"))
-            self.assemblyfunction_code.append(self._format_line("", "JMP", "WRITEV_LOOP","; Repete o ciclo"))
-            self.assemblyfunction_code.append(self._format_line("WRITEV_LF:", "MOV", "R2, LINEFEED","; Muda de linha"))
-            self.assemblyfunction_code.append(self._format_line("", "MOV", "M[OUT_PORT], R2"))
             self.assemblyfunction_code.append(self._format_line("WRITEV_END:", "RET"))
+
 
     def add_function_writes(self):
         if 'writes' not in self.declared_functions:
@@ -936,7 +939,7 @@ class GeradorP3Assembly:
             self.assemblyfunction_code.append(self._format_line("", "POP","R1"))
             self.assemblyfunction_code.append(self._format_line("WRITES_END:", "RET"))
 
-    # -------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     def generate_from_tac_list(self, tac_list):
         """
@@ -969,6 +972,10 @@ class GeradorP3Assembly:
         output.append(self._format_line("IN_PORT","EQU","FFFFh", "; Porto de entrada de texto (teclado)"))
         output.append(self._format_line("OUT_PORT","EQU","FFFEh", "; Porto de saída (consola)"))
         output.append(self._format_line("LINEFEED","EQU","10", "; Código ASCII da tecla enter na consola (LF)"))
+        if 'writev' in self.declared_functions:
+            output.append(self._format_line("ABRE", "STR", "'{'"))
+            output.append(self._format_line("FECHA", "STR", "'}'"))
+            output.append(self._format_line("VIRGULA", "STR", "','"))
         output.append("")
         output.append(self._format_line(";"+"="*14, "Região de Código (inicia no endereço 0000h)"))
         output.append(self._format_line("", "ORIG", "0000h"))
