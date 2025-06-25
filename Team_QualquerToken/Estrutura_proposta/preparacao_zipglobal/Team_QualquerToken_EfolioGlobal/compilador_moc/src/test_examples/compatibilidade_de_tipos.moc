@@ -1,0 +1,7 @@
+void main(void);
+
+void main(void) {
+    double b = 2;     // OK: int para double é conversão segura
+    int c;
+    c = 4.5;          // ERRO: double para int
+}

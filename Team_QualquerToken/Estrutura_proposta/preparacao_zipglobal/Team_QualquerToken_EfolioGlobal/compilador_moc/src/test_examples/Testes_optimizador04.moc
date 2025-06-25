@@ -1,0 +1,11 @@
+/* teste de optimização em operações combinadas inteiros */
+void main(void);
+void main(void) {
+	int a, b, c, d, e;
+	a = 50;
+	b = 10;
+	c = a + b;
+	d = 3 * b;
+	e = c - d;
+	write(e);
+}

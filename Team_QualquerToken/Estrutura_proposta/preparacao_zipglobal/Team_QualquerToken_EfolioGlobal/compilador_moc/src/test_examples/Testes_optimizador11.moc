@@ -1,0 +1,7 @@
+ /* teste de optimizacao de propagacao de copia */
+void main(void);
+void main(void) {
+	int a, b, c; 
+	a = 10; 
+	c = b + 10; 
+}

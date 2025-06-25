@@ -1,0 +1,38 @@
+Assim, deve ser entregue um ficheiro com a extensão ZIP, incluindo:
+- todo o código usado na construção do compilador;
+- um ficheiro README.TXT com as instruções para compilação do compilador, incluindo versões do software utilizado;
+- um ficheiro executável funcional (para Windows ou Linux) do compilador que permita executar e testar o código caso não seja possível compilar o mesmo;
+- um relatório de grupo;
+- a resolução individual da questão ( a ser feito no dia do exame)
+
+
+Caros alunos,
+
+O e-fólio Global está a aproximar-se e é fundamental que comecem desde já a trabalhar na versão final do vosso compilador. A informação detalhada apesar de estar no PUC da disciplina, é sempre válida relembrar, aproveito para relembrar os principais pontos que devem constar no vosso trabalho a entregar na versão final:
+
+✅ O que deve ser entregue?
+
+O compilador completo, com todas as fases desenvolvidas nos e-fólios A e B;
+
+Melhorias que tenham implementado desde então;
+
+A geração de código final, numa linguagem à vossa escolha (por exemplo, assembly, bytecode Java, ou P3).
+
+Indiquem claramente a linguagem usada e um simulador para testar o código final.
+
+⚠️ Importante:
+
+Caso a versão final não esteja totalmente funcional, devem enviar essa versão na mesma juntamente com a última versão funcional, indicando claramente as diferenças entre ambas.
+
+📝 Relatório
+
+É obrigatório incluir um relatório que explique o trabalho feito, destacando as diferenças relativamente ao que foi entregue no e-fólio B.
+
+💡 Dica: Não deixem para a última hora! Esta fase exige consolidação de tudo o que foi aprendido e o seu planeamento atempado será essencial para uma boa avaliação.
+
+Qualquer dúvida, estamos por aqui no fórum para apoiar!
+
+Nota: É importante deixarem toda esta parte prática pronta a ser submetida, apar se dedicarem nos minutos do e-fólio Global a responder às questões individuais que serão colocadas. Lembro que sendo avaliação final, todos terão que submeter o trabalho no Wiseflow e não apenas um elemento do grupo.
+
+Bom trabalho! 💻📘
+Constantino e Rúdi

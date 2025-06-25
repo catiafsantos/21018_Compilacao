@@ -1,0 +1,14 @@
+void main(void);
+void main(void) {
+    writes("le inteiro 1: ");
+	int x = read();
+    write(x);
+    writes("le inteiro 2: ");
+    int y= read();
+    write(y);
+    if (x==y){
+        writes("numeros iguais");
+    } else {
+        writes("numeros diferentes");
+    }
+}

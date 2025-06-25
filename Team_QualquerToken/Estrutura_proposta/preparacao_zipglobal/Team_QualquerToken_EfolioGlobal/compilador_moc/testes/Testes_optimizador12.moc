@@ -1,0 +1,9 @@
+/* teste de optimizacao de propagacao de copias com redefinição */
+void main(void);
+void main(void) {
+	int a, b, c; 
+	a = 100;
+	b = a;
+	a = 10;
+	c = b +  20;
+}

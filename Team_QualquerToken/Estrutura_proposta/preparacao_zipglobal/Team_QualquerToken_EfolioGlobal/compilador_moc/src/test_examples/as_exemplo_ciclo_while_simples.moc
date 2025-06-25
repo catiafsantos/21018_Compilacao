@@ -1,0 +1,14 @@
+void main(void);
+void main(void) {
+    writes("insira numero (0 para sair): ");
+	int x = read();
+
+    while (x!=0){
+        write(x);
+        writes("insira numero (0 para sair): ");
+        x = read();
+    }
+
+    writes ("fim");
+
+}

@@ -1,0 +1,6 @@
+void main(void);
+      
+void main(void) {    
+	double x=5;
+	int a = 2.5;
+}
